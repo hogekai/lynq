@@ -15,14 +15,18 @@ export interface Session {
 	get<T = unknown>(key: string): T | undefined;
 	/** Set a session-scoped value. */
 	set(key: string, value: unknown): void;
-	/** Authorize a middleware by name, enabling all tools guarded by it. */
+	/** Authorize a middleware by name, enabling all tools and resources guarded by it. */
 	authorize(middlewareName: string): void;
-	/** Revoke a middleware authorization, disabling all tools guarded by it. */
+	/** Revoke a middleware authorization, disabling all tools and resources guarded by it. */
 	revoke(middlewareName: string): void;
 	/** Enable specific tools by name. */
 	enableTools(...names: string[]): void;
 	/** Disable specific tools by name. */
 	disableTools(...names: string[]): void;
+	/** Enable specific resources by URI. */
+	enableResources(...uris: string[]): void;
+	/** Disable specific resources by URI. */
+	disableResources(...uris: string[]): void;
 }
 
 // === Context ===
@@ -74,6 +78,31 @@ export type ToolHandler<TInput = unknown> = (
 	ctx: ToolContext,
 ) => CallToolResult | Promise<CallToolResult>;
 
+// === Resource ===
+
+export interface ResourceConfig {
+	name: string;
+	description?: string;
+	mimeType?: string;
+}
+
+export interface ResourceContent {
+	text?: string;
+	blob?: string;
+	mimeType?: string;
+}
+
+export interface ResourceContext {
+	uri: string;
+	session: Session;
+	sessionId: string;
+}
+
+export type ResourceHandler = (
+	uri: string,
+	ctx: ResourceContext,
+) => ResourceContent | Promise<ResourceContent>;
+
 // === Server ===
 
 export interface MCPServer {
@@ -91,6 +120,15 @@ export interface MCPServer {
 	tool<TInput>(
 		name: string,
 		...args: [...ToolMiddleware[], ToolConfig<TInput>, ToolHandler<TInput>]
+	): void;
+
+	/** Register a resource with config and handler. */
+	resource(uri: string, config: ResourceConfig, handler: ResourceHandler): void;
+
+	/** Register a resource with per-resource middlewares, config, and handler. */
+	resource(
+		uri: string,
+		...args: [...ToolMiddleware[], ResourceConfig, ResourceHandler]
 	): void;
 
 	/** Start stdio transport. */

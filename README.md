@@ -70,6 +70,26 @@ server.tool("secret", auth(), {
 }));
 ```
 
+### `server.resource(uri, ...middlewares?, config, handler)`
+
+Register a resource. Same middleware pattern as `tool()`. Global middleware (`server.use()`) does not apply to resources.
+
+```ts
+server.resource("config://settings", {
+  name: "App Settings",
+  mimeType: "application/json",
+}, async (uri) => ({
+  text: JSON.stringify(config),
+}));
+
+server.resource("data://users", auth(), {
+  name: "User Database",
+  mimeType: "application/json",
+}, async (uri, ctx) => ({
+  text: JSON.stringify(await db.getUsers()),
+}));
+```
+
 ### `server.use(middleware)`
 
 Apply middleware to all subsequently registered tools.

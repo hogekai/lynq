@@ -6,6 +6,10 @@ export type {
 	ToolHandler,
 	ToolConfig,
 	ToolInfo,
+	ResourceConfig,
+	ResourceContent,
+	ResourceContext,
+	ResourceHandler,
 	Session,
 	ServerInfo,
 } from "./types.js";

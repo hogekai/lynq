@@ -89,4 +89,20 @@ server.tool(
 	},
 );
 
+// Hidden until authenticated — exposes saved notes as a resource
+server.resource(
+	"notes://list",
+	auth(),
+	{
+		name: "Saved Notes",
+		description: "All notes saved in this session",
+		mimeType: "application/json",
+	},
+	async (_uri, ctx) => {
+		const notes =
+			ctx.session.get<Array<{ title: string; content: string }>>("notes") ?? [];
+		return { text: JSON.stringify(notes) };
+	},
+);
+
 await server.stdio();
