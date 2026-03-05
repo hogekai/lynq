@@ -144,21 +144,14 @@ describe("server.http()", () => {
 			async (args, ctx) => {
 				ctx.session.authorize("auth");
 				return {
-					content: [
-						{ type: "text" as const, text: `Welcome ${args.user}` },
-					],
+					content: [{ type: "text" as const, text: `Welcome ${args.user}` }],
 				};
 			},
 		);
 
-		server.tool(
-			"secret",
-			auth(),
-			{ description: "Secret tool" },
-			async () => ({
-				content: [{ type: "text" as const, text: "secret data" }],
-			}),
-		);
+		server.tool("secret", auth(), { description: "Secret tool" }, async () => ({
+			content: [{ type: "text" as const, text: "secret data" }],
+		}));
 
 		const handler = server.http({ enableJsonResponse: true });
 
@@ -188,13 +181,9 @@ describe("server.http()", () => {
 
 	it("works in sessionless mode", async () => {
 		const server = createMCPServer({ name: "test", version: "1.0.0" });
-		server.tool(
-			"ping",
-			{ description: "Ping" },
-			async () => ({
-				content: [{ type: "text" as const, text: "pong" }],
-			}),
-		);
+		server.tool("ping", { description: "Ping" }, async () => ({
+			content: [{ type: "text" as const, text: "pong" }],
+		}));
 
 		const handler = server.http({
 			sessionless: true,
@@ -224,8 +213,6 @@ describe("server.http()", () => {
 		});
 
 		const { response } = await post(handler, initBody());
-		expect(response.headers.get("mcp-session-id")).toBe(
-			"custom-session-123",
-		);
+		expect(response.headers.get("mcp-session-id")).toBe("custom-session-123");
 	});
 });

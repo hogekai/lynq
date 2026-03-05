@@ -134,6 +134,11 @@ export interface ToolMiddleware {
 		ctx: ToolContext,
 		next: () => Promise<CallToolResult>,
 	): Promise<CallToolResult>;
+	/** Called after the handler returns. Runs in reverse middleware order. */
+	onResult?(
+		result: CallToolResult,
+		ctx: ToolContext,
+	): CallToolResult | Promise<CallToolResult>;
 }
 
 // === Tool ===

@@ -1,10 +1,6 @@
 import { InMemoryTaskStore } from "@modelcontextprotocol/sdk/experimental/tasks";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import {
-	type ZodRawShapeCompat,
-	normalizeObjectSchema,
-} from "@modelcontextprotocol/sdk/server/zod-compat.js";
-import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import {
 	CallToolRequestSchema,
 	ListResourceTemplatesRequestSchema,
@@ -12,135 +8,41 @@ import {
 	ListToolsRequestSchema,
 	ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { createRootsAccessor, createToolContext } from "./context.js";
+import {
+	buildMiddlewareChain,
+	buildTemplatePattern,
+	cacheHiddenMiddlewares,
+	findResourceByUri,
+	inputToJsonSchema,
+	isVisible,
+	parseMiddlewareArgs,
+} from "./helpers.js";
 import type {
-	Elicit,
+	InternalResource,
+	InternalTask,
+	InternalTool,
+	SessionState,
+} from "./internal-types.js";
+import type {
 	HttpAdapterOptions,
 	MCPServer,
 	ResourceConfig,
 	ResourceContext,
 	ResourceHandler,
-	RootInfo,
-	Sample,
-	SampleOptions,
 	Session,
 	TaskConfig,
 	TaskContext,
 	TaskControl,
 	TaskHandler,
 	ToolConfig,
-	ToolContext,
 	ToolHandler,
 	ToolInfo,
 	ToolMiddleware,
 } from "./types.js";
 
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type {
-	CallToolResult,
-	CreateMessageRequestParamsBase,
-	CreateMessageResult,
-} from "@modelcontextprotocol/sdk/types.js";
-
-// === Internal Types ===
-
-interface InternalTool {
-	name: string;
-	description: string | undefined;
-	input: unknown;
-	handler: ToolHandler;
-	middlewares: ToolMiddleware[];
-	hiddenByMiddlewares: string[];
-}
-
-interface InternalResource {
-	uri: string;
-	isTemplate: boolean;
-	uriPattern: RegExp | null;
-	name: string;
-	description: string | undefined;
-	mimeType: string | undefined;
-	handler: ResourceHandler;
-	middlewares: ToolMiddleware[];
-	hiddenByMiddlewares: string[];
-}
-
-interface InternalTask {
-	name: string;
-	description: string | undefined;
-	input: unknown;
-	handler: TaskHandler;
-	middlewares: ToolMiddleware[];
-	hiddenByMiddlewares: string[];
-}
-
-interface SessionState {
-	data: Map<string, unknown>;
-	grants: Set<string>;
-	toolOverrides: Map<string, "enabled" | "disabled">;
-	resourceOverrides: Map<string, "enabled" | "disabled">;
-}
-
-// === Helpers ===
-
-function inputToJsonSchema(input: unknown): Record<string, unknown> {
-	if (input == null) return { type: "object" };
-	const normalized = normalizeObjectSchema(input as ZodRawShapeCompat);
-	return normalized
-		? (toJsonSchemaCompat(normalized) as Record<string, unknown>)
-		: (input as Record<string, unknown>);
-}
-
-function parseMiddlewareArgs(
-	label: string,
-	args: unknown[],
-	// biome-ignore lint/complexity/noBannedTypes: handler type is narrowed by each caller
-): { middlewares: ToolMiddleware[]; config: unknown; handler: Function } {
-	const handler = args[args.length - 1];
-	if (typeof handler !== "function") {
-		throw new TypeError(`${label}: last argument must be a handler function`);
-	}
-	const config = args[args.length - 2];
-	if (config == null || typeof config !== "object" || Array.isArray(config)) {
-		throw new TypeError(
-			`${label}: second-to-last argument must be a config object`,
-		);
-	}
-	const mws = args.slice(0, -2);
-	for (const mw of mws) {
-		if (
-			!mw ||
-			typeof mw !== "object" ||
-			typeof (mw as Record<string, unknown>).name !== "string"
-		) {
-			throw new TypeError(
-				`${label}: each middleware must have a "name" property`,
-			);
-		}
-	}
-	return { middlewares: mws as ToolMiddleware[], config, handler };
-}
-
-function cacheHiddenMiddlewares(
-	info: ToolInfo,
-	middlewares: ToolMiddleware[],
-): string[] {
-	const hidden: string[] = [];
-	for (const mw of middlewares) {
-		if (mw.onRegister?.(info) === false) {
-			hidden.push(mw.name);
-		}
-	}
-	return hidden;
-}
-
 // === createMCPServer ===
-
-function buildTemplatePattern(uri: string): RegExp {
-	// Replace {variable} placeholders first, then escape the rest
-	const parts = uri.split(/\{[^}]+\}/);
-	const escaped = parts.map((p) => p.replace(/[.*+?^$|()[\]\\]/g, "\\$&"));
-	return new RegExp(`^${escaped.join("(.+)")}$`);
-}
 
 export function createMCPServer(info: {
 	name: string;
@@ -197,21 +99,6 @@ export function createMCPServer(info: {
 		return session;
 	}
 
-	function isVisible(
-		hiddenByMiddlewares: string[],
-		key: string,
-		overrides: Map<string, "enabled" | "disabled">,
-		grants: Set<string>,
-	): boolean {
-		const override = overrides.get(key);
-		if (override === "disabled") return false;
-		if (override === "enabled") return true;
-		for (const mwName of hiddenByMiddlewares) {
-			if (!grants.has(mwName)) return false;
-		}
-		return true;
-	}
-
 	function isToolVisible(tool: InternalTool, sessionId: string): boolean {
 		const s = getSession(sessionId);
 		return isVisible(
@@ -246,14 +133,12 @@ export function createMCPServer(info: {
 	}
 
 	function notifyToolListChanged(sessionId?: string): void {
-		const srv =
-			(sessionId && serverBySession.get(sessionId)) || server;
+		const srv = (sessionId && serverBySession.get(sessionId)) || server;
 		srv.sendToolListChanged().catch(() => {});
 	}
 
 	function notifyResourceListChanged(sessionId?: string): void {
-		const srv =
-			(sessionId && serverBySession.get(sessionId)) || server;
+		const srv = (sessionId && serverBySession.get(sessionId)) || server;
 		srv.sendResourceListChanged().catch(() => {});
 	}
 
@@ -304,116 +189,6 @@ export function createMCPServer(info: {
 		};
 	}
 
-	function createElicit(sdkServer: Server): Elicit {
-		return {
-			async form({ message, schema }) {
-				const r = await sdkServer.elicitInput({
-					message,
-					// biome-ignore lint/suspicious/noExplicitAny: SDK's PrimitiveSchemaDefinition union is too narrow for our simplified schema type
-					requestedSchema: { type: "object", properties: schema as any },
-				});
-				return {
-					action: r.action,
-					content: (r.content ?? {}) as Record<
-						string,
-						string | number | boolean | string[]
-					>,
-				};
-			},
-			async url({ message, url }) {
-				const r = await sdkServer.elicitInput({
-					mode: "url",
-					message,
-					url,
-					elicitationId: crypto.randomUUID(),
-				});
-				return { action: r.action };
-			},
-		};
-	}
-
-	function createRootsAccessor(sdkServer: Server): () => Promise<RootInfo[]> {
-		return async () => {
-			try {
-				const result = await sdkServer.listRoots();
-				return result.roots.map((r) => {
-					const info: RootInfo = { uri: r.uri };
-					if (r.name !== undefined) info.name = r.name;
-					return info;
-				});
-			} catch {
-				return [];
-			}
-		};
-	}
-
-	function createSample(sdkServer: Server): Sample {
-		async function sample(
-			prompt: string,
-			options?: SampleOptions,
-		): Promise<string> {
-			const params: CreateMessageRequestParamsBase = {
-				messages: [{ role: "user", content: { type: "text", text: prompt } }],
-				maxTokens: options?.maxTokens ?? 1024,
-			};
-			if (options?.model !== undefined)
-				params.modelPreferences = { hints: [{ name: options.model }] };
-			if (options?.system !== undefined) params.systemPrompt = options.system;
-			if (options?.temperature !== undefined)
-				params.temperature = options.temperature;
-			if (options?.stopSequences !== undefined)
-				params.stopSequences = options.stopSequences;
-
-			const result = await sdkServer.createMessage(params);
-			const content = result.content;
-			if (content.type === "text") return content.text;
-			return "";
-		}
-
-		async function raw(
-			params: CreateMessageRequestParamsBase,
-		): Promise<CreateMessageResult> {
-			return sdkServer.createMessage(params);
-		}
-
-		return Object.assign(sample, { raw });
-	}
-
-	function buildMiddlewareChain(
-		middlewares: ToolMiddleware[],
-		ctx: ToolContext,
-		finalHandler: () => Promise<CallToolResult>,
-	): () => Promise<CallToolResult> {
-		const callMiddlewares = middlewares.filter((mw) => mw.onCall);
-		let index = 0;
-
-		const next = (): Promise<CallToolResult> => {
-			if (index >= callMiddlewares.length) {
-				return finalHandler();
-			}
-			const mw = callMiddlewares[index++];
-			// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onCall
-			return mw.onCall!(ctx, next);
-		};
-
-		return next;
-	}
-
-	function findResource(uri: string): InternalResource | undefined {
-		// Exact match first (static resources)
-		const exact = resources.get(uri);
-		if (exact) return exact;
-
-		// Template match
-		for (const res of resources.values()) {
-			if (res.isTemplate && res.uriPattern?.test(uri)) {
-				return res;
-			}
-		}
-
-		return undefined;
-	}
-
 	// --- Request handlers ---
 
 	function setupHandlers(sdkServer: Server): void {
@@ -462,15 +237,13 @@ export function createMCPServer(info: {
 					if (!isToolVisible(tool, sessionId))
 						return toolErr(`Tool not available: ${name}`);
 
-					const ctx: ToolContext = {
-						toolName: name,
-						session: createSessionAPI(sessionId),
-						signal: extra.signal,
+					const ctx = createToolContext(
+						sdkServer,
 						sessionId,
-						elicit: createElicit(sdkServer),
-						roots: createRootsAccessor(sdkServer),
-						sample: createSample(sdkServer),
-					};
+						createSessionAPI(sessionId),
+						name,
+						extra.signal,
+					);
 
 					const finalHandler = () =>
 						Promise.resolve(tool.handler(args ?? {}, ctx));
@@ -509,13 +282,13 @@ export function createMCPServer(info: {
 					};
 
 					const ctx: TaskContext = {
-						toolName: name,
-						session: createSessionAPI(sessionId),
-						signal: extra.signal,
-						sessionId,
-						elicit: createElicit(sdkServer),
-						roots: createRootsAccessor(sdkServer),
-						sample: createSample(sdkServer),
+						...createToolContext(
+							sdkServer,
+							sessionId,
+							createSessionAPI(sessionId),
+							name,
+							extra.signal,
+						),
 						task: taskControl,
 					};
 
@@ -532,8 +305,7 @@ export function createMCPServer(info: {
 								}
 							} catch (err) {
 								if (!cancelledTaskIds.has(taskId)) {
-									const msg =
-										err instanceof Error ? err.message : String(err);
+									const msg = err instanceof Error ? err.message : String(err);
 									await requestTaskStore
 										.storeTaskResult(taskId, "failed", {
 											content: [{ type: "text", text: msg }],
@@ -604,7 +376,7 @@ export function createMCPServer(info: {
 			ReadResourceRequestSchema,
 			async (request, extra) => {
 				const { uri } = request.params;
-				const res = findResource(uri);
+				const res = findResourceByUri(resources, uri);
 
 				if (!res) {
 					throw new Error(`Unknown resource: ${uri}`);
@@ -616,23 +388,23 @@ export function createMCPServer(info: {
 					throw new Error(`Resource not available: ${uri}`);
 				}
 
+				const session = createSessionAPI(sessionId);
+
 				const ctx: ResourceContext = {
 					uri,
-					session: createSessionAPI(sessionId),
+					session,
 					sessionId,
 					roots: createRootsAccessor(sdkServer),
 				};
 
 				// Run middleware onCall chain using a ToolContext adapter
-				const toolCtx: ToolContext = {
-					toolName: res.uri,
-					session: ctx.session,
-					signal: extra.signal,
+				const toolCtx = createToolContext(
+					sdkServer,
 					sessionId,
-					elicit: createElicit(sdkServer),
-					roots: createRootsAccessor(sdkServer),
-					sample: createSample(sdkServer),
-				};
+					session,
+					res.uri,
+					extra.signal,
+				);
 
 				const finalHandler = async () => {
 					const content = await res.handler(uri, ctx);

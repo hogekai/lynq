@@ -327,6 +327,180 @@ describe("tool() argument validation", () => {
 	});
 });
 
+describe("onResult", () => {
+	it("runs onResult in reverse middleware order after handler", async () => {
+		const server = createTestServer();
+		const order: string[] = [];
+
+		const mw1: ToolMiddleware = {
+			name: "mw1",
+			async onCall(ctx, next) {
+				order.push("mw1:call");
+				return next();
+			},
+			onResult(result, ctx) {
+				order.push("mw1:result");
+				return result;
+			},
+		};
+
+		const mw2: ToolMiddleware = {
+			name: "mw2",
+			async onCall(ctx, next) {
+				order.push("mw2:call");
+				return next();
+			},
+			onResult(result, ctx) {
+				order.push("mw2:result");
+				return result;
+			},
+		};
+
+		server.tool("test", mw1, mw2, {}, async () => {
+			order.push("handler");
+			return { content: [{ type: "text", text: "ok" }] };
+		});
+
+		const { Client } = await import(
+			"@modelcontextprotocol/sdk/client/index.js"
+		);
+		const { InMemoryTransport } = await import(
+			"@modelcontextprotocol/sdk/inMemory.js"
+		);
+		const [ct, st] = InMemoryTransport.createLinkedPair();
+		const client = new Client({ name: "test-client", version: "1.0.0" });
+		await Promise.all([server._server.connect(st), client.connect(ct)]);
+
+		await client.callTool({ name: "test", arguments: {} });
+
+		// onResult runs in reverse: mw2 first, then mw1
+		expect(order).toEqual([
+			"mw1:call",
+			"mw2:call",
+			"handler",
+			"mw2:result",
+			"mw1:result",
+		]);
+
+		await client.close();
+	});
+
+	it("onResult can modify the result", async () => {
+		const server = createTestServer();
+
+		const truncateMw: ToolMiddleware = {
+			name: "truncate",
+			onResult(result) {
+				return {
+					...result,
+					content: [{ type: "text" as const, text: "modified" }],
+				};
+			},
+		};
+
+		server.tool("test", truncateMw, {}, async () => ({
+			content: [{ type: "text", text: "original" }],
+		}));
+
+		const { Client } = await import(
+			"@modelcontextprotocol/sdk/client/index.js"
+		);
+		const { InMemoryTransport } = await import(
+			"@modelcontextprotocol/sdk/inMemory.js"
+		);
+		const [ct, st] = InMemoryTransport.createLinkedPair();
+		const client = new Client({ name: "test-client", version: "1.0.0" });
+		await Promise.all([server._server.connect(st), client.connect(ct)]);
+
+		const result = await client.callTool({ name: "test", arguments: {} });
+
+		expect(result.content).toEqual([{ type: "text", text: "modified" }]);
+
+		await client.close();
+	});
+
+	it("onResult does not run when onCall short-circuits", async () => {
+		const server = createTestServer();
+		const resultCalled = vi.fn();
+
+		const blockMw: ToolMiddleware = {
+			name: "blocker",
+			async onCall() {
+				// Does not call next()
+				return { content: [{ type: "text", text: "blocked" }] };
+			},
+			onResult(result) {
+				resultCalled();
+				return result;
+			},
+		};
+
+		server.tool("test", blockMw, {}, async () => ({
+			content: [{ type: "text", text: "ok" }],
+		}));
+
+		const { Client } = await import(
+			"@modelcontextprotocol/sdk/client/index.js"
+		);
+		const { InMemoryTransport } = await import(
+			"@modelcontextprotocol/sdk/inMemory.js"
+		);
+		const [ct, st] = InMemoryTransport.createLinkedPair();
+		const client = new Client({ name: "test-client", version: "1.0.0" });
+		await Promise.all([server._server.connect(st), client.connect(ct)]);
+
+		const result = await client.callTool({ name: "test", arguments: {} });
+
+		expect(result.content).toEqual([{ type: "text", text: "blocked" }]);
+		expect(resultCalled).not.toHaveBeenCalled();
+
+		await client.close();
+	});
+
+	it("works with global + per-tool middleware together", async () => {
+		const server = createTestServer();
+		const trail: string[] = [];
+
+		const globalMw: ToolMiddleware = {
+			name: "global",
+			onResult(result) {
+				trail.push("global");
+				return result;
+			},
+		};
+
+		const localMw: ToolMiddleware = {
+			name: "local",
+			onResult(result) {
+				trail.push("local");
+				return result;
+			},
+		};
+
+		server.use(globalMw);
+		server.tool("test", localMw, {}, async () => ({
+			content: [{ type: "text", text: "ok" }],
+		}));
+
+		const { Client } = await import(
+			"@modelcontextprotocol/sdk/client/index.js"
+		);
+		const { InMemoryTransport } = await import(
+			"@modelcontextprotocol/sdk/inMemory.js"
+		);
+		const [ct, st] = InMemoryTransport.createLinkedPair();
+		const client = new Client({ name: "test-client", version: "1.0.0" });
+		await Promise.all([server._server.connect(st), client.connect(ct)]);
+
+		await client.callTool({ name: "test", arguments: {} });
+
+		// Reverse order: local first (last registered), then global
+		expect(trail).toEqual(["local", "global"]);
+
+		await client.close();
+	});
+});
+
 describe("tools/list integration", () => {
 	it("returns only visible tools", async () => {
 		const server = createTestServer();

@@ -26,6 +26,8 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **`ctx.roots()` queries client-provided filesystem roots.** Returns `Promise<RootInfo[]>`. Empty array if client lacks roots capability. No caching — each call queries the client.
 - **`ctx.sample()` requests LLM inference from the client.** `ctx.sample(prompt, options?)` → `Promise<string>`. `ctx.sample.raw(sdkParams)` → `Promise<CreateMessageResult>`. Available in tool and task handlers. Not in resource handlers.
 - **`server.http(options?)` returns a Web Standard request handler.** `(req: Request) => Promise<Response>`. Mounts in Hono, Deno, Cloudflare Workers — any framework. Lazy-imports `WebStandardStreamableHTTPServerTransport` from the SDK. Stateful mode (default): per-session Server+Transport, session IDs via `Mcp-Session-Id` header. Sessionless mode: new Server+Transport per request. `enableJsonResponse` option returns JSON instead of SSE.
+- **`onResult` hook for post-handler result transformation.** `ToolMiddleware.onResult?(result, ctx)` runs after the handler returns. Execution order: `onCall` chain → handler → `onResult` (reverse middleware order) → `onCall` post-next processing. If `onCall` short-circuits (doesn't call `next()`), `onResult` does not run.
+- **Framework adapters are optional entry points.** `lynq/hono` and `lynq/express` provide `mountLynq(app, server, options?)`. DNS rebinding protection included by default for localhost. No additional runtime dependencies — framework types are peer deps.
 
 ## Out of scope
 
@@ -47,22 +49,33 @@ Single package, multiple entry points via `exports` field:
 - `lynq` — core (`createMCPServer` + types)
 - `lynq/auth` — auth middleware (`auth()`)
 - `lynq/stdio` — re-export of `StdioServerTransport`
+- `lynq/hono` — Hono adapter (`mountLynq`)
+- `lynq/express` — Express adapter (`mountLynq`)
 
 ```
 src/
 ├── index.ts          — public exports
 ├── types.ts          — all type definitions
-├── core.ts           — createMCPServer implementation
+├── core.ts           — createMCPServer + state management + request handlers
+├── helpers.ts        — pure functions (isVisible, buildMiddlewareChain, parseMiddlewareArgs, etc.)
+├── context.ts        — ctx factories (createElicit, createRootsAccessor, createSample, createToolContext)
+├── internal-types.ts — internal interfaces (InternalTool, InternalResource, etc.)
 ├── middleware/
 │   └── auth.ts       — auth() middleware
 └── adapters/
-    └── stdio.ts      — stdio transport re-export
+    ├── stdio.ts      — stdio transport re-export
+    ├── shared.ts     — validateHost utility for DNS rebinding protection
+    ├── hono.ts       — mountLynq for Hono
+    └── express.ts    — mountLynq for Express
 tests/
 ├── core.test.ts
 ├── http.test.ts
 ├── resource.test.ts
 ├── sampling.test.ts
 ├── task.test.ts
-└── middleware/
-    └── auth.test.ts
+├── middleware/
+│   └── auth.test.ts
+└── adapters/
+    ├── hono.test.ts
+    └── express.test.ts
 ```
