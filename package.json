@@ -1,5 +1,5 @@
 {
-	"name": "lynq",
+	"name": "@lynq/lynq",
 	"version": "0.1.0",
 	"description": "Lightweight MCP server framework. Tool visibility control through middleware.",
 	"type": "module",
