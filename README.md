@@ -120,6 +120,60 @@ auth({ sessionKey: "token" });   // checks ctx.session.get("token")
 auth({ message: "Login first" }); // custom error message
 ```
 
+## Testing
+
+lynq ships a test helper that eliminates MCP boilerplate. No manual `Client`/`InMemoryTransport` setup.
+
+```ts
+import { createTestClient } from "lynq/test";
+import { createMCPServer } from "lynq";
+import { auth } from "lynq/auth";
+import { z } from "zod";
+
+const server = createMCPServer({ name: "my-server", version: "1.0.0" });
+server.tool("weather", auth(), {
+  input: z.object({ city: z.string() }),
+}, async (args) => ({
+  content: [{ type: "text", text: `Sunny in ${args.city}` }],
+}));
+
+const t = await createTestClient(server);
+
+// Tool visibility
+const tools = await t.listTools();     // string[]
+expect(tools).not.toContain("weather");
+
+// Authorize and call
+t.authorize("auth");
+const text = await t.callToolText("weather", { city: "Tokyo" });
+expect(text).toContain("Sunny");
+
+// Full result access
+const result = await t.callTool("weather", { city: "Tokyo" });
+
+// Resources
+const uris = await t.listResources();
+const content = await t.readResource("config://settings");
+
+// Session access
+t.session.set("user", { name: "alice" });
+
+await t.close();
+```
+
+### Custom matchers
+
+Optional vitest/jest matchers for more expressive assertions:
+
+```ts
+import { matchers } from "lynq/test";
+expect.extend(matchers);
+
+const result = await t.callTool("weather", { city: "Tokyo" });
+expect(result).toHaveTextContent("Sunny");
+expect(result).not.toBeError();
+```
+
 ## License
 
 MIT

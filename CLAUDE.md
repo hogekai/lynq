@@ -51,12 +51,14 @@ Single package, multiple entry points via `exports` field:
 - `lynq/stdio` — re-export of `StdioServerTransport`
 - `lynq/hono` — Hono adapter (`mountLynq`)
 - `lynq/express` — Express adapter (`mountLynq`)
+- `lynq/test` — test helpers (`createTestClient`, `matchers`)
 
 ```
 src/
 ├── index.ts          — public exports
 ├── types.ts          — all type definitions
 ├── core.ts           — createMCPServer + state management + request handlers
+├── test.ts           — test helpers (createTestClient, matchers)
 ├── helpers.ts        — pure functions (isVisible, buildMiddlewareChain, parseMiddlewareArgs, etc.)
 ├── context.ts        — ctx factories (createElicit, createRootsAccessor, createSample, createToolContext)
 ├── internal-types.ts — internal interfaces (InternalTool, InternalResource, etc.)
@@ -73,6 +75,7 @@ tests/
 ├── resource.test.ts
 ├── sampling.test.ts
 ├── task.test.ts
+├── test-helpers.test.ts
 ├── middleware/
 │   └── auth.test.ts
 └── adapters/

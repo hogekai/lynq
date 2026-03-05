@@ -2,27 +2,10 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
 import { auth } from "../../src/middleware/auth.js";
+import { createTestClient } from "../../src/test.js";
 
 function createTestServer() {
 	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
-}
-
-async function createConnectedPair(server: any) {
-	const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
-	const { InMemoryTransport } = await import(
-		"@modelcontextprotocol/sdk/inMemory.js"
-	);
-
-	const [clientTransport, serverTransport] =
-		InMemoryTransport.createLinkedPair();
-	const client = new Client({ name: "test-client", version: "1.0.0" });
-
-	await Promise.all([
-		server._server.connect(serverTransport),
-		client.connect(clientTransport),
-	]);
-
-	return client;
 }
 
 describe("auth middleware", () => {
@@ -69,22 +52,17 @@ describe("auth middleware", () => {
 		);
 
 		// Authorize the middleware so the tool is visible, but don't set user
-		const session = server._createSessionAPI("default");
-		session.authorize("auth");
+		const t = await createTestClient(server);
+		t.authorize("auth");
 
-		const client = await createConnectedPair(server);
-
-		const result = await client.callTool({
-			name: "secret",
-			arguments: { query: "test" },
-		});
+		const result = await t.callTool("secret", { query: "test" });
 
 		expect(result.isError).toBe(true);
 		expect((result.content as any)[0].text).toContain(
 			"Authentication required",
 		);
 
-		await client.close();
+		await t.close();
 	});
 
 	it("allows call when session has user set", async () => {
@@ -107,24 +85,18 @@ describe("auth middleware", () => {
 			}),
 		);
 
-		const client = await createConnectedPair(server);
+		const t = await createTestClient(server);
 
 		// Login first
-		await client.callTool({
-			name: "login",
-			arguments: { username: "alice" },
-		});
+		await t.callTool("login", { username: "alice" });
 
 		// Now call the secret tool
-		const result = await client.callTool({
-			name: "secret",
-			arguments: { query: "data" },
-		});
+		const result = await t.callTool("secret", { query: "data" });
 
 		expect(result.isError).toBeUndefined();
 		expect((result.content as any)[0].text).toBe("Secret: data");
 
-		await client.close();
+		await t.close();
 	});
 
 	it("uses custom sessionKey", () => {

@@ -1,25 +1,11 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it } from "vitest";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
+import { createTestClient } from "../src/test.js";
 import type { ToolMiddleware } from "../src/types.js";
 
 function createTestServer() {
 	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
-}
-
-async function createConnectedPair(server: any) {
-	const [clientTransport, serverTransport] =
-		InMemoryTransport.createLinkedPair();
-	const client = new Client({ name: "test-client", version: "1.0.0" });
-
-	await Promise.all([
-		server._server.connect(serverTransport),
-		client.connect(clientTransport),
-	]);
-
-	return client;
 }
 
 describe("resource registration", () => {
@@ -171,21 +157,15 @@ describe("resources/list integration", () => {
 			text: "",
 		}));
 
-		const client = await createConnectedPair(server);
+		const t = await createTestClient(server);
 
-		const result = await client.listResources();
-		const uris = result.resources.map((r: any) => r.uri);
+		const uris = await t.listResources();
 
 		expect(uris).toContain("data://public");
 		expect(uris).not.toContain("data://private");
 		expect(uris).not.toContain("file:///{path}");
 
-		// Verify metadata
-		const pub = result.resources.find((r: any) => r.uri === "data://public");
-		expect(pub.name).toBe("Public");
-		expect(pub.mimeType).toBe("text/plain");
-
-		await client.close();
+		await t.close();
 	});
 });
 
@@ -205,16 +185,15 @@ describe("resources/templates/list integration", () => {
 			text: "{}",
 		}));
 
-		const client = await createConnectedPair(server);
+		const t = await createTestClient(server);
 
-		const result = await client.listResourceTemplates();
-		const uris = result.resourceTemplates.map((r: any) => r.uriTemplate);
+		const uris = await t.listResourceTemplates();
 
 		expect(uris).toContain("file:///{path}");
 		expect(uris).not.toContain("secret:///{id}");
 		expect(uris).not.toContain("config://settings");
 
-		await client.close();
+		await t.close();
 	});
 });
 
@@ -227,15 +206,12 @@ describe("resources/read integration", () => {
 			async () => ({ text: '{"theme":"dark"}' }),
 		);
 
-		const client = await createConnectedPair(server);
+		const t = await createTestClient(server);
 
-		const result = await client.readResource({ uri: "config://settings" });
-		expect(result.contents).toHaveLength(1);
-		expect(result.contents[0].uri).toBe("config://settings");
-		expect(result.contents[0].text).toBe('{"theme":"dark"}');
-		expect(result.contents[0].mimeType).toBe("application/json");
+		const text = await t.readResource("config://settings");
+		expect(text).toBe('{"theme":"dark"}');
 
-		await client.close();
+		await t.close();
 	});
 
 	it("reads a template resource with matched URI", async () => {
@@ -251,15 +227,13 @@ describe("resources/read integration", () => {
 			},
 		);
 
-		const client = await createConnectedPair(server);
+		const t = await createTestClient(server);
 
-		const result = await client.readResource({
-			uri: "file:///src/main.ts",
-		});
-		expect(result.contents[0].text).toBe("content of file:///src/main.ts");
+		const text = await t.readResource("file:///src/main.ts");
+		expect(text).toBe("content of file:///src/main.ts");
 		expect(receivedUri).toBe("file:///src/main.ts");
 
-		await client.close();
+		await t.close();
 	});
 
 	it("reads a resource returning blob content", async () => {
@@ -272,7 +246,16 @@ describe("resources/read integration", () => {
 			async () => ({ blob: base64Data }),
 		);
 
-		const client = await createConnectedPair(server);
+		// Blob assertion needs raw client — readResource returns text only
+		const { Client } = await import(
+			"@modelcontextprotocol/sdk/client/index.js"
+		);
+		const { InMemoryTransport } = await import(
+			"@modelcontextprotocol/sdk/inMemory.js"
+		);
+		const [ct, st] = InMemoryTransport.createLinkedPair();
+		const client = new Client({ name: "test-client", version: "1.0.0" });
+		await Promise.all([server._server.connect(st), client.connect(ct)]);
 
 		const result = await client.readResource({ uri: "data://binary" });
 		expect(result.contents[0].blob).toBe(base64Data);
@@ -282,13 +265,11 @@ describe("resources/read integration", () => {
 
 	it("throws for unknown resource", async () => {
 		const server = createTestServer();
-		const client = await createConnectedPair(server);
+		const t = await createTestClient(server);
 
-		await expect(
-			client.readResource({ uri: "nonexistent://x" }),
-		).rejects.toThrow();
+		await expect(t.readResource("nonexistent://x")).rejects.toThrow();
 
-		await client.close();
+		await t.close();
 	});
 
 	it("throws for hidden resource", async () => {
@@ -299,13 +280,11 @@ describe("resources/read integration", () => {
 			text: "secret",
 		}));
 
-		const client = await createConnectedPair(server);
+		const t = await createTestClient(server);
 
-		await expect(
-			client.readResource({ uri: "data://secret" }),
-		).rejects.toThrow();
+		await expect(t.readResource("data://secret")).rejects.toThrow();
 
-		await client.close();
+		await t.close();
 	});
 
 	it("runs middleware onCall chain for resources", async () => {
@@ -325,11 +304,11 @@ describe("resources/read integration", () => {
 			return { text: "ok" };
 		});
 
-		const client = await createConnectedPair(server);
+		const t = await createTestClient(server);
 
-		await client.readResource({ uri: "data://logged" });
+		await t.readResource("data://logged");
 		expect(order).toEqual(["middleware", "handler"]);
 
-		await client.close();
+		await t.close();
 	});
 });

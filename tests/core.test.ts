@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { createTestClient } from "../src/test.js";
 import type { ToolMiddleware } from "../src/types.js";
 
 function createTestServer() {
@@ -119,32 +120,14 @@ describe("middleware", () => {
 			},
 		);
 
-		const { Client } = await import(
-			"@modelcontextprotocol/sdk/client/index.js"
-		);
-		const { InMemoryTransport } = await import(
-			"@modelcontextprotocol/sdk/inMemory.js"
-		);
+		const t = await createTestClient(server);
 
-		const [clientTransport, serverTransport] =
-			InMemoryTransport.createLinkedPair();
-
-		const client = new Client({ name: "test-client", version: "1.0.0" });
-
-		await Promise.all([
-			server._server.connect(serverTransport),
-			client.connect(clientTransport),
-		]);
-
-		const result = await client.callTool({
-			name: "test",
-			arguments: { name: "world" },
-		});
+		const result = await t.callTool("test", { name: "world" });
 
 		expect(order).toEqual(["global", "per-tool", "handler"]);
 		expect(result.content).toEqual([{ type: "text", text: "ok" }]);
 
-		await client.close();
+		await t.close();
 	});
 
 	it("calls onRegister once at registration, not on every tools/list", async () => {
@@ -167,35 +150,19 @@ describe("middleware", () => {
 		// onRegister called once at registration
 		expect(onRegisterSpy).toHaveBeenCalledTimes(1);
 
-		// Connect and list tools multiple times
-		const { Client } = await import(
-			"@modelcontextprotocol/sdk/client/index.js"
-		);
-		const { InMemoryTransport } = await import(
-			"@modelcontextprotocol/sdk/inMemory.js"
-		);
-
-		const [clientTransport, serverTransport] =
-			InMemoryTransport.createLinkedPair();
-		const client = new Client({ name: "test-client", version: "1.0.0" });
-
-		await Promise.all([
-			server._server.connect(serverTransport),
-			client.connect(clientTransport),
-		]);
+		const t = await createTestClient(server);
 
 		// Authorize so tool is visible, then list multiple times
-		const session = server._createSessionAPI("default");
-		session.authorize("spy-mw");
+		t.authorize("spy-mw");
 
-		await client.listTools();
-		await client.listTools();
-		await client.listTools();
+		await t.listTools();
+		await t.listTools();
+		await t.listTools();
 
 		// Still only called once (at registration)
 		expect(onRegisterSpy).toHaveBeenCalledTimes(1);
 
-		await client.close();
+		await t.close();
 	});
 });
 
@@ -361,17 +328,8 @@ describe("onResult", () => {
 			return { content: [{ type: "text", text: "ok" }] };
 		});
 
-		const { Client } = await import(
-			"@modelcontextprotocol/sdk/client/index.js"
-		);
-		const { InMemoryTransport } = await import(
-			"@modelcontextprotocol/sdk/inMemory.js"
-		);
-		const [ct, st] = InMemoryTransport.createLinkedPair();
-		const client = new Client({ name: "test-client", version: "1.0.0" });
-		await Promise.all([server._server.connect(st), client.connect(ct)]);
-
-		await client.callTool({ name: "test", arguments: {} });
+		const t = await createTestClient(server);
+		await t.callTool("test");
 
 		// onResult runs in reverse: mw2 first, then mw1
 		expect(order).toEqual([
@@ -382,7 +340,7 @@ describe("onResult", () => {
 			"mw1:result",
 		]);
 
-		await client.close();
+		await t.close();
 	});
 
 	it("onResult can modify the result", async () => {
@@ -402,21 +360,12 @@ describe("onResult", () => {
 			content: [{ type: "text", text: "original" }],
 		}));
 
-		const { Client } = await import(
-			"@modelcontextprotocol/sdk/client/index.js"
-		);
-		const { InMemoryTransport } = await import(
-			"@modelcontextprotocol/sdk/inMemory.js"
-		);
-		const [ct, st] = InMemoryTransport.createLinkedPair();
-		const client = new Client({ name: "test-client", version: "1.0.0" });
-		await Promise.all([server._server.connect(st), client.connect(ct)]);
-
-		const result = await client.callTool({ name: "test", arguments: {} });
+		const t = await createTestClient(server);
+		const result = await t.callTool("test");
 
 		expect(result.content).toEqual([{ type: "text", text: "modified" }]);
 
-		await client.close();
+		await t.close();
 	});
 
 	it("onResult does not run when onCall short-circuits", async () => {
@@ -439,22 +388,13 @@ describe("onResult", () => {
 			content: [{ type: "text", text: "ok" }],
 		}));
 
-		const { Client } = await import(
-			"@modelcontextprotocol/sdk/client/index.js"
-		);
-		const { InMemoryTransport } = await import(
-			"@modelcontextprotocol/sdk/inMemory.js"
-		);
-		const [ct, st] = InMemoryTransport.createLinkedPair();
-		const client = new Client({ name: "test-client", version: "1.0.0" });
-		await Promise.all([server._server.connect(st), client.connect(ct)]);
-
-		const result = await client.callTool({ name: "test", arguments: {} });
+		const t = await createTestClient(server);
+		const result = await t.callTool("test");
 
 		expect(result.content).toEqual([{ type: "text", text: "blocked" }]);
 		expect(resultCalled).not.toHaveBeenCalled();
 
-		await client.close();
+		await t.close();
 	});
 
 	it("works with global + per-tool middleware together", async () => {
@@ -482,22 +422,13 @@ describe("onResult", () => {
 			content: [{ type: "text", text: "ok" }],
 		}));
 
-		const { Client } = await import(
-			"@modelcontextprotocol/sdk/client/index.js"
-		);
-		const { InMemoryTransport } = await import(
-			"@modelcontextprotocol/sdk/inMemory.js"
-		);
-		const [ct, st] = InMemoryTransport.createLinkedPair();
-		const client = new Client({ name: "test-client", version: "1.0.0" });
-		await Promise.all([server._server.connect(st), client.connect(ct)]);
-
-		await client.callTool({ name: "test", arguments: {} });
+		const t = await createTestClient(server);
+		await t.callTool("test");
 
 		// Reverse order: local first (last registered), then global
 		expect(trail).toEqual(["local", "global"]);
 
-		await client.close();
+		await t.close();
 	});
 });
 
@@ -525,28 +456,12 @@ describe("tools/list integration", () => {
 			}),
 		);
 
-		const { Client } = await import(
-			"@modelcontextprotocol/sdk/client/index.js"
-		);
-		const { InMemoryTransport } = await import(
-			"@modelcontextprotocol/sdk/inMemory.js"
-		);
-
-		const [clientTransport, serverTransport] =
-			InMemoryTransport.createLinkedPair();
-		const client = new Client({ name: "test-client", version: "1.0.0" });
-
-		await Promise.all([
-			server._server.connect(serverTransport),
-			client.connect(clientTransport),
-		]);
-
-		const result = await client.listTools();
-		const names = result.tools.map((t: any) => t.name);
+		const t = await createTestClient(server);
+		const names = await t.listTools();
 
 		expect(names).toContain("public");
 		expect(names).not.toContain("private");
 
-		await client.close();
+		await t.close();
 	});
 });

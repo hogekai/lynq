@@ -23,6 +23,10 @@
 		"./express": {
 			"types": "./dist/adapters/express.d.ts",
 			"import": "./dist/adapters/express.mjs"
+		},
+		"./test": {
+			"types": "./dist/test.d.ts",
+			"import": "./dist/test.mjs"
 		}
 	},
 	"files": [

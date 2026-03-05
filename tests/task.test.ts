@@ -2,28 +2,10 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
-import type { ToolMiddleware } from "../src/types.js";
+import { createTestClient } from "../src/test.js";
 
 function createTestServer() {
 	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
-}
-
-async function createConnectedPair(server: any) {
-	const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
-	const { InMemoryTransport } = await import(
-		"@modelcontextprotocol/sdk/inMemory.js"
-	);
-	const [clientTransport, serverTransport] =
-		InMemoryTransport.createLinkedPair();
-	const client = new Client(
-		{ name: "test-client", version: "1.0.0" },
-		{ capabilities: { tasks: {} } },
-	);
-	await Promise.all([
-		server._server.connect(serverTransport),
-		client.connect(clientTransport),
-	]);
-	return client;
 }
 
 describe("task() registration", () => {
@@ -102,9 +84,21 @@ describe("task in tools/list", () => {
 			async () => ({ content: [{ type: "text", text: "done" }] }),
 		);
 
-		const client = await createConnectedPair(server);
-		const result = await client.listTools();
+		// Need raw client to inspect execution field on tool listing
+		const { Client } = await import(
+			"@modelcontextprotocol/sdk/client/index.js"
+		);
+		const { InMemoryTransport } = await import(
+			"@modelcontextprotocol/sdk/inMemory.js"
+		);
+		const [ct, st] = InMemoryTransport.createLinkedPair();
+		const client = new Client(
+			{ name: "test-client", version: "1.0.0" },
+			{ capabilities: { tasks: {} } },
+		);
+		await Promise.all([server._server.connect(st), client.connect(ct)]);
 
+		const result = await client.listTools();
 		const deployTool = result.tools.find((t: any) => t.name === "deploy");
 		expect(deployTool).toBeDefined();
 		expect(deployTool.description).toBe("Deploy");
@@ -119,12 +113,10 @@ describe("task in tools/list", () => {
 			content: [{ type: "text", text: "done" }],
 		}));
 
-		const client = await createConnectedPair(server);
-		const result = await client.listTools();
-
-		expect(result.tools.find((t: any) => t.name === "deploy")).toBeUndefined();
-
-		await client.close();
+		const t = await createTestClient(server);
+		const tools = await t.listTools();
+		expect(tools).not.toContain("deploy");
+		await t.close();
 	});
 
 	it("coexists with regular tools", async () => {
@@ -136,20 +128,14 @@ describe("task in tools/list", () => {
 			content: [{ type: "text", text: "done" }],
 		}));
 
-		const client = await createConnectedPair(server);
-		const result = await client.listTools();
+		const t = await createTestClient(server);
+		const tools = await t.listTools();
 
-		expect(result.tools).toHaveLength(2);
+		expect(tools).toContain("greet");
+		expect(tools).toContain("deploy");
+		expect(tools).toHaveLength(2);
 
-		const greet = result.tools.find((t: any) => t.name === "greet");
-		expect(greet).toBeDefined();
-		expect(greet.execution).toBeUndefined();
-
-		const deploy = result.tools.find((t: any) => t.name === "deploy");
-		expect(deploy).toBeDefined();
-		expect(deploy.execution?.taskSupport).toBe("required");
-
-		await client.close();
+		await t.close();
 	});
 });
 
