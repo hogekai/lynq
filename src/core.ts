@@ -18,6 +18,7 @@ import type {
 	ResourceConfig,
 	ResourceContext,
 	ResourceHandler,
+	RootInfo,
 	Session,
 	TaskConfig,
 	TaskContext,
@@ -319,6 +320,21 @@ export function createMCPServer(info: {
 		};
 	}
 
+	function createRootsAccessor(): () => Promise<RootInfo[]> {
+		return async () => {
+			try {
+				const result = await server.listRoots();
+				return result.roots.map((r) => {
+					const info: RootInfo = { uri: r.uri };
+					if (r.name !== undefined) info.name = r.name;
+					return info;
+				});
+			} catch {
+				return [];
+			}
+		};
+	}
+
 	function buildMiddlewareChain(
 		middlewares: ToolMiddleware[],
 		ctx: ToolContext,
@@ -405,6 +421,7 @@ export function createMCPServer(info: {
 				signal: extra.signal,
 				sessionId,
 				elicit: createElicit(),
+				roots: createRootsAccessor(),
 			};
 
 			const finalHandler = () => Promise.resolve(tool.handler(args ?? {}, ctx));
@@ -444,6 +461,7 @@ export function createMCPServer(info: {
 				signal: extra.signal,
 				sessionId,
 				elicit: createElicit(),
+				roots: createRootsAccessor(),
 				task: taskControl,
 			};
 
@@ -539,6 +557,7 @@ export function createMCPServer(info: {
 				uri,
 				session: createSessionAPI(sessionId),
 				sessionId,
+				roots: createRootsAccessor(),
 			};
 
 			// Run middleware onCall chain using a ToolContext adapter
@@ -548,6 +567,7 @@ export function createMCPServer(info: {
 				signal: extra.signal,
 				sessionId,
 				elicit: createElicit(),
+				roots: createRootsAccessor(),
 			};
 
 			const finalHandler = async () => {

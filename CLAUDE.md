@@ -23,6 +23,7 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **Tool, resource, and task visibility is session-scoped.** `tool()`, `resource()`, and `task()` share the same middleware pattern. `ctx.session.authorize()` / `ctx.session.revoke()` affect all. Bidirectional notification is internal — users never touch it.
 - **`@experimental` marks unstable APIs.** `server.task()` depends on the MCP SDK's experimental Tasks API. User-facing interface is stable; internal SDK wiring may change.
 - **ctx follows Hono's Context pattern.** `ctx.session.set()` / `ctx.session.get()`.
+- **`ctx.roots()` queries client-provided filesystem roots.** Returns `Promise<RootInfo[]>`. Empty array if client lacks roots capability. No caching — each call queries the client.
 
 ## Out of scope
 

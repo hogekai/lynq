@@ -65,6 +65,13 @@ export interface Elicit {
 	url(params: ElicitUrlParams): Promise<ElicitUrlResult>;
 }
 
+export interface RootInfo {
+	/** The root URI. Currently always `file://`. */
+	uri: string;
+	/** Optional human-readable name for the root. */
+	name?: string;
+}
+
 // === Context ===
 
 export interface ToolContext {
@@ -78,6 +85,8 @@ export interface ToolContext {
 	sessionId: string;
 	/** Request information from the user. */
 	elicit: Elicit;
+	/** Query client-provided filesystem roots. */
+	roots: () => Promise<RootInfo[]>;
 }
 
 // === Middleware ===
@@ -161,6 +170,8 @@ export interface ResourceContext {
 	uri: string;
 	session: Session;
 	sessionId: string;
+	/** Query client-provided filesystem roots. */
+	roots: () => Promise<RootInfo[]>;
 }
 
 export type ResourceHandler = (

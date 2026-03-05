@@ -5,6 +5,7 @@ export type {
 	ElicitFormResult,
 	ElicitUrlParams,
 	ElicitUrlResult,
+	RootInfo,
 	MCPServer,
 	ToolMiddleware,
 	ToolContext,

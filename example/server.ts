@@ -164,4 +164,26 @@ server.task(
 	},
 );
 
+// Hidden until authenticated — roots example
+server.tool(
+	"check_roots",
+	auth(),
+	{
+		description: "List client-provided filesystem roots",
+		input: z.object({}),
+	},
+	async (_args, ctx) => {
+		const roots = await ctx.roots();
+		if (roots.length === 0) {
+			return {
+				content: [{ type: "text", text: "No roots provided by client" }],
+			};
+		}
+		const list = roots
+			.map((r) => `${r.name ?? "unnamed"}: ${r.uri}`)
+			.join("\n");
+		return { content: [{ type: "text", text: `Available roots:\n${list}` }] };
+	},
+);
+
 await server.stdio();
