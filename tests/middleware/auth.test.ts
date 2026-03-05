@@ -28,18 +28,28 @@ async function createConnectedPair(server: any) {
 describe("auth middleware", () => {
 	it("hides tools on registration (onRegister returns false)", () => {
 		const server = createTestServer();
-		server.tool("secret", auth(), { query: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"secret",
+			auth(),
+			{ input: z.object({ query: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 
 		expect(server._isToolVisible("secret", "s1")).toBe(false);
 	});
 
 	it("shows tools after session.authorize('auth')", () => {
 		const server = createTestServer();
-		server.tool("secret", auth(), { query: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"secret",
+			auth(),
+			{ input: z.object({ query: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 
 		const session = server._createSessionAPI("s1");
 		session.authorize("auth");
@@ -49,9 +59,14 @@ describe("auth middleware", () => {
 
 	it("blocks call when session has no user", async () => {
 		const server = createTestServer();
-		server.tool("secret", auth(), { query: z.string() }, async (args: any) => ({
-			content: [{ type: "text", text: `Result: ${args.query}` }],
-		}));
+		server.tool(
+			"secret",
+			auth(),
+			{ input: z.object({ query: z.string() }) },
+			async (args: any) => ({
+				content: [{ type: "text", text: `Result: ${args.query}` }],
+			}),
+		);
 
 		// Authorize the middleware so the tool is visible, but don't set user
 		const session = server._createSessionAPI("default");
@@ -74,19 +89,23 @@ describe("auth middleware", () => {
 
 	it("allows call when session has user set", async () => {
 		const server = createTestServer();
-		// Register a login tool that sets session user
 		server.tool(
 			"login",
-			{ username: z.string() },
+			{ input: z.object({ username: z.string() }) },
 			async (args: any, ctx: any) => {
 				ctx.session.set("user", { name: args.username });
 				ctx.session.authorize("auth");
 				return { content: [{ type: "text", text: "Logged in" }] };
 			},
 		);
-		server.tool("secret", auth(), { query: z.string() }, async (args: any) => ({
-			content: [{ type: "text", text: `Secret: ${args.query}` }],
-		}));
+		server.tool(
+			"secret",
+			auth(),
+			{ input: z.object({ query: z.string() }) },
+			async (args: any) => ({
+				content: [{ type: "text", text: `Secret: ${args.query}` }],
+			}),
+		);
 
 		const client = await createConnectedPair(server);
 
@@ -113,9 +132,14 @@ describe("auth middleware", () => {
 		const customAuth = auth({ sessionKey: "token" });
 		expect(customAuth.name).toBe("auth");
 
-		server.tool("api", customAuth, { query: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"api",
+			customAuth,
+			{ input: z.object({ query: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 
 		expect(server._isToolVisible("api", "s1")).toBe(false);
 	});
@@ -124,12 +148,20 @@ describe("auth middleware", () => {
 		const server = createTestServer();
 		server.use(auth());
 
-		server.tool("tool-a", { query: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
-		server.tool("tool-b", { query: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"tool-a",
+			{ input: z.object({ query: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
+		server.tool(
+			"tool-b",
+			{ input: z.object({ query: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 
 		expect(server._isToolVisible("tool-a", "s1")).toBe(false);
 		expect(server._isToolVisible("tool-b", "s1")).toBe(false);

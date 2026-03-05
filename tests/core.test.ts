@@ -17,20 +17,26 @@ describe("createMCPServer", () => {
 		expect(server.stdio).toBeTypeOf("function");
 	});
 
-	it("registers a tool with schema and handler", () => {
-		const server = createTestServer();
-		server.tool("greet", { name: z.string() }, async (args: any) => ({
-			content: [{ type: "text", text: `Hello ${args.name}` }],
-		}));
-		expect(server._isToolVisible("greet", "default")).toBe(true);
-	});
-
-	it("registers a tool with description", () => {
+	it("registers a tool with config and handler", () => {
 		const server = createTestServer();
 		server.tool(
 			"greet",
-			"Greet someone",
-			{ name: z.string() },
+			{ input: z.object({ name: z.string() }) },
+			async (args: any) => ({
+				content: [{ type: "text", text: `Hello ${args.name}` }],
+			}),
+		);
+		expect(server._isToolVisible("greet", "default")).toBe(true);
+	});
+
+	it("registers a tool with description in config", () => {
+		const server = createTestServer();
+		server.tool(
+			"greet",
+			{
+				description: "Greet someone",
+				input: z.object({ name: z.string() }),
+			},
 			async (args: any) => ({
 				content: [{ type: "text", text: `Hello ${args.name}` }],
 			}),
@@ -47,9 +53,13 @@ describe("middleware", () => {
 			onRegister: () => false,
 		};
 		server.use(mw);
-		server.tool("hidden", { name: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"hidden",
+			{ input: z.object({ name: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 		expect(server._isToolVisible("hidden", "default")).toBe(false);
 	});
 
@@ -59,12 +69,21 @@ describe("middleware", () => {
 			name: "guard",
 			onRegister: () => false,
 		};
-		server.tool("guarded", mw, { name: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
-		server.tool("open", { name: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"guarded",
+			mw,
+			{ input: z.object({ name: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
+		server.tool(
+			"open",
+			{ input: z.object({ name: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 		expect(server._isToolVisible("guarded", "default")).toBe(false);
 		expect(server._isToolVisible("open", "default")).toBe(true);
 	});
@@ -90,22 +109,16 @@ describe("middleware", () => {
 		};
 
 		server.use(globalMw);
-		server.tool("test", perToolMw, { name: z.string() }, async () => {
-			order.push("handler");
-			return { content: [{ type: "text", text: "ok" }] };
-		});
+		server.tool(
+			"test",
+			perToolMw,
+			{ input: z.object({ name: z.string() }) },
+			async () => {
+				order.push("handler");
+				return { content: [{ type: "text", text: "ok" }] };
+			},
+		);
 
-		// Simulate a tools/call by accessing internals
-		const session = server._createSessionAPI("test-session");
-		const ctx = {
-			toolName: "test",
-			session,
-			signal: AbortSignal.timeout(5000),
-			sessionId: "test-session",
-		};
-
-		// We need to directly test through the server's request handler
-		// Instead, we can connect with a mock transport and send requests
 		const { Client } = await import(
 			"@modelcontextprotocol/sdk/client/index.js"
 		);
@@ -130,6 +143,57 @@ describe("middleware", () => {
 
 		expect(order).toEqual(["global", "per-tool", "handler"]);
 		expect(result.content).toEqual([{ type: "text", text: "ok" }]);
+
+		await client.close();
+	});
+
+	it("calls onRegister once at registration, not on every tools/list", async () => {
+		const server = createTestServer();
+		const onRegisterSpy = vi.fn(() => false);
+		const mw: ToolMiddleware = {
+			name: "spy-mw",
+			onRegister: onRegisterSpy,
+		};
+
+		server.tool(
+			"spied",
+			mw,
+			{ input: z.object({ name: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
+
+		// onRegister called once at registration
+		expect(onRegisterSpy).toHaveBeenCalledTimes(1);
+
+		// Connect and list tools multiple times
+		const { Client } = await import(
+			"@modelcontextprotocol/sdk/client/index.js"
+		);
+		const { InMemoryTransport } = await import(
+			"@modelcontextprotocol/sdk/inMemory.js"
+		);
+
+		const [clientTransport, serverTransport] =
+			InMemoryTransport.createLinkedPair();
+		const client = new Client({ name: "test-client", version: "1.0.0" });
+
+		await Promise.all([
+			server._server.connect(serverTransport),
+			client.connect(clientTransport),
+		]);
+
+		// Authorize so tool is visible, then list multiple times
+		const session = server._createSessionAPI("default");
+		session.authorize("spy-mw");
+
+		await client.listTools();
+		await client.listTools();
+		await client.listTools();
+
+		// Still only called once (at registration)
+		expect(onRegisterSpy).toHaveBeenCalledTimes(1);
 
 		await client.close();
 	});
@@ -159,9 +223,14 @@ describe("session", () => {
 			name: "auth",
 			onRegister: () => false,
 		};
-		server.tool("protected", mw, { name: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"protected",
+			mw,
+			{ input: z.object({ name: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 
 		expect(server._isToolVisible("protected", "s1")).toBe(false);
 
@@ -177,9 +246,14 @@ describe("session", () => {
 			name: "auth",
 			onRegister: () => false,
 		};
-		server.tool("protected", mw, { name: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"protected",
+			mw,
+			{ input: z.object({ name: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 
 		const session = server._createSessionAPI("s1");
 		session.authorize("auth");
@@ -191,12 +265,20 @@ describe("session", () => {
 
 	it("enableTools/disableTools control individual tool visibility", () => {
 		const server = createTestServer();
-		server.tool("tool-a", { name: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
-		server.tool("tool-b", { name: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"tool-a",
+			{ input: z.object({ name: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
+		server.tool(
+			"tool-b",
+			{ input: z.object({ name: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 
 		const session = server._createSessionAPI("s1");
 
@@ -209,6 +291,42 @@ describe("session", () => {
 	});
 });
 
+describe("tool() argument validation", () => {
+	it("throws when last argument is not a function", () => {
+		const server = createTestServer();
+		expect(() => {
+			server.tool(
+				"bad",
+				{ input: z.object({ name: z.string() }) },
+				"not-a-function",
+			);
+		}).toThrow('tool("bad"): last argument must be a handler function');
+	});
+
+	it("throws when config is not a plain object", () => {
+		const server = createTestServer();
+		expect(() => {
+			server.tool("bad", "not-a-config", async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}));
+		}).toThrow('tool("bad"): second-to-last argument must be a config object');
+	});
+
+	it("throws when middleware lacks a name property", () => {
+		const server = createTestServer();
+		expect(() => {
+			server.tool(
+				"bad",
+				{ noName: true } as any,
+				{ input: z.object({ name: z.string() }) },
+				async () => ({
+					content: [{ type: "text", text: "ok" }],
+				}),
+			);
+		}).toThrow('tool("bad"): each middleware must have a "name" property');
+	});
+});
+
 describe("tools/list integration", () => {
 	it("returns only visible tools", async () => {
 		const server = createTestServer();
@@ -217,12 +335,21 @@ describe("tools/list integration", () => {
 			onRegister: () => false,
 		};
 
-		server.tool("public", { query: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
-		server.tool("private", mw, { query: z.string() }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool(
+			"public",
+			{ input: z.object({ query: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
+		server.tool(
+			"private",
+			mw,
+			{ input: z.object({ query: z.string() }) },
+			async () => ({
+				content: [{ type: "text", text: "ok" }],
+			}),
+		);
 
 		const { Client } = await import(
 			"@modelcontextprotocol/sdk/client/index.js"

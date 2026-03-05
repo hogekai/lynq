@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "lynq-demo": {
+      "command": "npx",
+      "args": ["tsx", "server.ts"]
+    }
+  }
+}

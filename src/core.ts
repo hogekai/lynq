@@ -1,36 +1,51 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
+	type ZodRawShapeCompat,
+	normalizeObjectSchema,
+} from "@modelcontextprotocol/sdk/server/zod-compat.js";
+import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
+import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { zodToJsonSchema } from "./schema.js";
 import type {
 	MCPServer,
 	Session,
+	ToolConfig,
 	ToolContext,
 	ToolHandler,
+	ToolInfo,
 	ToolMiddleware,
 } from "./types.js";
 
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { z } from "zod";
 
 // === Internal Types ===
 
 interface InternalTool {
 	name: string;
 	description: string | undefined;
-	schema: z.ZodRawShape;
+	input: unknown;
 	handler: ToolHandler;
 	middlewares: ToolMiddleware[];
+	hiddenByMiddlewares: string[];
 }
 
 interface SessionState {
 	data: Map<string, unknown>;
-	authorizedMiddlewares: Set<string>;
-	disabledTools: Set<string>;
-	enabledOverrides: Set<string>;
+	grants: Set<string>;
+	toolOverrides: Map<string, "enabled" | "disabled">;
+}
+
+// === Helpers ===
+
+function inputToJsonSchema(input: unknown): Record<string, unknown> {
+	if (input == null) return { type: "object" };
+	const normalized = normalizeObjectSchema(input as ZodRawShapeCompat);
+	return normalized
+		? (toJsonSchemaCompat(normalized) as Record<string, unknown>)
+		: (input as Record<string, unknown>);
 }
 
 // === createMCPServer ===
@@ -52,9 +67,8 @@ export function createMCPServer(info: {
 		if (!session) {
 			session = {
 				data: new Map(),
-				authorizedMiddlewares: new Set(),
-				disabledTools: new Set(),
-				enabledOverrides: new Set(),
+				grants: new Set(),
+				toolOverrides: new Map(),
 			};
 			sessions.set(sessionId, session);
 		}
@@ -72,24 +86,22 @@ export function createMCPServer(info: {
 				state.data.set(key, value);
 			},
 			authorize(middlewareName: string): void {
-				state.authorizedMiddlewares.add(middlewareName);
+				state.grants.add(middlewareName);
 				notifyToolListChanged();
 			},
 			revoke(middlewareName: string): void {
-				state.authorizedMiddlewares.delete(middlewareName);
+				state.grants.delete(middlewareName);
 				notifyToolListChanged();
 			},
 			enableTools(...names: string[]): void {
 				for (const name of names) {
-					state.enabledOverrides.add(name);
-					state.disabledTools.delete(name);
+					state.toolOverrides.set(name, "enabled");
 				}
 				notifyToolListChanged();
 			},
 			disableTools(...names: string[]): void {
 				for (const name of names) {
-					state.disabledTools.add(name);
-					state.enabledOverrides.delete(name);
+					state.toolOverrides.set(name, "disabled");
 				}
 				notifyToolListChanged();
 			},
@@ -103,22 +115,12 @@ export function createMCPServer(info: {
 	function isToolVisible(tool: InternalTool, sessionId: string): boolean {
 		const state = getSession(sessionId);
 
-		if (state.disabledTools.has(tool.name)) return false;
-		if (state.enabledOverrides.has(tool.name)) return true;
+		const override = state.toolOverrides.get(tool.name);
+		if (override === "disabled") return false;
+		if (override === "enabled") return true;
 
-		for (const mw of tool.middlewares) {
-			if (mw.onRegister) {
-				const result = mw.onRegister({
-					name: tool.name,
-					description: tool.description,
-					middlewares: tool.middlewares,
-				});
-				if (result === false) {
-					if (!state.authorizedMiddlewares.has(mw.name)) {
-						return false;
-					}
-				}
-			}
+		for (const mwName of tool.hiddenByMiddlewares) {
+			if (!state.grants.has(mwName)) return false;
 		}
 
 		return true;
@@ -155,7 +157,7 @@ export function createMCPServer(info: {
 				visibleTools.push({
 					name: tool.name,
 					description: tool.description,
-					inputSchema: zodToJsonSchema(tool.schema),
+					inputSchema: inputToJsonSchema(tool.input),
 				});
 			}
 		}
@@ -210,33 +212,68 @@ export function createMCPServer(info: {
 
 	function tool(...args: unknown[]): void {
 		const name = args[0] as string;
-		let description: string | undefined;
+		const rest = args.slice(1);
 
-		// Parse overloaded arguments
-		let rest = args.slice(1);
-
-		// Optional description
-		if (typeof rest[0] === "string") {
-			description = rest[0] as string;
-			rest = rest.slice(1);
+		// Handler is always last
+		const handler = rest[rest.length - 1];
+		if (typeof handler !== "function") {
+			throw new TypeError(
+				`tool("${name}"): last argument must be a handler function`,
+			);
 		}
 
-		// Handler is always last, schema is second-to-last
-		const handler = rest[rest.length - 1] as ToolHandler;
-		const schema = rest[rest.length - 2] as z.ZodRawShape;
+		// Config is second-to-last
+		const config = rest[rest.length - 2];
+		if (
+			config == null ||
+			typeof config !== "object" ||
+			Array.isArray(config) ||
+			typeof (config as Record<string, unknown>).name === "string"
+		) {
+			throw new TypeError(
+				`tool("${name}"): second-to-last argument must be a config object`,
+			);
+		}
 
-		// Everything before schema is per-tool middleware
-		const middlewares = rest.slice(0, -2) as ToolMiddleware[];
+		// Everything between name and config is per-tool middleware
+		const perToolMiddlewares = rest.slice(0, -2);
+		for (const mw of perToolMiddlewares) {
+			if (
+				!mw ||
+				typeof mw !== "object" ||
+				typeof (mw as Record<string, unknown>).name !== "string"
+			) {
+				throw new TypeError(
+					`tool("${name}"): each middleware must have a "name" property`,
+				);
+			}
+		}
 
-		// Combine global + per-tool middlewares
+		const toolConfig = config as ToolConfig;
+		const middlewares = perToolMiddlewares as ToolMiddleware[];
 		const allMiddlewares = [...globalMiddlewares, ...middlewares];
+
+		// Cache onRegister results at registration time
+		const toolInfo: ToolInfo = {
+			name,
+			description: toolConfig.description,
+			middlewares: allMiddlewares,
+		};
+
+		const hiddenByMiddlewares: string[] = [];
+		for (const mw of allMiddlewares) {
+			if (mw.onRegister?.(toolInfo) === false) {
+				hiddenByMiddlewares.push(mw.name);
+			}
+		}
 
 		const internalTool: InternalTool = {
 			name,
-			description,
-			schema,
-			handler,
+			description: toolConfig.description,
+			input: toolConfig.input,
+			handler: handler as ToolHandler,
 			middlewares: allMiddlewares,
+			hiddenByMiddlewares,
 		};
 
 		tools.set(name, internalTool);

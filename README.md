@@ -10,7 +10,9 @@ import { z } from "zod";
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });
 
 // Login tool — always visible
-server.tool("login", { username: z.string(), password: z.string() }, async (args, ctx) => {
+server.tool("login", {
+  input: z.object({ username: z.string(), password: z.string() }),
+}, async (args, ctx) => {
   const user = await authenticate(args.username, args.password);
   ctx.session.set("user", user);
   ctx.session.authorize("auth");
@@ -18,7 +20,10 @@ server.tool("login", { username: z.string(), password: z.string() }, async (args
 });
 
 // Weather tool — hidden until authenticated
-server.tool("weather", auth(), { city: z.string() }, async (args) => {
+server.tool("weather", auth(), {
+  description: "Get weather for a city",
+  input: z.object({ city: z.string() }),
+}, async (args) => {
   const data = await fetchWeather(args.city);
   return { content: [{ type: "text", text: JSON.stringify(data) }] };
 });
@@ -32,18 +37,9 @@ await server.stdio();
 npm install lynq @modelcontextprotocol/sdk zod
 ```
 
-## What lynq does
+## Why lynq
 
-- **Hono-style middleware** — global via `server.use()`, per-tool inline
-- **Session-scoped tool visibility** — `ctx.session.authorize()` / `ctx.session.revoke()` show/hide tools per session
-- **Thin layer** — delegates to the official MCP SDK for protocol handling
-
-## What lynq does NOT do
-
-- HTTP server or auth implementation
-- Database or session persistence
-- Tool discovery or directory scanning
-- Anything the official SDK already handles
+When you build an MCP server, you often need to show different tools depending on session state — hide admin tools from unauthenticated users, reveal features after onboarding, etc. The MCP protocol supports this via bidirectional tool list notifications, but wiring it by hand means managing visibility sets, diffing tool lists, and calling `sendToolListChanged` at the right time. lynq lets you declare visibility as middleware and handles the rest.
 
 ## API
 
@@ -55,16 +51,21 @@ Creates a server instance.
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });
 ```
 
-### `server.tool(name, ...middlewares?, schema, handler)`
+### `server.tool(name, ...middlewares?, config, handler)`
 
-Register a tool. Middlewares are optional.
+Register a tool. Middlewares are optional, config holds `description` and `input` schema.
 
 ```ts
-server.tool("greet", { name: z.string() }, async (args) => ({
+server.tool("greet", {
+  description: "Greet someone",
+  input: z.object({ name: z.string() }),
+}, async (args) => ({
   content: [{ type: "text", text: `Hello ${args.name}` }],
 }));
 
-server.tool("secret", auth(), { query: z.string() }, async (args) => ({
+server.tool("secret", auth(), {
+  input: z.object({ query: z.string() }),
+}, async (args) => ({
   content: [{ type: "text", text: args.query }],
 }));
 ```
@@ -77,21 +78,14 @@ Apply middleware to all subsequently registered tools.
 server.use(auth());
 ```
 
-### `server.stdio()`
+### Session
 
-Start the server with stdio transport.
-
-### Session API
-
-Available in tool handlers and middleware via `ctx.session`:
+Available in handlers and middleware via `ctx.session`:
 
 ```ts
 ctx.session.set("key", value);
 ctx.session.get("key");
-ctx.session.authorize("auth");      // Enable tools guarded by "auth" middleware
-ctx.session.revoke("auth");         // Disable them again
-ctx.session.enableTools("weather"); // Enable specific tools
-ctx.session.disableTools("weather");
+ctx.session.authorize("auth"); // Enable tools guarded by "auth" middleware
 ```
 
 ### `auth(options?)`
@@ -104,24 +98,6 @@ import { auth } from "lynq/auth";
 auth();                          // checks ctx.session.get("user")
 auth({ sessionKey: "token" });   // checks ctx.session.get("token")
 auth({ message: "Login first" }); // custom error message
-```
-
-### Custom Middleware
-
-```ts
-import type { ToolMiddleware } from "lynq";
-
-const rateLimit = (max: number): ToolMiddleware => ({
-  name: "rateLimit",
-  async onCall(ctx, next) {
-    const count = ctx.session.get<number>("callCount") ?? 0;
-    if (count >= max) {
-      return { content: [{ type: "text", text: "Rate limited" }], isError: true };
-    }
-    ctx.session.set("callCount", count + 1);
-    return next();
-  },
-});
 ```
 
 ## License

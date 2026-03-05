@@ -2,23 +2,30 @@
 
 Lightweight MCP server framework. Tool visibility control through middleware.
 
+## Concept
+
+MCP is a bidirectional protocol — servers can push tool list changes to clients at any time. This enables session-aware tool visibility: show or hide tools based on runtime state like authentication. But wiring the bidirectional notification by hand is tedious and error-prone. lynq absorbs that plumbing. You declare visibility rules as Hono-style middleware, and lynq handles the protocol-level notifications internally. Users write `server.tool("weather", auth(), config, handler)` and never touch `sendToolListChanged`.
+
 ## Philosophy
 
-Think Deno, not webpack, Think Hono, not Express. Think vide (../vide), not video.js. Defaults are minimal. Extensions are explicit. Nothing implicit.
+Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not video.js. Defaults are minimal. Extensions are explicit. Nothing implicit.
 
 ## Rules
 
-- **Delegate, don't wrap.** If the official MCP SDK already has the API, use it.
+- **Delegate, don't wrap.** If the official MCP SDK already has the API, use it. Example: schema conversion is delegated to the SDK's `toJsonSchemaCompat` — lynq never parses schemas.
 - **Pure functions over stateful objects.** Middleware factories return plain objects. No classes.
 - **ESM only.** No CJS. `sideEffects: false`.
 - **Types are the docs.** If the API isn't obvious from type signatures alone, redesign the API.
 - **Dependency direction: one way.** Middleware → core. Never reverse. Never circular.
 - **One runtime dependency.** `@modelcontextprotocol/sdk` as peer dep. Nothing else in core.
 - **`createMCPServer(info)` is the entire API surface.** No config files, no directory scanning.
-- **Middleware is Hono-style.** Global via `server.use(middleware)`. Per-tool via `server.tool("name", middleware, schema, handler)`. Both supported.
+- **Middleware is Hono-style.** Global via `server.use(middleware)`. Per-tool via `server.tool("name", middleware, config, handler)`. Both supported.
 - **Tool visibility is session-scoped.** Middleware controls initial visibility. `ctx.session.authorize()` / `ctx.session.revoke()` change it at runtime. Bidirectional notification is internal — users never touch it.
 - **ctx follows Hono's Context pattern.** `ctx.session.set()` / `ctx.session.get()`.
-- **Framework does NOT handle:** HTTP server, auth implementation, database, session persistence.
+
+## Out of scope
+
+HTTP server, auth implementation, database, session persistence.
 
 ## When adding features
 
@@ -42,7 +49,6 @@ src/
 ├── index.ts          — public exports
 ├── types.ts          — all type definitions
 ├── core.ts           — createMCPServer implementation
-├── schema.ts         — Zod-to-JSON-Schema conversion
 ├── middleware/
 │   └── auth.ts       — auth() middleware
 └── adapters/

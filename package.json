@@ -41,6 +41,11 @@
 		"@modelcontextprotocol/sdk": "^1.27.0",
 		"zod": "^3.0.0"
 	},
+	"peerDependenciesMeta": {
+		"zod": {
+			"optional": true
+		}
+	},
 	"license": "MIT",
 	"engines": {
 		"node": ">=18"

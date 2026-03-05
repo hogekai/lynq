@@ -40,11 +40,17 @@ export interface ToolContext {
 
 // === Middleware ===
 
+export interface ToolInfo {
+	name: string;
+	description?: string | undefined;
+	middlewares: readonly ToolMiddleware[];
+}
+
 export interface ToolMiddleware {
 	/** Unique name for this middleware instance. Used for authorize()/revoke(). */
 	name: string;
 	/** Called when a tool is registered. Return false to hide the tool initially. */
-	onRegister?(tool: RegisteredToolInfo): boolean | undefined;
+	onRegister?(tool: ToolInfo): boolean | undefined;
 	/** Called when a tool is invoked. Must call next() to continue the chain. */
 	onCall?(
 		ctx: ToolContext,
@@ -54,14 +60,17 @@ export interface ToolMiddleware {
 
 // === Tool ===
 
-export interface RegisteredToolInfo {
-	name: string;
-	description?: string | undefined;
-	middlewares: readonly ToolMiddleware[];
+type InferInput<T> = T extends z.ZodTypeAny
+	? z.output<T>
+	: Record<string, unknown>;
+
+export interface ToolConfig<TInput = unknown> {
+	description?: string;
+	input?: TInput;
 }
 
-export type ToolHandler<T extends z.ZodRawShape = z.ZodRawShape> = (
-	args: z.objectOutputType<T, z.ZodTypeAny>,
+export type ToolHandler<TInput = unknown> = (
+	args: InferInput<TInput>,
 	ctx: ToolContext,
 ) => CallToolResult | Promise<CallToolResult>;
 
@@ -71,32 +80,17 @@ export interface MCPServer {
 	/** Register a global middleware applied to all subsequently registered tools. */
 	use(middleware: ToolMiddleware): void;
 
-	/** Register a tool with schema and handler. */
-	tool<T extends z.ZodRawShape>(
+	/** Register a tool with config and handler. */
+	tool<TInput>(
 		name: string,
-		schema: T,
-		handler: ToolHandler<T>,
+		config: ToolConfig<TInput>,
+		handler: ToolHandler<TInput>,
 	): void;
 
-	/** Register a tool with description, schema, and handler. */
-	tool<T extends z.ZodRawShape>(
+	/** Register a tool with per-tool middlewares, config, and handler. */
+	tool<TInput>(
 		name: string,
-		description: string,
-		schema: T,
-		handler: ToolHandler<T>,
-	): void;
-
-	/** Register a tool with per-tool middlewares and schema. */
-	tool<T extends z.ZodRawShape>(
-		name: string,
-		...args: [...ToolMiddleware[], T, ToolHandler<T>]
-	): void;
-
-	/** Register a tool with description, per-tool middlewares, and schema. */
-	tool<T extends z.ZodRawShape>(
-		name: string,
-		description: string,
-		...args: [...ToolMiddleware[], T, ToolHandler<T>]
+		...args: [...ToolMiddleware[], ToolConfig<TInput>, ToolHandler<TInput>]
 	): void;
 
 	/** Start stdio transport. */

@@ -4,7 +4,8 @@ export type {
 	ToolMiddleware,
 	ToolContext,
 	ToolHandler,
+	ToolConfig,
+	ToolInfo,
 	Session,
-	RegisteredToolInfo,
 	ServerInfo,
 } from "./types.js";
