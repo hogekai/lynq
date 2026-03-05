@@ -1,6 +1,6 @@
 # lynq demo
 
-Login → tool visibility change demo.
+Login → tool visibility change demo. Includes async tasks.
 
 ## Run with Claude Code
 
@@ -17,4 +17,5 @@ claude
 
 1. Only `login` is visible
 2. Call `login` with `admin` / `1234`
-3. `get_weather` and `save_note` appear
+3. `get_weather`, `save_note`, and `slow_analysis` appear
+4. `slow_analysis` is an async task — it returns a task ID immediately, then sends progress notifications (`0%`, `50%`, `100%`) over ~4 seconds

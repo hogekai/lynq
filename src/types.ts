@@ -78,6 +78,33 @@ export type ToolHandler<TInput = unknown> = (
 	ctx: ToolContext,
 ) => CallToolResult | Promise<CallToolResult>;
 
+// === Task (@experimental) ===
+
+/** @experimental */
+export interface TaskConfig<TInput = unknown> {
+	description?: string;
+	input?: TInput;
+}
+
+/** @experimental */
+export interface TaskControl {
+	/** Report progress. percentage: 0-100. message: optional status text. */
+	progress(percentage: number, message?: string): void;
+	/** True when the client has cancelled this task. */
+	readonly cancelled: boolean;
+}
+
+/** @experimental */
+export interface TaskContext extends ToolContext {
+	task: TaskControl;
+}
+
+/** @experimental */
+export type TaskHandler<TInput = unknown> = (
+	args: InferInput<TInput>,
+	ctx: TaskContext,
+) => CallToolResult | Promise<CallToolResult>;
+
 // === Resource ===
 
 export interface ResourceConfig {
@@ -129,6 +156,19 @@ export interface MCPServer {
 	resource(
 		uri: string,
 		...args: [...ToolMiddleware[], ResourceConfig, ResourceHandler]
+	): void;
+
+	/** @experimental Register a task with config and handler. */
+	task<TInput>(
+		name: string,
+		config: TaskConfig<TInput>,
+		handler: TaskHandler<TInput>,
+	): void;
+
+	/** @experimental Register a task with per-task middlewares, config, and handler. */
+	task<TInput>(
+		name: string,
+		...args: [...ToolMiddleware[], TaskConfig<TInput>, TaskHandler<TInput>]
 	): void;
 
 	/** Start stdio transport. */

@@ -105,4 +105,26 @@ server.resource(
 	},
 );
 
+// Hidden until authenticated — async task example
+server.task(
+	"slow_analysis",
+	auth(),
+	{
+		description: "Run a slow data analysis (demonstrates async tasks)",
+		input: z.object({ query: z.string() }),
+	},
+	async (args, ctx) => {
+		ctx.task.progress(0, "Starting analysis...");
+		await new Promise((r) => setTimeout(r, 2000));
+		ctx.task.progress(50, "Halfway...");
+		await new Promise((r) => setTimeout(r, 2000));
+		ctx.task.progress(100, "Complete");
+		return {
+			content: [
+				{ type: "text", text: `Analysis result for: ${args.query}` },
+			],
+		};
+	},
+);
+
 await server.stdio();

@@ -1,3 +1,4 @@
+import { InMemoryTaskStore } from "@modelcontextprotocol/sdk/experimental/tasks";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
 	type ZodRawShapeCompat,
@@ -17,6 +18,10 @@ import type {
 	ResourceContext,
 	ResourceHandler,
 	Session,
+	TaskConfig,
+	TaskContext,
+	TaskControl,
+	TaskHandler,
 	ToolConfig,
 	ToolContext,
 	ToolHandler,
@@ -50,6 +55,15 @@ interface InternalResource {
 	hiddenByMiddlewares: string[];
 }
 
+interface InternalTask {
+	name: string;
+	description: string | undefined;
+	input: unknown;
+	handler: TaskHandler;
+	middlewares: ToolMiddleware[];
+	hiddenByMiddlewares: string[];
+}
+
 interface SessionState {
 	data: Map<string, unknown>;
 	grants: Set<string>;
@@ -65,6 +79,49 @@ function inputToJsonSchema(input: unknown): Record<string, unknown> {
 	return normalized
 		? (toJsonSchemaCompat(normalized) as Record<string, unknown>)
 		: (input as Record<string, unknown>);
+}
+
+function parseMiddlewareArgs(
+	label: string,
+	args: unknown[],
+	// biome-ignore lint/complexity/noBannedTypes: handler type is narrowed by each caller
+): { middlewares: ToolMiddleware[]; config: unknown; handler: Function } {
+	const handler = args[args.length - 1];
+	if (typeof handler !== "function") {
+		throw new TypeError(`${label}: last argument must be a handler function`);
+	}
+	const config = args[args.length - 2];
+	if (config == null || typeof config !== "object" || Array.isArray(config)) {
+		throw new TypeError(
+			`${label}: second-to-last argument must be a config object`,
+		);
+	}
+	const mws = args.slice(0, -2);
+	for (const mw of mws) {
+		if (
+			!mw ||
+			typeof mw !== "object" ||
+			typeof (mw as Record<string, unknown>).name !== "string"
+		) {
+			throw new TypeError(
+				`${label}: each middleware must have a "name" property`,
+			);
+		}
+	}
+	return { middlewares: mws as ToolMiddleware[], config, handler };
+}
+
+function cacheHiddenMiddlewares(
+	info: ToolInfo,
+	middlewares: ToolMiddleware[],
+): string[] {
+	const hidden: string[] = [];
+	for (const mw of middlewares) {
+		if (mw.onRegister?.(info) === false) {
+			hidden.push(mw.name);
+		}
+	}
+	return hidden;
 }
 
 // === createMCPServer ===
@@ -83,13 +140,37 @@ export function createMCPServer(info: {
 	const globalMiddlewares: ToolMiddleware[] = [];
 	const tools = new Map<string, InternalTool>();
 	const resources = new Map<string, InternalResource>();
+	const tasks = new Map<string, InternalTask>();
 	const sessions = new Map<string, SessionState>();
+
+	// Task infrastructure
+	const cancelledTaskIds = new Set<string>();
+	const baseTaskStore = new InMemoryTaskStore();
+	const taskStore = new Proxy(baseTaskStore, {
+		get(target, prop, receiver) {
+			if (prop === "updateTaskStatus") {
+				return async (taskId: string, status: string, ...rest: unknown[]) => {
+					if (status === "cancelled") cancelledTaskIds.add(taskId);
+					// biome-ignore lint/complexity/noBannedTypes: Proxy interception requires dynamic call
+					return (target.updateTaskStatus as Function).call(
+						target,
+						taskId,
+						status,
+						...rest,
+					);
+				};
+			}
+			return Reflect.get(target, prop, receiver);
+		},
+	});
 
 	const server = new Server(info, {
 		capabilities: {
 			tools: { listChanged: true },
 			resources: { listChanged: true },
+			tasks: { list: {}, cancel: {}, requests: { tools: { call: {} } } },
 		},
+		taskStore,
 	});
 
 	function getSession(sessionId: string): SessionState {
@@ -106,7 +187,6 @@ export function createMCPServer(info: {
 		return session;
 	}
 
-	// Shared visibility logic for tools and resources
 	function isVisible(
 		hiddenByMiddlewares: string[],
 		key: string,
@@ -116,21 +196,19 @@ export function createMCPServer(info: {
 		const override = overrides.get(key);
 		if (override === "disabled") return false;
 		if (override === "enabled") return true;
-
 		for (const mwName of hiddenByMiddlewares) {
 			if (!grants.has(mwName)) return false;
 		}
-
 		return true;
 	}
 
 	function isToolVisible(tool: InternalTool, sessionId: string): boolean {
-		const state = getSession(sessionId);
+		const s = getSession(sessionId);
 		return isVisible(
 			tool.hiddenByMiddlewares,
 			tool.name,
-			state.toolOverrides,
-			state.grants,
+			s.toolOverrides,
+			s.grants,
 		);
 	}
 
@@ -138,12 +216,22 @@ export function createMCPServer(info: {
 		res: InternalResource,
 		sessionId: string,
 	): boolean {
-		const state = getSession(sessionId);
+		const s = getSession(sessionId);
 		return isVisible(
 			res.hiddenByMiddlewares,
 			res.uri,
-			state.resourceOverrides,
-			state.grants,
+			s.resourceOverrides,
+			s.grants,
+		);
+	}
+
+	function isTaskVisible(task: InternalTask, sessionId: string): boolean {
+		const s = getSession(sessionId);
+		return isVisible(
+			task.hiddenByMiddlewares,
+			task.name,
+			s.toolOverrides,
+			s.grants,
 		);
 	}
 
@@ -253,46 +341,112 @@ export function createMCPServer(info: {
 			}
 		}
 
+		for (const task of tasks.values()) {
+			if (isTaskVisible(task, sessionId)) {
+				visibleTools.push({
+					name: task.name,
+					description: task.description,
+					inputSchema: inputToJsonSchema(task.input),
+					execution: { taskSupport: "required" as const },
+				});
+			}
+		}
+
 		return { tools: visibleTools };
 	});
 
 	server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
 		const { name, arguments: args } = request.params;
-		const tool = tools.get(name);
-
-		if (!tool) {
-			return {
-				content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
-				isError: true,
-			};
-		}
-
 		const sessionId = extra.sessionId ?? "default";
 
-		if (!isToolVisible(tool, sessionId)) {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: `Tool not available: ${name}`,
-					},
-				],
-				isError: true,
+		const toolErr = (msg: string) => ({
+			content: [{ type: "text" as const, text: msg }],
+			isError: true as const,
+		});
+
+		// Regular tool
+		const tool = tools.get(name);
+		if (tool) {
+			if (!isToolVisible(tool, sessionId))
+				return toolErr(`Tool not available: ${name}`);
+
+			const ctx: ToolContext = {
+				toolName: name,
+				session: createSessionAPI(sessionId),
+				signal: extra.signal,
+				sessionId,
 			};
+
+			const finalHandler = () => Promise.resolve(tool.handler(args ?? {}, ctx));
+			const chain = buildMiddlewareChain(tool.middlewares, ctx, finalHandler);
+			return chain();
 		}
 
-		const ctx: ToolContext = {
-			toolName: name,
-			session: createSessionAPI(sessionId),
-			signal: extra.signal,
-			sessionId,
-		};
+		// Task tool
+		const task = tasks.get(name);
+		if (task) {
+			if (!isTaskVisible(task, sessionId))
+				return toolErr(`Tool not available: ${name}`);
+			const requestTaskStore = extra.taskStore;
+			if (!requestTaskStore) return toolErr("Task store not available");
 
-		const finalHandler = () => Promise.resolve(tool.handler(args ?? {}, ctx));
+			const createdTask = await requestTaskStore.createTask({
+				pollInterval: 1000,
+			});
+			const taskId = createdTask.taskId;
 
-		const chain = buildMiddlewareChain(tool.middlewares, ctx, finalHandler);
+			const taskControl: TaskControl = {
+				progress(pct: number, msg?: string) {
+					if (cancelledTaskIds.has(taskId)) return;
+					const status = msg ? `${pct}% ${msg}` : `${pct}%`;
+					requestTaskStore
+						.updateTaskStatus(taskId, "working", status)
+						.catch(() => {});
+				},
+				get cancelled() {
+					return cancelledTaskIds.has(taskId);
+				},
+			};
 
-		return chain();
+			const ctx: TaskContext = {
+				toolName: name,
+				session: createSessionAPI(sessionId),
+				signal: extra.signal,
+				sessionId,
+				task: taskControl,
+			};
+
+			const finalHandler = async (): Promise<CallToolResult> => {
+				(async () => {
+					try {
+						const result = await task.handler(args ?? {}, ctx);
+						if (!cancelledTaskIds.has(taskId)) {
+							await requestTaskStore.storeTaskResult(
+								taskId,
+								"completed",
+								result,
+							);
+						}
+					} catch (err) {
+						if (!cancelledTaskIds.has(taskId)) {
+							const msg = err instanceof Error ? err.message : String(err);
+							await requestTaskStore
+								.storeTaskResult(taskId, "failed", {
+									content: [{ type: "text", text: msg }],
+									isError: true,
+								})
+								.catch(() => {});
+						}
+					}
+				})();
+				return { task: createdTask } as unknown as CallToolResult;
+			};
+
+			const chain = buildMiddlewareChain(task.middlewares, ctx, finalHandler);
+			return chain();
+		}
+
+		return toolErr(`Unknown tool: ${name}`);
 	});
 
 	server.setRequestHandler(ListResourcesRequestSchema, (_request, extra) => {
@@ -403,142 +557,97 @@ export function createMCPServer(info: {
 
 	function tool(...args: unknown[]): void {
 		const name = args[0] as string;
-		const rest = args.slice(1);
+		const parsed = parseMiddlewareArgs(`tool("${name}")`, args.slice(1));
 
-		// Handler is always last
-		const handler = rest[rest.length - 1];
-		if (typeof handler !== "function") {
-			throw new TypeError(
-				`tool("${name}"): last argument must be a handler function`,
-			);
-		}
-
-		// Config is second-to-last
-		const config = rest[rest.length - 2];
-		if (
-			config == null ||
-			typeof config !== "object" ||
-			Array.isArray(config) ||
-			typeof (config as Record<string, unknown>).name === "string"
-		) {
+		if (typeof (parsed.config as Record<string, unknown>).name === "string") {
 			throw new TypeError(
 				`tool("${name}"): second-to-last argument must be a config object`,
 			);
 		}
 
-		// Everything between name and config is per-tool middleware
-		const perToolMiddlewares = rest.slice(0, -2);
-		for (const mw of perToolMiddlewares) {
-			if (
-				!mw ||
-				typeof mw !== "object" ||
-				typeof (mw as Record<string, unknown>).name !== "string"
-			) {
-				throw new TypeError(
-					`tool("${name}"): each middleware must have a "name" property`,
-				);
-			}
-		}
+		const toolConfig = parsed.config as ToolConfig;
+		const allMiddlewares = [...globalMiddlewares, ...parsed.middlewares];
 
-		const toolConfig = config as ToolConfig;
-		const middlewares = perToolMiddlewares as ToolMiddleware[];
-		const allMiddlewares = [...globalMiddlewares, ...middlewares];
-
-		// Cache onRegister results at registration time
 		const toolInfo: ToolInfo = {
 			name,
 			description: toolConfig.description,
 			middlewares: allMiddlewares,
 		};
 
-		const hiddenByMiddlewares: string[] = [];
-		for (const mw of allMiddlewares) {
-			if (mw.onRegister?.(toolInfo) === false) {
-				hiddenByMiddlewares.push(mw.name);
-			}
-		}
-
-		const internalTool: InternalTool = {
+		tools.set(name, {
 			name,
 			description: toolConfig.description,
 			input: toolConfig.input,
-			handler: handler as ToolHandler,
+			handler: parsed.handler as ToolHandler,
 			middlewares: allMiddlewares,
-			hiddenByMiddlewares,
-		};
-
-		tools.set(name, internalTool);
+			hiddenByMiddlewares: cacheHiddenMiddlewares(toolInfo, allMiddlewares),
+		});
 	}
 
 	function resource(...args: unknown[]): void {
 		const uri = args[0] as string;
-		const rest = args.slice(1);
+		const parsed = parseMiddlewareArgs(`resource("${uri}")`, args.slice(1));
 
-		const handler = rest[rest.length - 1];
-		if (typeof handler !== "function") {
-			throw new TypeError(
-				`resource("${uri}"): last argument must be a handler function`,
-			);
-		}
-
-		const config = rest[rest.length - 2];
-		if (
-			config == null ||
-			typeof config !== "object" ||
-			Array.isArray(config) ||
-			typeof (config as Record<string, unknown>).name !== "string"
-		) {
+		if (typeof (parsed.config as Record<string, unknown>).name !== "string") {
 			throw new TypeError(
 				`resource("${uri}"): second-to-last argument must be a config object with a "name" property`,
 			);
 		}
 
-		// Everything between URI and config is per-resource middleware
-		const perResourceMiddlewares = rest.slice(0, -2);
-		for (const mw of perResourceMiddlewares) {
-			if (
-				!mw ||
-				typeof mw !== "object" ||
-				typeof (mw as Record<string, unknown>).name !== "string"
-			) {
-				throw new TypeError(
-					`resource("${uri}"): each middleware must have a "name" property`,
-				);
-			}
-		}
-
-		const resConfig = config as ResourceConfig;
-		const middlewares = perResourceMiddlewares as ToolMiddleware[];
+		const resConfig = parsed.config as ResourceConfig;
 		// No global middlewares for resources
 
 		const resourceInfo: ToolInfo = {
 			name: resConfig.name,
 			description: resConfig.description,
-			middlewares,
+			middlewares: parsed.middlewares,
 		};
-
-		const hiddenByMiddlewares: string[] = [];
-		for (const mw of middlewares) {
-			if (mw.onRegister?.(resourceInfo) === false) {
-				hiddenByMiddlewares.push(mw.name);
-			}
-		}
 
 		const isTemplate = uri.includes("{");
 
-		const internalResource: InternalResource = {
+		resources.set(uri, {
 			uri,
 			isTemplate,
 			uriPattern: isTemplate ? buildTemplatePattern(uri) : null,
 			name: resConfig.name,
 			description: resConfig.description,
 			mimeType: resConfig.mimeType,
-			handler: handler as ResourceHandler,
-			middlewares,
-			hiddenByMiddlewares,
+			handler: parsed.handler as ResourceHandler,
+			middlewares: parsed.middlewares,
+			hiddenByMiddlewares: cacheHiddenMiddlewares(
+				resourceInfo,
+				parsed.middlewares,
+			),
+		});
+	}
+
+	function task(...args: unknown[]): void {
+		const name = args[0] as string;
+		const parsed = parseMiddlewareArgs(`task("${name}")`, args.slice(1));
+
+		if (typeof (parsed.config as Record<string, unknown>).name === "string") {
+			throw new TypeError(
+				`task("${name}"): second-to-last argument must be a config object`,
+			);
+		}
+
+		const taskConfig = parsed.config as TaskConfig;
+		const allMiddlewares = [...globalMiddlewares, ...parsed.middlewares];
+
+		const taskInfo: ToolInfo = {
+			name,
+			description: taskConfig.description,
+			middlewares: allMiddlewares,
 		};
 
-		resources.set(uri, internalResource);
+		tasks.set(name, {
+			name,
+			description: taskConfig.description,
+			input: taskConfig.input,
+			handler: parsed.handler as TaskHandler,
+			middlewares: allMiddlewares,
+			hiddenByMiddlewares: cacheHiddenMiddlewares(taskInfo, allMiddlewares),
+		});
 	}
 
 	async function stdio(): Promise<void> {
@@ -557,6 +666,7 @@ export function createMCPServer(info: {
 		use,
 		tool: tool as MCPServer["tool"],
 		resource: resource as MCPServer["resource"],
+		task: task as MCPServer["task"],
 		stdio,
 		connect,
 		/** @internal Exposed for testing. */
@@ -572,6 +682,11 @@ export function createMCPServer(info: {
 			if (!r) return false;
 			return isResourceVisible(r, sessionId);
 		},
+		_isTaskVisible(taskName: string, sessionId: string): boolean {
+			const t = tasks.get(taskName);
+			if (!t) return false;
+			return isTaskVisible(t, sessionId);
+		},
 		_createSessionAPI: createSessionAPI,
 	} as MCPServer & {
 		connect(transport: Transport): Promise<void>;
@@ -579,6 +694,7 @@ export function createMCPServer(info: {
 		_getSession(sessionId: string): SessionState;
 		_isToolVisible(toolName: string, sessionId: string): boolean;
 		_isResourceVisible(uri: string, sessionId: string): boolean;
+		_isTaskVisible(taskName: string, sessionId: string): boolean;
 		_createSessionAPI(sessionId: string): Session;
 	};
 }

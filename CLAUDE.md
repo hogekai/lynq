@@ -19,8 +19,9 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **Dependency direction: one way.** Middleware → core. Never reverse. Never circular.
 - **One runtime dependency.** `@modelcontextprotocol/sdk` as peer dep. Nothing else in core.
 - **`createMCPServer(info)` is the entire API surface.** No config files, no directory scanning.
-- **Middleware is Hono-style.** Global via `server.use(middleware)`. Per-tool via `server.tool("name", middleware, config, handler)`. Per-resource via `server.resource("uri", middleware, config, handler)`. `server.use()` applies only to tools.
-- **Tool and resource visibility is session-scoped.** `tool()` and `resource()` share the same middleware pattern. `ctx.session.authorize()` / `ctx.session.revoke()` affect both. Bidirectional notification is internal — users never touch it.
+- **Middleware is Hono-style.** Global via `server.use(middleware)`. Per-tool via `server.tool("name", middleware, config, handler)`. Per-resource via `server.resource("uri", middleware, config, handler)`. Per-task via `server.task("name", middleware, config, handler)`. `server.use()` applies to tools and tasks.
+- **Tool, resource, and task visibility is session-scoped.** `tool()`, `resource()`, and `task()` share the same middleware pattern. `ctx.session.authorize()` / `ctx.session.revoke()` affect all. Bidirectional notification is internal — users never touch it.
+- **`@experimental` marks unstable APIs.** `server.task()` depends on the MCP SDK's experimental Tasks API. User-facing interface is stable; internal SDK wiring may change.
 - **ctx follows Hono's Context pattern.** `ctx.session.set()` / `ctx.session.get()`.
 
 ## Out of scope
@@ -56,6 +57,7 @@ src/
 tests/
 ├── core.test.ts
 ├── resource.test.ts
+├── task.test.ts
 └── middleware/
     └── auth.test.ts
 ```

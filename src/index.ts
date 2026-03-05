@@ -12,4 +12,8 @@ export type {
 	ResourceHandler,
 	Session,
 	ServerInfo,
+	TaskConfig,
+	TaskContext,
+	TaskControl,
+	TaskHandler,
 } from "./types.js";
