@@ -25,10 +25,11 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **ctx follows Hono's Context pattern.** `ctx.session.set()` / `ctx.session.get()`.
 - **`ctx.roots()` queries client-provided filesystem roots.** Returns `Promise<RootInfo[]>`. Empty array if client lacks roots capability. No caching — each call queries the client.
 - **`ctx.sample()` requests LLM inference from the client.** `ctx.sample(prompt, options?)` → `Promise<string>`. `ctx.sample.raw(sdkParams)` → `Promise<CreateMessageResult>`. Available in tool and task handlers. Not in resource handlers.
+- **`server.http(options?)` returns a Web Standard request handler.** `(req: Request) => Promise<Response>`. Mounts in Hono, Deno, Cloudflare Workers — any framework. Lazy-imports `WebStandardStreamableHTTPServerTransport` from the SDK. Stateful mode (default): per-session Server+Transport, session IDs via `Mcp-Session-Id` header. Sessionless mode: new Server+Transport per request. `enableJsonResponse` option returns JSON instead of SSE.
 
 ## Out of scope
 
-HTTP server, auth implementation, database, session persistence.
+Auth implementation, database, session persistence.
 
 ## When adding features
 
@@ -58,6 +59,7 @@ src/
     └── stdio.ts      — stdio transport re-export
 tests/
 ├── core.test.ts
+├── http.test.ts
 ├── resource.test.ts
 ├── sampling.test.ts
 ├── task.test.ts

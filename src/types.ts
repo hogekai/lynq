@@ -206,6 +206,17 @@ export type ResourceHandler = (
 	ctx: ResourceContext,
 ) => ResourceContent | Promise<ResourceContent>;
 
+// === HTTP Adapter ===
+
+export interface HttpAdapterOptions {
+	/** Disable session management. Default: false. */
+	sessionless?: boolean;
+	/** Custom session ID generator. Default: crypto.randomUUID(). */
+	sessionIdGenerator?: () => string;
+	/** Return JSON instead of SSE streams. Default: false. */
+	enableJsonResponse?: boolean;
+}
+
 // === Server ===
 
 export interface MCPServer {
@@ -249,4 +260,7 @@ export interface MCPServer {
 
 	/** Start stdio transport. */
 	stdio(): Promise<void>;
+
+	/** Start HTTP transport. Returns a Web Standard request handler. */
+	http(options?: HttpAdapterOptions): (req: Request) => Promise<Response>;
 }

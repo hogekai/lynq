@@ -14,6 +14,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type {
 	Elicit,
+	HttpAdapterOptions,
 	MCPServer,
 	ResourceConfig,
 	ResourceContext,
@@ -150,6 +151,7 @@ export function createMCPServer(info: {
 	const resources = new Map<string, InternalResource>();
 	const tasks = new Map<string, InternalTask>();
 	const sessions = new Map<string, SessionState>();
+	const serverBySession = new Map<string, Server>();
 
 	// Task infrastructure
 	const cancelledTaskIds = new Set<string>();
@@ -243,12 +245,16 @@ export function createMCPServer(info: {
 		);
 	}
 
-	function notifyToolListChanged(): void {
-		server.sendToolListChanged().catch(() => {});
+	function notifyToolListChanged(sessionId?: string): void {
+		const srv =
+			(sessionId && serverBySession.get(sessionId)) || server;
+		srv.sendToolListChanged().catch(() => {});
 	}
 
-	function notifyResourceListChanged(): void {
-		server.sendResourceListChanged().catch(() => {});
+	function notifyResourceListChanged(sessionId?: string): void {
+		const srv =
+			(sessionId && serverBySession.get(sessionId)) || server;
+		srv.sendResourceListChanged().catch(() => {});
 	}
 
 	function createSessionAPI(sessionId: string): Session {
@@ -263,45 +269,45 @@ export function createMCPServer(info: {
 			},
 			authorize(middlewareName: string): void {
 				state.grants.add(middlewareName);
-				notifyToolListChanged();
-				notifyResourceListChanged();
+				notifyToolListChanged(sessionId);
+				notifyResourceListChanged(sessionId);
 			},
 			revoke(middlewareName: string): void {
 				state.grants.delete(middlewareName);
-				notifyToolListChanged();
-				notifyResourceListChanged();
+				notifyToolListChanged(sessionId);
+				notifyResourceListChanged(sessionId);
 			},
 			enableTools(...names: string[]): void {
 				for (const name of names) {
 					state.toolOverrides.set(name, "enabled");
 				}
-				notifyToolListChanged();
+				notifyToolListChanged(sessionId);
 			},
 			disableTools(...names: string[]): void {
 				for (const name of names) {
 					state.toolOverrides.set(name, "disabled");
 				}
-				notifyToolListChanged();
+				notifyToolListChanged(sessionId);
 			},
 			enableResources(...uris: string[]): void {
 				for (const uri of uris) {
 					state.resourceOverrides.set(uri, "enabled");
 				}
-				notifyResourceListChanged();
+				notifyResourceListChanged(sessionId);
 			},
 			disableResources(...uris: string[]): void {
 				for (const uri of uris) {
 					state.resourceOverrides.set(uri, "disabled");
 				}
-				notifyResourceListChanged();
+				notifyResourceListChanged(sessionId);
 			},
 		};
 	}
 
-	function createElicit(): Elicit {
+	function createElicit(sdkServer: Server): Elicit {
 		return {
 			async form({ message, schema }) {
-				const r = await server.elicitInput({
+				const r = await sdkServer.elicitInput({
 					message,
 					// biome-ignore lint/suspicious/noExplicitAny: SDK's PrimitiveSchemaDefinition union is too narrow for our simplified schema type
 					requestedSchema: { type: "object", properties: schema as any },
@@ -315,7 +321,7 @@ export function createMCPServer(info: {
 				};
 			},
 			async url({ message, url }) {
-				const r = await server.elicitInput({
+				const r = await sdkServer.elicitInput({
 					mode: "url",
 					message,
 					url,
@@ -326,10 +332,10 @@ export function createMCPServer(info: {
 		};
 	}
 
-	function createRootsAccessor(): () => Promise<RootInfo[]> {
+	function createRootsAccessor(sdkServer: Server): () => Promise<RootInfo[]> {
 		return async () => {
 			try {
-				const result = await server.listRoots();
+				const result = await sdkServer.listRoots();
 				return result.roots.map((r) => {
 					const info: RootInfo = { uri: r.uri };
 					if (r.name !== undefined) info.name = r.name;
@@ -341,7 +347,7 @@ export function createMCPServer(info: {
 		};
 	}
 
-	function createSample(): Sample {
+	function createSample(sdkServer: Server): Sample {
 		async function sample(
 			prompt: string,
 			options?: SampleOptions,
@@ -358,7 +364,7 @@ export function createMCPServer(info: {
 			if (options?.stopSequences !== undefined)
 				params.stopSequences = options.stopSequences;
 
-			const result = await server.createMessage(params);
+			const result = await sdkServer.createMessage(params);
 			const content = result.content;
 			if (content.type === "text") return content.text;
 			return "";
@@ -367,7 +373,7 @@ export function createMCPServer(info: {
 		async function raw(
 			params: CreateMessageRequestParamsBase,
 		): Promise<CreateMessageResult> {
-			return server.createMessage(params);
+			return sdkServer.createMessage(params);
 		}
 
 		return Object.assign(sample, { raw });
@@ -410,237 +416,257 @@ export function createMCPServer(info: {
 
 	// --- Request handlers ---
 
-	server.setRequestHandler(ListToolsRequestSchema, (_request, extra) => {
-		const sessionId = extra.sessionId ?? "default";
-		const visibleTools = [];
-
-		for (const tool of tools.values()) {
-			if (isToolVisible(tool, sessionId)) {
-				visibleTools.push({
-					name: tool.name,
-					description: tool.description,
-					inputSchema: inputToJsonSchema(tool.input),
-				});
-			}
-		}
-
-		for (const task of tasks.values()) {
-			if (isTaskVisible(task, sessionId)) {
-				visibleTools.push({
-					name: task.name,
-					description: task.description,
-					inputSchema: inputToJsonSchema(task.input),
-					execution: { taskSupport: "required" as const },
-				});
-			}
-		}
-
-		return { tools: visibleTools };
-	});
-
-	server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
-		const { name, arguments: args } = request.params;
-		const sessionId = extra.sessionId ?? "default";
-
-		const toolErr = (msg: string) => ({
-			content: [{ type: "text" as const, text: msg }],
-			isError: true as const,
-		});
-
-		// Regular tool
-		const tool = tools.get(name);
-		if (tool) {
-			if (!isToolVisible(tool, sessionId))
-				return toolErr(`Tool not available: ${name}`);
-
-			const ctx: ToolContext = {
-				toolName: name,
-				session: createSessionAPI(sessionId),
-				signal: extra.signal,
-				sessionId,
-				elicit: createElicit(),
-				roots: createRootsAccessor(),
-				sample: createSample(),
-			};
-
-			const finalHandler = () => Promise.resolve(tool.handler(args ?? {}, ctx));
-			const chain = buildMiddlewareChain(tool.middlewares, ctx, finalHandler);
-			return chain();
-		}
-
-		// Task tool
-		const task = tasks.get(name);
-		if (task) {
-			if (!isTaskVisible(task, sessionId))
-				return toolErr(`Tool not available: ${name}`);
-			const requestTaskStore = extra.taskStore;
-			if (!requestTaskStore) return toolErr("Task store not available");
-
-			const createdTask = await requestTaskStore.createTask({
-				pollInterval: 1000,
-			});
-			const taskId = createdTask.taskId;
-
-			const taskControl: TaskControl = {
-				progress(pct: number, msg?: string) {
-					if (cancelledTaskIds.has(taskId)) return;
-					const status = msg ? `${pct}% ${msg}` : `${pct}%`;
-					requestTaskStore
-						.updateTaskStatus(taskId, "working", status)
-						.catch(() => {});
-				},
-				get cancelled() {
-					return cancelledTaskIds.has(taskId);
-				},
-			};
-
-			const ctx: TaskContext = {
-				toolName: name,
-				session: createSessionAPI(sessionId),
-				signal: extra.signal,
-				sessionId,
-				elicit: createElicit(),
-				roots: createRootsAccessor(),
-				sample: createSample(),
-				task: taskControl,
-			};
-
-			const finalHandler = async (): Promise<CallToolResult> => {
-				(async () => {
-					try {
-						const result = await task.handler(args ?? {}, ctx);
-						if (!cancelledTaskIds.has(taskId)) {
-							await requestTaskStore.storeTaskResult(
-								taskId,
-								"completed",
-								result,
-							);
-						}
-					} catch (err) {
-						if (!cancelledTaskIds.has(taskId)) {
-							const msg = err instanceof Error ? err.message : String(err);
-							await requestTaskStore
-								.storeTaskResult(taskId, "failed", {
-									content: [{ type: "text", text: msg }],
-									isError: true,
-								})
-								.catch(() => {});
-						}
-					}
-				})();
-				return { task: createdTask } as unknown as CallToolResult;
-			};
-
-			const chain = buildMiddlewareChain(task.middlewares, ctx, finalHandler);
-			return chain();
-		}
-
-		return toolErr(`Unknown tool: ${name}`);
-	});
-
-	server.setRequestHandler(ListResourcesRequestSchema, (_request, extra) => {
-		const sessionId = extra.sessionId ?? "default";
-		const visibleResources = [];
-
-		for (const res of resources.values()) {
-			if (!res.isTemplate && isResourceVisible(res, sessionId)) {
-				visibleResources.push({
-					uri: res.uri,
-					name: res.name,
-					description: res.description,
-					mimeType: res.mimeType,
-				});
-			}
-		}
-
-		return { resources: visibleResources };
-	});
-
-	server.setRequestHandler(
-		ListResourceTemplatesRequestSchema,
-		(_request, extra) => {
+	function setupHandlers(sdkServer: Server): void {
+		sdkServer.setRequestHandler(ListToolsRequestSchema, (_request, extra) => {
 			const sessionId = extra.sessionId ?? "default";
-			const visibleTemplates = [];
+			const visibleTools = [];
 
-			for (const res of resources.values()) {
-				if (res.isTemplate && isResourceVisible(res, sessionId)) {
-					visibleTemplates.push({
-						uriTemplate: res.uri,
-						name: res.name,
-						description: res.description,
-						mimeType: res.mimeType,
+			for (const tool of tools.values()) {
+				if (isToolVisible(tool, sessionId)) {
+					visibleTools.push({
+						name: tool.name,
+						description: tool.description,
+						inputSchema: inputToJsonSchema(tool.input),
 					});
 				}
 			}
 
-			return { resourceTemplates: visibleTemplates };
-		},
-	);
-
-	server.setRequestHandler(
-		ReadResourceRequestSchema,
-		async (request, extra) => {
-			const { uri } = request.params;
-			const res = findResource(uri);
-
-			if (!res) {
-				throw new Error(`Unknown resource: ${uri}`);
+			for (const task of tasks.values()) {
+				if (isTaskVisible(task, sessionId)) {
+					visibleTools.push({
+						name: task.name,
+						description: task.description,
+						inputSchema: inputToJsonSchema(task.input),
+						execution: { taskSupport: "required" as const },
+					});
+				}
 			}
 
-			const sessionId = extra.sessionId ?? "default";
+			return { tools: visibleTools };
+		});
 
-			if (!isResourceVisible(res, sessionId)) {
-				throw new Error(`Resource not available: ${uri}`);
-			}
+		sdkServer.setRequestHandler(
+			CallToolRequestSchema,
+			async (request, extra) => {
+				const { name, arguments: args } = request.params;
+				const sessionId = extra.sessionId ?? "default";
 
-			const ctx: ResourceContext = {
-				uri,
-				session: createSessionAPI(sessionId),
-				sessionId,
-				roots: createRootsAccessor(),
-			};
+				const toolErr = (msg: string) => ({
+					content: [{ type: "text" as const, text: msg }],
+					isError: true as const,
+				});
 
-			// Run middleware onCall chain using a ToolContext adapter
-			const toolCtx: ToolContext = {
-				toolName: res.uri,
-				session: ctx.session,
-				signal: extra.signal,
-				sessionId,
-				elicit: createElicit(),
-				roots: createRootsAccessor(),
-				sample: createSample(),
-			};
+				// Regular tool
+				const tool = tools.get(name);
+				if (tool) {
+					if (!isToolVisible(tool, sessionId))
+						return toolErr(`Tool not available: ${name}`);
 
-			const finalHandler = async () => {
-				const content = await res.handler(uri, ctx);
-				return {
-					contents: [
-						{
-							uri,
-							mimeType: content.mimeType ?? res.mimeType,
-							...(content.text != null ? { text: content.text } : {}),
-							...(content.blob != null ? { blob: content.blob } : {}),
+					const ctx: ToolContext = {
+						toolName: name,
+						session: createSessionAPI(sessionId),
+						signal: extra.signal,
+						sessionId,
+						elicit: createElicit(sdkServer),
+						roots: createRootsAccessor(sdkServer),
+						sample: createSample(sdkServer),
+					};
+
+					const finalHandler = () =>
+						Promise.resolve(tool.handler(args ?? {}, ctx));
+					const chain = buildMiddlewareChain(
+						tool.middlewares,
+						ctx,
+						finalHandler,
+					);
+					return chain();
+				}
+
+				// Task tool
+				const task = tasks.get(name);
+				if (task) {
+					if (!isTaskVisible(task, sessionId))
+						return toolErr(`Tool not available: ${name}`);
+					const requestTaskStore = extra.taskStore;
+					if (!requestTaskStore) return toolErr("Task store not available");
+
+					const createdTask = await requestTaskStore.createTask({
+						pollInterval: 1000,
+					});
+					const taskId = createdTask.taskId;
+
+					const taskControl: TaskControl = {
+						progress(pct: number, msg?: string) {
+							if (cancelledTaskIds.has(taskId)) return;
+							const status = msg ? `${pct}% ${msg}` : `${pct}%`;
+							requestTaskStore
+								.updateTaskStatus(taskId, "working", status)
+								.catch(() => {});
 						},
-					],
+						get cancelled() {
+							return cancelledTaskIds.has(taskId);
+						},
+					};
+
+					const ctx: TaskContext = {
+						toolName: name,
+						session: createSessionAPI(sessionId),
+						signal: extra.signal,
+						sessionId,
+						elicit: createElicit(sdkServer),
+						roots: createRootsAccessor(sdkServer),
+						sample: createSample(sdkServer),
+						task: taskControl,
+					};
+
+					const finalHandler = async (): Promise<CallToolResult> => {
+						(async () => {
+							try {
+								const result = await task.handler(args ?? {}, ctx);
+								if (!cancelledTaskIds.has(taskId)) {
+									await requestTaskStore.storeTaskResult(
+										taskId,
+										"completed",
+										result,
+									);
+								}
+							} catch (err) {
+								if (!cancelledTaskIds.has(taskId)) {
+									const msg =
+										err instanceof Error ? err.message : String(err);
+									await requestTaskStore
+										.storeTaskResult(taskId, "failed", {
+											content: [{ type: "text", text: msg }],
+											isError: true,
+										})
+										.catch(() => {});
+								}
+							}
+						})();
+						return { task: createdTask } as unknown as CallToolResult;
+					};
+
+					const chain = buildMiddlewareChain(
+						task.middlewares,
+						ctx,
+						finalHandler,
+					);
+					return chain();
+				}
+
+				return toolErr(`Unknown tool: ${name}`);
+			},
+		);
+
+		sdkServer.setRequestHandler(
+			ListResourcesRequestSchema,
+			(_request, extra) => {
+				const sessionId = extra.sessionId ?? "default";
+				const visibleResources = [];
+
+				for (const res of resources.values()) {
+					if (!res.isTemplate && isResourceVisible(res, sessionId)) {
+						visibleResources.push({
+							uri: res.uri,
+							name: res.name,
+							description: res.description,
+							mimeType: res.mimeType,
+						});
+					}
+				}
+
+				return { resources: visibleResources };
+			},
+		);
+
+		sdkServer.setRequestHandler(
+			ListResourceTemplatesRequestSchema,
+			(_request, extra) => {
+				const sessionId = extra.sessionId ?? "default";
+				const visibleTemplates = [];
+
+				for (const res of resources.values()) {
+					if (res.isTemplate && isResourceVisible(res, sessionId)) {
+						visibleTemplates.push({
+							uriTemplate: res.uri,
+							name: res.name,
+							description: res.description,
+							mimeType: res.mimeType,
+						});
+					}
+				}
+
+				return { resourceTemplates: visibleTemplates };
+			},
+		);
+
+		sdkServer.setRequestHandler(
+			ReadResourceRequestSchema,
+			async (request, extra) => {
+				const { uri } = request.params;
+				const res = findResource(uri);
+
+				if (!res) {
+					throw new Error(`Unknown resource: ${uri}`);
+				}
+
+				const sessionId = extra.sessionId ?? "default";
+
+				if (!isResourceVisible(res, sessionId)) {
+					throw new Error(`Resource not available: ${uri}`);
+				}
+
+				const ctx: ResourceContext = {
+					uri,
+					session: createSessionAPI(sessionId),
+					sessionId,
+					roots: createRootsAccessor(sdkServer),
 				};
-			};
 
-			const chain = buildMiddlewareChain(
-				res.middlewares,
-				toolCtx,
-				finalHandler as unknown as () => Promise<CallToolResult>,
-			);
+				// Run middleware onCall chain using a ToolContext adapter
+				const toolCtx: ToolContext = {
+					toolName: res.uri,
+					session: ctx.session,
+					signal: extra.signal,
+					sessionId,
+					elicit: createElicit(sdkServer),
+					roots: createRootsAccessor(sdkServer),
+					sample: createSample(sdkServer),
+				};
 
-			return chain() as unknown as Promise<{
-				contents: Array<{
-					uri: string;
-					mimeType?: string;
-					text?: string;
-					blob?: string;
+				const finalHandler = async () => {
+					const content = await res.handler(uri, ctx);
+					return {
+						contents: [
+							{
+								uri,
+								mimeType: content.mimeType ?? res.mimeType,
+								...(content.text != null ? { text: content.text } : {}),
+								...(content.blob != null ? { blob: content.blob } : {}),
+							},
+						],
+					};
+				};
+
+				const chain = buildMiddlewareChain(
+					res.middlewares,
+					toolCtx,
+					finalHandler as unknown as () => Promise<CallToolResult>,
+				);
+
+				return chain() as unknown as Promise<{
+					contents: Array<{
+						uri: string;
+						mimeType?: string;
+						text?: string;
+						blob?: string;
+					}>;
 				}>;
-			}>;
-		},
-	);
+			},
+		);
+	}
+
+	setupHandlers(server);
 
 	// --- Public API ---
 
@@ -755,12 +781,104 @@ export function createMCPServer(info: {
 		await server.connect(transport);
 	}
 
+	// --- HTTP adapter ---
+
+	const serverCapabilities = {
+		tools: { listChanged: true },
+		resources: { listChanged: true },
+		tasks: { list: {}, cancel: {}, requests: { tools: { call: {} } } },
+	} as const;
+
+	function createServerWithHandlers(): Server {
+		const srv = new Server(info, {
+			capabilities: serverCapabilities,
+			taskStore,
+		});
+		setupHandlers(srv);
+		return srv;
+	}
+
+	function http(
+		options?: HttpAdapterOptions,
+	): (req: Request) => Promise<Response> {
+		// biome-ignore lint/suspicious/noExplicitAny: lazy-loaded transport class
+		let TransportCtor: any = null;
+
+		async function lazyImport() {
+			if (!TransportCtor) {
+				const mod = await import(
+					"@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
+				);
+				TransportCtor = mod.WebStandardStreamableHTTPServerTransport;
+			}
+			return TransportCtor;
+		}
+
+		// Sessionless: new server+transport per request
+		if (options?.sessionless) {
+			return async (req: Request): Promise<Response> => {
+				const T = await lazyImport();
+				const srv = createServerWithHandlers();
+				const transport = new T({
+					sessionIdGenerator: undefined,
+					enableJsonResponse: options?.enableJsonResponse,
+				});
+				await srv.connect(transport);
+				return transport.handleRequest(req);
+			};
+		}
+
+		// Stateful: per-session routing
+		// biome-ignore lint/suspicious/noExplicitAny: transport type from lazy import
+		const httpSessions = new Map<string, { server: Server; transport: any }>();
+
+		return async (req: Request): Promise<Response> => {
+			const T = await lazyImport();
+			const sessionId = req.headers.get("mcp-session-id");
+
+			// Route to existing session
+			if (sessionId) {
+				const session = httpSessions.get(sessionId);
+				if (session) return session.transport.handleRequest(req);
+				return new Response(
+					JSON.stringify({
+						jsonrpc: "2.0",
+						error: { code: -32000, message: "Session not found" },
+					}),
+					{
+						status: 404,
+						headers: { "Content-Type": "application/json" },
+					},
+				);
+			}
+
+			// New session
+			const srv = createServerWithHandlers();
+			const transport = new T({
+				sessionIdGenerator:
+					options?.sessionIdGenerator ?? (() => crypto.randomUUID()),
+				enableJsonResponse: options?.enableJsonResponse,
+				onsessioninitialized: (sid: string) => {
+					httpSessions.set(sid, { server: srv, transport });
+					serverBySession.set(sid, srv);
+				},
+				onsessionclosed: (sid: string) => {
+					httpSessions.delete(sid);
+					serverBySession.delete(sid);
+				},
+			});
+			await srv.connect(transport);
+			return transport.handleRequest(req);
+		};
+	}
+
 	return {
 		use,
 		tool: tool as MCPServer["tool"],
 		resource: resource as MCPServer["resource"],
 		task: task as MCPServer["task"],
 		stdio,
+		http,
 		connect,
 		/** @internal Exposed for testing. */
 		_server: server,

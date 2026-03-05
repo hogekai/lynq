@@ -1,5 +1,6 @@
 export { createMCPServer } from "./core.js";
 export type {
+	HttpAdapterOptions,
 	Elicit,
 	ElicitFormParams,
 	ElicitFormResult,
