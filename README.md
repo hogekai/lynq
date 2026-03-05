@@ -1,5 +1,8 @@
 # lynq
 
+[![CI](https://github.com/hogekai/lynq/actions/workflows/ci.yml/badge.svg)](https://github.com/hogekai/lynq/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/lynq)](https://www.npmjs.com/package/lynq)
+
 Lightweight MCP server framework. Tool visibility control through middleware.
 
 ```ts

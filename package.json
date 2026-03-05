@@ -39,7 +39,8 @@
 		"test:watch": "vitest",
 		"lint": "biome check src tests",
 		"lint:fix": "biome check --write src tests",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"prepublishOnly": "pnpm build"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.0",
@@ -69,6 +70,25 @@
 			"optional": true
 		}
 	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"keywords": [
+		"mcp",
+		"model-context-protocol",
+		"framework",
+		"middleware",
+		"ai",
+		"agent"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/hogekai/lynq"
+	},
+	"bugs": {
+		"url": "https://github.com/hogekai/lynq/issues"
+	},
+	"homepage": "https://github.com/hogekai/lynq#readme",
 	"license": "MIT",
 	"engines": {
 		"node": ">=18"
