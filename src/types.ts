@@ -1,4 +1,8 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type {
+	CallToolResult,
+	CreateMessageRequestParamsBase,
+	CreateMessageResult,
+} from "@modelcontextprotocol/sdk/types.js";
 import type { z } from "zod";
 
 // === Server Info ===
@@ -65,6 +69,27 @@ export interface Elicit {
 	url(params: ElicitUrlParams): Promise<ElicitUrlResult>;
 }
 
+// === Sampling ===
+
+export interface SampleOptions {
+	maxTokens?: number;
+	/** Model hint — the client makes the final decision. */
+	model?: string;
+	system?: string;
+	temperature?: number;
+	stopSequences?: string[];
+}
+
+export type SampleRawParams = CreateMessageRequestParamsBase;
+export type SampleRawResult = CreateMessageResult;
+
+export interface Sample {
+	/** Send text, get text back. */
+	(prompt: string, options?: SampleOptions): Promise<string>;
+	/** Full SDK createMessage params and result. */
+	raw(params: SampleRawParams): Promise<SampleRawResult>;
+}
+
 export interface RootInfo {
 	/** The root URI. Currently always `file://`. */
 	uri: string;
@@ -87,6 +112,8 @@ export interface ToolContext {
 	elicit: Elicit;
 	/** Query client-provided filesystem roots. */
 	roots: () => Promise<RootInfo[]>;
+	/** Request LLM inference from the client. */
+	sample: Sample;
 }
 
 // === Middleware ===

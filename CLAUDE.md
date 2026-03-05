@@ -24,6 +24,7 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **`@experimental` marks unstable APIs.** `server.task()` depends on the MCP SDK's experimental Tasks API. User-facing interface is stable; internal SDK wiring may change.
 - **ctx follows Hono's Context pattern.** `ctx.session.set()` / `ctx.session.get()`.
 - **`ctx.roots()` queries client-provided filesystem roots.** Returns `Promise<RootInfo[]>`. Empty array if client lacks roots capability. No caching — each call queries the client.
+- **`ctx.sample()` requests LLM inference from the client.** `ctx.sample(prompt, options?)` → `Promise<string>`. `ctx.sample.raw(sdkParams)` → `Promise<CreateMessageResult>`. Available in tool and task handlers. Not in resource handlers.
 
 ## Out of scope
 
@@ -58,6 +59,7 @@ src/
 tests/
 ├── core.test.ts
 ├── resource.test.ts
+├── sampling.test.ts
 ├── task.test.ts
 └── middleware/
     └── auth.test.ts

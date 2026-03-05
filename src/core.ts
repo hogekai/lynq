@@ -19,6 +19,8 @@ import type {
 	ResourceContext,
 	ResourceHandler,
 	RootInfo,
+	Sample,
+	SampleOptions,
 	Session,
 	TaskConfig,
 	TaskContext,
@@ -32,7 +34,11 @@ import type {
 } from "./types.js";
 
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type {
+	CallToolResult,
+	CreateMessageRequestParamsBase,
+	CreateMessageResult,
+} from "@modelcontextprotocol/sdk/types.js";
 
 // === Internal Types ===
 
@@ -335,6 +341,38 @@ export function createMCPServer(info: {
 		};
 	}
 
+	function createSample(): Sample {
+		async function sample(
+			prompt: string,
+			options?: SampleOptions,
+		): Promise<string> {
+			const params: CreateMessageRequestParamsBase = {
+				messages: [{ role: "user", content: { type: "text", text: prompt } }],
+				maxTokens: options?.maxTokens ?? 1024,
+			};
+			if (options?.model !== undefined)
+				params.modelPreferences = { hints: [{ name: options.model }] };
+			if (options?.system !== undefined) params.systemPrompt = options.system;
+			if (options?.temperature !== undefined)
+				params.temperature = options.temperature;
+			if (options?.stopSequences !== undefined)
+				params.stopSequences = options.stopSequences;
+
+			const result = await server.createMessage(params);
+			const content = result.content;
+			if (content.type === "text") return content.text;
+			return "";
+		}
+
+		async function raw(
+			params: CreateMessageRequestParamsBase,
+		): Promise<CreateMessageResult> {
+			return server.createMessage(params);
+		}
+
+		return Object.assign(sample, { raw });
+	}
+
 	function buildMiddlewareChain(
 		middlewares: ToolMiddleware[],
 		ctx: ToolContext,
@@ -422,6 +460,7 @@ export function createMCPServer(info: {
 				sessionId,
 				elicit: createElicit(),
 				roots: createRootsAccessor(),
+				sample: createSample(),
 			};
 
 			const finalHandler = () => Promise.resolve(tool.handler(args ?? {}, ctx));
@@ -462,6 +501,7 @@ export function createMCPServer(info: {
 				sessionId,
 				elicit: createElicit(),
 				roots: createRootsAccessor(),
+				sample: createSample(),
 				task: taskControl,
 			};
 
@@ -568,6 +608,7 @@ export function createMCPServer(info: {
 				sessionId,
 				elicit: createElicit(),
 				roots: createRootsAccessor(),
+				sample: createSample(),
 			};
 
 			const finalHandler = async () => {

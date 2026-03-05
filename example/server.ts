@@ -186,4 +186,21 @@ server.tool(
 	},
 );
 
+// Hidden until authenticated — sampling example
+server.tool(
+	"ask_model",
+	auth(),
+	{
+		description: "Ask the client's LLM a question (demonstrates sampling)",
+		input: z.object({ question: z.string().describe("Question to ask") }),
+	},
+	async (args, ctx) => {
+		const answer = await ctx.sample(args.question, {
+			system: "You are a helpful assistant. Be concise.",
+			maxTokens: 256,
+		});
+		return { content: [{ type: "text", text: answer }] };
+	},
+);
+
 await server.stdio();
