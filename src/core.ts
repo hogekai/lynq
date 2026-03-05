@@ -13,6 +13,7 @@ import {
 	ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import type {
+	Elicit,
 	MCPServer,
 	ResourceConfig,
 	ResourceContext,
@@ -290,6 +291,34 @@ export function createMCPServer(info: {
 		};
 	}
 
+	function createElicit(): Elicit {
+		return {
+			async form({ message, schema }) {
+				const r = await server.elicitInput({
+					message,
+					// biome-ignore lint/suspicious/noExplicitAny: SDK's PrimitiveSchemaDefinition union is too narrow for our simplified schema type
+					requestedSchema: { type: "object", properties: schema as any },
+				});
+				return {
+					action: r.action,
+					content: (r.content ?? {}) as Record<
+						string,
+						string | number | boolean | string[]
+					>,
+				};
+			},
+			async url({ message, url }) {
+				const r = await server.elicitInput({
+					mode: "url",
+					message,
+					url,
+					elicitationId: crypto.randomUUID(),
+				});
+				return { action: r.action };
+			},
+		};
+	}
+
 	function buildMiddlewareChain(
 		middlewares: ToolMiddleware[],
 		ctx: ToolContext,
@@ -375,6 +404,7 @@ export function createMCPServer(info: {
 				session: createSessionAPI(sessionId),
 				signal: extra.signal,
 				sessionId,
+				elicit: createElicit(),
 			};
 
 			const finalHandler = () => Promise.resolve(tool.handler(args ?? {}, ctx));
@@ -413,6 +443,7 @@ export function createMCPServer(info: {
 				session: createSessionAPI(sessionId),
 				signal: extra.signal,
 				sessionId,
+				elicit: createElicit(),
 				task: taskControl,
 			};
 
@@ -516,6 +547,7 @@ export function createMCPServer(info: {
 				session: ctx.session,
 				signal: extra.signal,
 				sessionId,
+				elicit: createElicit(),
 			};
 
 			const finalHandler = async () => {

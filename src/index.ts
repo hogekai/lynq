@@ -1,5 +1,10 @@
 export { createMCPServer } from "./core.js";
 export type {
+	Elicit,
+	ElicitFormParams,
+	ElicitFormResult,
+	ElicitUrlParams,
+	ElicitUrlResult,
 	MCPServer,
 	ToolMiddleware,
 	ToolContext,

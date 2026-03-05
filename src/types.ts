@@ -29,6 +29,42 @@ export interface Session {
 	disableResources(...uris: string[]): void;
 }
 
+// === Elicitation ===
+
+export interface ElicitFormParams {
+	message: string;
+	schema: Record<
+		string,
+		{
+			type: "string" | "number" | "boolean";
+			description?: string;
+			enum?: string[];
+			default?: unknown;
+		}
+	>;
+}
+
+export interface ElicitFormResult {
+	action: "accept" | "decline" | "cancel";
+	content: Record<string, string | number | boolean | string[]>;
+}
+
+export interface ElicitUrlParams {
+	message: string;
+	url: string;
+}
+
+export interface ElicitUrlResult {
+	action: "accept" | "decline" | "cancel";
+}
+
+export interface Elicit {
+	/** Request structured data from the user via a form. */
+	form(params: ElicitFormParams): Promise<ElicitFormResult>;
+	/** Direct the user to an external URL. */
+	url(params: ElicitUrlParams): Promise<ElicitUrlResult>;
+}
+
 // === Context ===
 
 export interface ToolContext {
@@ -40,6 +76,8 @@ export interface ToolContext {
 	signal: AbortSignal;
 	/** Session ID. */
 	sessionId: string;
+	/** Request information from the user. */
+	elicit: Elicit;
 }
 
 // === Middleware ===

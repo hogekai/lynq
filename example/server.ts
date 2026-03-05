@@ -105,6 +105,43 @@ server.resource(
 	},
 );
 
+// Hidden until authenticated — elicitation example
+server.tool(
+	"configure",
+	auth(),
+	{
+		description: "Configure your preferences (demonstrates elicitation)",
+		input: z.object({}),
+	},
+	async (_args, ctx) => {
+		const result = await ctx.elicit.form({
+			message: "Set your preferences",
+			schema: {
+				theme: {
+					type: "string",
+					enum: ["light", "dark"],
+					description: "Color theme",
+				},
+				language: { type: "string", description: "Preferred language" },
+			},
+		});
+
+		if (result.action !== "accept") {
+			return { content: [{ type: "text", text: "Configuration cancelled." }] };
+		}
+
+		ctx.session.set("preferences", result.content);
+		return {
+			content: [
+				{
+					type: "text",
+					text: `Preferences saved: ${JSON.stringify(result.content)}`,
+				},
+			],
+		};
+	},
+);
+
 // Hidden until authenticated — async task example
 server.task(
 	"slow_analysis",
