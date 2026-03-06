@@ -4,3 +4,6 @@ temp/
 *.tsbuildinfo
 .serena/cache/
 .serena/memories/
+docs/api-reference/
+docs/.vitepress/cache/
+docs/.vitepress/dist/

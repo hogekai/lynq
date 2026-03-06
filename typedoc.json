@@ -1,0 +1,16 @@
+{
+	"$schema": "https://typedoc.org/schema.json",
+	"entryPoints": [
+		"src/index.ts",
+		"src/middleware/auth.ts",
+		"src/adapters/hono.ts",
+		"src/adapters/express.ts",
+		"src/test.ts"
+	],
+	"out": "docs/api-reference",
+	"plugin": ["typedoc-plugin-markdown"],
+	"excludePrivate": true,
+	"excludeInternal": true,
+	"readme": "none",
+	"entryFileName": "index"
+}
