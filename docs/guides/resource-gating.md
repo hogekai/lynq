@@ -5,19 +5,19 @@ Resources use the same middleware and visibility system as tools. Hidden resourc
 ## auth() on a Resource
 
 ```ts
-import { createMCPServer, text } from "@lynq/lynq";
+import { createMCPServer } from "@lynq/lynq";
 import { auth } from "@lynq/lynq/auth";
 
 const server = createMCPServer({ name: "docs", version: "1.0.0" });
 
-// Public resource — always visible
+// Public resource -- always visible
 server.resource(
   "config://public",
   { name: "Public Config" },
   async () => ({ text: '{"theme":"light"}' }),
 );
 
-// Protected resource — hidden until auth() is authorized
+// Protected resource -- hidden until auth() is authorized
 server.resource(
   "config://secrets",
   auth(),
@@ -38,7 +38,7 @@ server.tool(
     ctx.session.set("user", args.user);
     ctx.session.authorize("auth");
     // Both "admin-panel" tool and "config://secrets" resource appear
-    return text("Logged in");
+    return ctx.text("Logged in");
   },
 );
 
@@ -46,7 +46,7 @@ server.tool(
   "admin-panel",
   auth(),
   { description: "Admin operations" },
-  async () => text("Admin panel data"),
+  async (_args, ctx) => ctx.text("Admin panel data"),
 );
 ```
 
@@ -55,7 +55,7 @@ server.tool(
 Use `enableResources()` / `disableResources()` for fine-grained control independent of middleware authorization.
 
 ```ts
-import { text, type ToolMiddleware } from "@lynq/lynq";
+import { type ToolMiddleware } from "@lynq/lynq";
 
 function hidden(name: string): ToolMiddleware {
   return { name, onRegister: () => false };
@@ -80,7 +80,7 @@ server.tool(
   { description: "Unlock only the daily report" },
   async (_args, ctx) => {
     ctx.session.enableResources("report://daily");
-    return text("Daily report unlocked");
+    return ctx.text("Daily report unlocked");
   },
 );
 ```
@@ -101,3 +101,7 @@ server.resource(
   async () => ({ text: "{}" }),
 );
 ```
+
+:::tip Under the hood
+Resources use the same internal visibility map as tools. `authorize("auth")` fires both `notifications/tools/list_changed` and `notifications/resources/list_changed`. `enableResources()` / `disableResources()` set per-session overrides for specific resource URIs. The reason `server.use()` doesn't apply to resources is by design -- resources have different access patterns and lifecycles than tools.
+:::

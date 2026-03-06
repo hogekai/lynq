@@ -9,17 +9,52 @@ export default defineConfig({
 
 	themeConfig: {
 		nav: [
-			{ text: "Guide", link: "/getting-started" },
-			{ text: "Middleware", link: "/middleware/auth" },
+			{ text: "Getting Started", link: "/getting-started/quick-start" },
+			{ text: "Concepts", link: "/concepts/middleware" },
 			{ text: "API", link: "/api-reference/" },
 		],
 
 		sidebar: [
 			{
-				text: "Guide",
+				text: "Getting Started",
 				items: [
-					{ text: "Getting Started", link: "/getting-started" },
+					{ text: "MCP Overview", link: "/getting-started/mcp-overview" },
+					{ text: "Quick Start", link: "/getting-started/quick-start" },
+					{ text: "With Hono", link: "/getting-started/with-hono" },
+					{ text: "With Express", link: "/getting-started/with-express" },
+					{ text: "Claude Code", link: "/getting-started/claude-code" },
 					{ text: "Why lynq", link: "/why-lynq" },
+				],
+			},
+			{
+				text: "Concepts",
+				items: [
+					{ text: "Middleware", link: "/concepts/middleware" },
+					{
+						text: "Session & Visibility",
+						link: "/concepts/session-and-visibility",
+					},
+					{ text: "Elicitation", link: "/concepts/elicitation" },
+					{ text: "Sampling", link: "/concepts/sampling" },
+					{ text: "Tasks", link: "/concepts/tasks" },
+					{ text: "Transports", link: "/concepts/transports" },
+				],
+			},
+			{
+				text: "Guides",
+				items: [
+					{ text: "Auth Flow", link: "/guides/auth-flow" },
+					{ text: "Dynamic Tools", link: "/guides/dynamic-tools" },
+					{ text: "Resource Gating", link: "/guides/resource-gating" },
+					{
+						text: "Custom Middleware",
+						link: "/guides/custom-middleware",
+					},
+					{
+						text: "Middleware Recipes",
+						link: "/guides/middleware-recipes",
+					},
+					{ text: "Testing", link: "/guides/testing" },
 				],
 			},
 			{
@@ -27,35 +62,6 @@ export default defineConfig({
 				items: [
 					{ text: "Overview", link: "/api/overview" },
 					{ text: "Reference", link: "/api-reference/" },
-				],
-			},
-			{
-				text: "Middleware",
-				items: [
-					{ text: "auth()", link: "/middleware/auth" },
-					{ text: "Custom Middleware", link: "/middleware/custom" },
-					{ text: "Recipes", link: "/middleware/recipes" },
-				],
-			},
-			{
-				text: "Adapters",
-				items: [
-					{ text: "stdio", link: "/adapters/stdio" },
-					{ text: "HTTP", link: "/adapters/http" },
-					{ text: "Hono", link: "/adapters/hono" },
-					{ text: "Express", link: "/adapters/express" },
-				],
-			},
-			{
-				text: "Patterns",
-				items: [
-					{ text: "Auth Flow", link: "/patterns/auth-flow" },
-					{ text: "Dynamic Tools", link: "/patterns/dynamic-tools" },
-					{
-						text: "Resource Gating",
-						link: "/patterns/resource-gating",
-					},
-					{ text: "Testing", link: "/patterns/testing" },
 				],
 			},
 		],

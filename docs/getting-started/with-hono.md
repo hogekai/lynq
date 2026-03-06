@@ -1,18 +1,18 @@
-# Hono Adapter
+# With Hono
 
-The Hono adapter mounts your MCP server onto a Hono app with DNS rebinding protection included by default.
+Deploy your MCP server over HTTP using Hono.
 
 ## Install
 
-```bash
-npm install hono
+```sh
+npm install @lynq/lynq @modelcontextprotocol/sdk zod hono
 ```
 
 ## Usage
 
 ```ts
 import { Hono } from "hono";
-import { createMCPServer, text } from "@lynq/lynq";
+import { createMCPServer } from "@lynq/lynq";
 import { mountLynq } from "@lynq/lynq/hono";
 import { z } from "zod";
 
@@ -24,7 +24,7 @@ server.tool(
     description: "Add two numbers",
     input: z.object({ a: z.number(), b: z.number() }),
   },
-  (args) => text(String(args.a + args.b)),
+  (args, ctx) => ctx.text(String(args.a + args.b)),
 );
 
 const app = new Hono();
@@ -33,9 +33,11 @@ mountLynq(app, server);
 export default app;
 ```
 
-## DNS Rebinding Protection
+The MCP endpoint is mounted at `/mcp` by default.
 
-`mountLynq` validates the `Host` header against a list of allowed hostnames. This is enabled by default and blocks requests from unexpected origins, preventing DNS rebinding attacks on localhost servers. Allowed hosts default to `["localhost", "127.0.0.1", "::1"]`.
+:::tip Under the hood
+`mountLynq` calls `server.http()` internally to get a Web Standard `(req: Request) => Promise<Response>` handler, then wires it into Hono's routing. DNS rebinding protection is included by default -- the `Host` header is validated against allowed hostnames to prevent attacks on localhost servers.
+:::
 
 ## Options
 
@@ -74,3 +76,8 @@ mountLynq(app, server);
 
 export default app;
 ```
+
+## Next Steps
+
+- [Transports](/concepts/transports) -- stateful vs sessionless, runtime examples
+- [Claude Code](/getting-started/claude-code) -- connect Claude Code to your HTTP server

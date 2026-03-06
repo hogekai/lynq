@@ -1,6 +1,6 @@
 # Testing
 
-MCP server testing is painful — transport wiring, SDK client setup, content extraction boilerplate. `@lynq/lynq/test` reduces it to a few lines.
+MCP server testing is painful -- transport wiring, SDK client setup, content extraction boilerplate. `@lynq/lynq/test` reduces it to a few lines.
 
 ## Before / After
 
@@ -30,7 +30,7 @@ const text = await t.callToolText("ping");
 
 ```ts
 import { describe, expect, it, afterEach } from "vitest";
-import { createMCPServer, text, error } from "@lynq/lynq";
+import { createMCPServer } from "@lynq/lynq";
 import { createTestClient, matchers } from "@lynq/lynq/test";
 
 expect.extend(matchers);
@@ -49,8 +49,8 @@ import { auth } from "@lynq/lynq/auth";
 
 it("auth-guarded tools are hidden then revealed", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("public", {}, async () => text("ok"));
-  server.tool("secret", auth(), {}, async () => text("classified"));
+  server.tool("public", {}, async (_args, ctx) => ctx.text("ok"));
+  server.tool("secret", auth(), {}, async (_args, ctx) => ctx.text("classified"));
 
   t = await createTestClient(server);
 
@@ -78,7 +78,7 @@ it("callTool returns the full result", async () => {
   server.tool(
     "greet",
     { input: z.object({ name: z.string() }) },
-    async (args) => text(`Hello ${args.name}`),
+    async (args, ctx) => ctx.text(`Hello ${args.name}`),
   );
 
   t = await createTestClient(server);
@@ -88,8 +88,8 @@ it("callTool returns the full result", async () => {
 
 it("callToolText extracts text and throws on errors", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("echo", {}, async () => text("hello"));
-  server.tool("fail", {}, async () => error("something broke"));
+  server.tool("echo", {}, async (_args, ctx) => ctx.text("hello"));
+  server.tool("fail", {}, async (_args, ctx) => ctx.error("something broke"));
 
   t = await createTestClient(server);
   expect(await t.callToolText("echo")).toBe("hello");
@@ -117,8 +117,8 @@ it("lists and reads resources", async () => {
   const templates = await t.listResourceTemplates();
   expect(templates).toContain("file:///{path}");
 
-  const text = await t.readResource("config://settings");
-  expect(text).toBe('{"theme":"dark"}');
+  const content = await t.readResource("config://settings");
+  expect(content).toBe('{"theme":"dark"}');
 });
 ```
 
@@ -133,7 +133,7 @@ expect.extend(matchers);
 
 it("toHaveTextContent checks for substring", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("weather", {}, async () => text("sunny in Tokyo"));
+  server.tool("weather", {}, async (_args, ctx) => ctx.text("sunny in Tokyo"));
 
   t = await createTestClient(server);
   const result = await t.callTool("weather");
@@ -142,7 +142,7 @@ it("toHaveTextContent checks for substring", async () => {
 
 it("toBeError checks isError flag", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("fail", {}, async () => error("denied"));
+  server.tool("fail", {}, async (_args, ctx) => ctx.error("denied"));
 
   t = await createTestClient(server);
   const result = await t.callTool("fail");
@@ -159,6 +159,10 @@ afterEach(async () => {
   await t?.close();
 });
 ```
+
+:::tip Under the hood
+`createTestClient()` uses the MCP SDK's `InMemoryTransport.createLinkedPair()` to create a bidirectional in-memory channel. It connects a real `Client` to your server's internal `_server`. The `authorize()`/`revoke()` methods on the test client directly manipulate session state, simulating what `ctx.session.authorize()` does in production -- without needing a real transport or network.
+:::
 
 ## TestClient API Reference
 

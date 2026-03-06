@@ -2,12 +2,12 @@
 
 Three patterns for controlling tool visibility at runtime beyond simple auth gating.
 
-## 1. Onboarding — Sequential Steps
+## 1. Onboarding -- Sequential Steps
 
 Problem: A wizard flow where step 2 only appears after step 1 completes.
 
 ```ts
-import { createMCPServer, text, type ToolMiddleware } from "@lynq/lynq";
+import { createMCPServer, type ToolMiddleware } from "@lynq/lynq";
 
 function step(name: string): ToolMiddleware {
   return {
@@ -24,7 +24,7 @@ server.tool(
   async (args, ctx) => {
     ctx.session.set("name", args.name);
     ctx.session.enableTools("step2_choose_plan");
-    return text(`Name set to ${args.name}`);
+    return ctx.text(`Name set to ${args.name}`);
   },
 );
 
@@ -35,7 +35,7 @@ server.tool(
   async (args, ctx) => {
     ctx.session.set("plan", args.plan);
     ctx.session.enableTools("step3_confirm");
-    return text(`Plan: ${args.plan}`);
+    return ctx.text(`Plan: ${args.plan}`);
   },
 );
 
@@ -46,17 +46,17 @@ server.tool(
   async (_args, ctx) => {
     const name = ctx.session.get("name");
     const plan = ctx.session.get("plan");
-    return text(`Welcome ${name} (${plan})!`);
+    return ctx.text(`Welcome ${name} (${plan})!`);
   },
 );
 ```
 
-## 2. Multi-Tenant — Plan-Based Access
+## 2. Multi-Tenant -- Plan-Based Access
 
 Problem: Free users see basic tools; premium users see everything.
 
 ```ts
-import { createMCPServer, text, type ToolMiddleware } from "@lynq/lynq";
+import { createMCPServer, type ToolMiddleware } from "@lynq/lynq";
 
 function premium(): ToolMiddleware {
   return { name: "premium", onRegister: () => false };
@@ -74,35 +74,35 @@ server.tool(
     if (user.plan === "premium") {
       ctx.session.authorize("premium");
     }
-    return text(`Welcome ${user.name}`);
+    return ctx.text(`Welcome ${user.name}`);
   },
 );
 
-server.tool("search", { description: "Basic search" }, async (args) =>
-  text(`Results for ${args.query}`),
+server.tool("search", { description: "Basic search" }, async (args, ctx) =>
+  ctx.text(`Results for ${args.query}`),
 );
 
 server.tool(
   "analytics",
   premium(),
   { description: "Advanced analytics (premium)" },
-  async () => text("Analytics data..."),
+  async (_args, ctx) => ctx.text("Analytics data..."),
 );
 
 server.tool(
   "export",
   premium(),
   { description: "Export to CSV (premium)" },
-  async () => text("Exported."),
+  async (_args, ctx) => ctx.text("Exported."),
 );
 ```
 
-## 3. Wizard — Result-Driven Branching
+## 3. Wizard -- Result-Driven Branching
 
 Problem: Tool A's output determines which tool appears next.
 
 ```ts
-import { createMCPServer, text, type ToolMiddleware } from "@lynq/lynq";
+import { createMCPServer, type ToolMiddleware } from "@lynq/lynq";
 
 function hidden(name: string): ToolMiddleware {
   return { name, onRegister: () => false };
@@ -122,7 +122,7 @@ server.tool(
       ctx.session.enableTools("configure_cloudflare");
     }
 
-    return text(`Target: ${args.target}`);
+    return ctx.text(`Target: ${args.target}`);
   },
 );
 
@@ -130,15 +130,19 @@ server.tool(
   "configure_aws",
   hidden("aws-config"),
   { description: "Configure AWS deployment" },
-  async (args) => text(`AWS region: ${args.region}`),
+  async (args, ctx) => ctx.text(`AWS region: ${args.region}`),
 );
 
 server.tool(
   "configure_cloudflare",
   hidden("cf-config"),
   { description: "Configure Cloudflare deployment" },
-  async (args) => text(`CF zone: ${args.zone}`),
+  async (args, ctx) => ctx.text(`CF zone: ${args.zone}`),
 );
 ```
 
-Key difference: `authorize(name)` reveals **all** tools guarded by that middleware. `enableTools(...names)` reveals **specific** tools by name. Use whichever fits your use case.
+:::tip Under the hood
+`enableTools()` sets an internal per-session visibility override. On the next `tools/list` request, lynq checks both middleware-based visibility (via `authorize`/`revoke`) and individual overrides (via `enableTools`/`disableTools`). Either mechanism can show or hide a tool independently. Every change triggers a `notifications/tools/list_changed` notification.
+:::
+
+Key difference: `authorize(name)` reveals **all** tools guarded by that middleware. `enableTools(...names)` reveals **specific** tools by name. Use whichever fits your use case. See [Session & Visibility](/concepts/session-and-visibility) for the full comparison.

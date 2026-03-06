@@ -1,4 +1,6 @@
-# Getting Started
+# Quick Start
+
+lynq is a framework for building [MCP](/getting-started/mcp-overview) servers with middleware and session-scoped tool visibility.
 
 ## Install
 
@@ -10,7 +12,7 @@ npm install @lynq/lynq @modelcontextprotocol/sdk zod
 
 ```ts
 // server.ts
-import { createMCPServer, text } from "@lynq/lynq";
+import { createMCPServer } from "@lynq/lynq";
 import { z } from "zod";
 
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });
@@ -21,7 +23,7 @@ server.tool(
     description: "Say hello",
     input: z.object({ name: z.string() }),
   },
-  async (args) => text(`Hello, ${args.name}!`),
+  async (args, ctx) => ctx.text(`Hello, ${args.name}!`),
 );
 
 await server.stdio();
@@ -37,7 +39,7 @@ That's it. One tool, stdio transport, zero config.
 
 ## Connect to Claude Desktop
 
-Add to your project's `.mcp.json`:
+Add to your Claude Desktop config (`claude_desktop_config.json`):
 
 ```json
 {
@@ -52,19 +54,22 @@ Add to your project's `.mcp.json`:
 
 Restart Claude Desktop. The `greet` tool appears in the tool list.
 
+:::tip Under the hood
+`server.stdio()` creates an `StdioServerTransport` from the MCP SDK and connects it to the internal server. The client spawns your process, then communicates over stdin/stdout using JSON-RPC. All MCP protocol negotiation (capabilities, initialization) is handled by the SDK.
+:::
+
 ## Add Auth-Protected Tools
 
-lynq's core feature is session-scoped tool visibility. Tools guarded by `auth()` are hidden until the session is authorized.
+lynq's core feature is session-scoped tool visibility. Tools guarded by middleware are hidden until the session is authorized. Here's an example using the built-in `auth()` sample middleware:
 
 ```ts
-// server.ts
-import { createMCPServer, text, error } from "@lynq/lynq";
+import { createMCPServer } from "@lynq/lynq";
 import { auth } from "@lynq/lynq/auth";
 import { z } from "zod";
 
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });
 
-// Always visible — the entry point
+// Always visible -- the entry point
 server.tool(
   "login",
   {
@@ -78,9 +83,9 @@ server.tool(
     if (args.username === "admin" && args.password === "1234") {
       ctx.session.set("user", { name: args.username });
       ctx.session.authorize("auth");
-      return text(`Welcome, ${args.username}.`);
+      return ctx.text(`Welcome, ${args.username}.`);
     }
-    return error("Invalid credentials.");
+    return ctx.error("Invalid credentials.");
   },
 );
 
@@ -92,15 +97,13 @@ server.tool(
     description: "Get current weather for a city",
     input: z.object({ city: z.string() }),
   },
-  async (args) => text(`${args.city}: 22C, Sunny`),
+  async (args, ctx) => ctx.text(`${args.city}: 22C, Sunny`),
 );
 
 await server.stdio();
 ```
 
-:::tip What's happening
-`auth()` returns a middleware named `"auth"` with `onRegister() { return false }` -- this hides the tool at registration time. When `ctx.session.authorize("auth")` runs, lynq sends a `tools/list_changed` notification to the client. The client re-fetches the tool list and sees `get_weather` appear.
-:::
+> `auth()` is a sample middleware that demonstrates the visibility pattern. For production use cases, write your own middleware tailored to your auth system -- see [Custom Middleware](/guides/custom-middleware).
 
 ## Verify Visibility
 
@@ -122,5 +125,6 @@ The client receives the notification automatically. No manual `sendToolListChang
 
 ## Next Steps
 
-- [Why lynq?](./why-lynq.md) -- design decisions and comparison
-- [API Overview](./api/overview.md) -- full API surface at a glance
+- [Middleware](/concepts/middleware) -- understand the middleware model
+- [Session & Visibility](/concepts/session-and-visibility) -- lynq's core concept
+- [With Hono](/getting-started/with-hono) -- deploy over HTTP
