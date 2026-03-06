@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
-import { text, error } from "../src/response.js";
+import { error, text } from "../src/response.js";
 
 const PROTOCOL_VERSION = "2025-03-26";
 
@@ -176,9 +176,7 @@ describe("server.http()", () => {
 
 	it("works in sessionless mode", async () => {
 		const server = createMCPServer({ name: "test", version: "1.0.0" });
-		server.tool("ping", { description: "Ping" }, async () =>
-			text("pong"),
-		);
+		server.tool("ping", { description: "Ping" }, async () => text("pong"));
 
 		const handler = server.http({
 			sessionless: true,

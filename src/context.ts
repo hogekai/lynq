@@ -4,7 +4,7 @@ import type {
 	CreateMessageResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import { inputToJsonSchema } from "./helpers.js";
-import { text, json, error, image } from "./response.js";
+import { error, image, json, text } from "./response.js";
 import type {
 	Elicit,
 	RootInfo,

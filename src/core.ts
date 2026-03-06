@@ -10,7 +10,6 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { createRootsAccessor, createToolContext } from "./context.js";
-import { error as errorResponse } from "./response.js";
 import {
 	buildMiddlewareChain,
 	buildTemplatePattern,
@@ -26,6 +25,7 @@ import type {
 	InternalTool,
 	SessionState,
 } from "./internal-types.js";
+import { error as errorResponse } from "./response.js";
 import type {
 	HttpAdapterOptions,
 	MCPServer,
@@ -227,7 +227,6 @@ export function createMCPServer(info: {
 				const { name, arguments: args } = request.params;
 				const sessionId = extra.sessionId ?? "default";
 
-
 				// Regular tool
 				const tool = tools.get(name);
 				if (tool) {
@@ -258,7 +257,8 @@ export function createMCPServer(info: {
 					if (!isTaskVisible(task, sessionId))
 						return errorResponse(`Tool not available: ${name}`);
 					const requestTaskStore = extra.taskStore;
-					if (!requestTaskStore) return errorResponse("Task store not available");
+					if (!requestTaskStore)
+						return errorResponse("Task store not available");
 
 					const createdTask = await requestTaskStore.createTask({
 						pollInterval: 1000,

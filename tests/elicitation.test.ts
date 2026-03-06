@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
-import { text, error } from "../src/response.js";
+import { error, text } from "../src/response.js";
 import type { ToolMiddleware } from "../src/types.js";
 
 function createTestServer() {
@@ -143,10 +143,7 @@ describe("elicitation — url mode", () => {
 			"login",
 			{ description: "Login", input: z.object({}) },
 			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.url(
-					"Auth",
-					"https://example.com",
-				);
+				const result = await ctx.elicit.url("Auth", "https://example.com");
 				return text(result.action);
 			},
 		);

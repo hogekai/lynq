@@ -2,7 +2,7 @@ import express from "express";
 import { describe, expect, it } from "vitest";
 import { mountLynq } from "../../src/adapters/express.js";
 import { createMCPServer } from "../../src/core.js";
-import { text, error } from "../../src/response.js";
+import { error, text } from "../../src/response.js";
 
 function createApp(options?: Parameters<typeof mountLynq>[2]) {
 	const server = createMCPServer({ name: "test", version: "1.0.0" });

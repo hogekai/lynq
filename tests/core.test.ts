@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
-import { text, error } from "../src/response.js";
+import { error, text } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
 import type { ToolMiddleware } from "../src/types.js";
 
@@ -51,10 +51,8 @@ describe("middleware", () => {
 			onRegister: () => false,
 		};
 		server.use(mw);
-		server.tool(
-			"hidden",
-			{ input: z.object({ name: z.string() }) },
-			async () => text("ok"),
+		server.tool("hidden", { input: z.object({ name: z.string() }) }, async () =>
+			text("ok"),
 		);
 		expect(server._isToolVisible("hidden", "default")).toBe(false);
 	});
@@ -71,10 +69,8 @@ describe("middleware", () => {
 			{ input: z.object({ name: z.string() }) },
 			async () => text("ok"),
 		);
-		server.tool(
-			"open",
-			{ input: z.object({ name: z.string() }) },
-			async () => text("ok"),
+		server.tool("open", { input: z.object({ name: z.string() }) }, async () =>
+			text("ok"),
 		);
 		expect(server._isToolVisible("guarded", "default")).toBe(false);
 		expect(server._isToolVisible("open", "default")).toBe(true);
@@ -217,15 +213,11 @@ describe("session", () => {
 
 	it("enableTools/disableTools control individual tool visibility", () => {
 		const server = createTestServer();
-		server.tool(
-			"tool-a",
-			{ input: z.object({ name: z.string() }) },
-			async () => text("ok"),
+		server.tool("tool-a", { input: z.object({ name: z.string() }) }, async () =>
+			text("ok"),
 		);
-		server.tool(
-			"tool-b",
-			{ input: z.object({ name: z.string() }) },
-			async () => text("ok"),
+		server.tool("tool-b", { input: z.object({ name: z.string() }) }, async () =>
+			text("ok"),
 		);
 
 		const session = server._createSessionAPI("s1");

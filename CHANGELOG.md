@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-06
+
+### Added
+
+- Response helpers: `text()`, `json()`, `error()`, `image()` as standalone pure functions
+- Chainable response builder via `response()` for composing multi-content results
+- Response helpers injected into ToolContext (`ctx.text`, `ctx.json`, `ctx.error`, `ctx.image`)
+- Docs restructured for framework-oriented navigation
+
 ## [0.2.0] - 2026-03-06
 
 ### Added

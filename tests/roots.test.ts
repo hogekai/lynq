@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
-import { text, error } from "../src/response.js";
+import { error, text } from "../src/response.js";
 
 function createTestServer() {
 	return createMCPServer({ name: "test", version: "1.0.0" }) as any;

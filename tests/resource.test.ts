@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
-import { text, error } from "../src/response.js";
+import { error, text } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
 import type { ToolMiddleware } from "../src/types.js";
 
