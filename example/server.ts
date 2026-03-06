@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
-import { text, error, json } from "../src/response.js";
 
 const server = createMCPServer({ name: "lynq-demo", version: "1.0.0" });
 
@@ -19,11 +18,11 @@ server.tool(
 		if (args.username === "admin" && args.password === "1234") {
 			ctx.session.set("user", { name: args.username });
 			ctx.session.authorize("auth");
-			return text(
+			return ctx.text(
 				`Welcome, ${args.username}. You now have access to weather and notes tools.`,
 			);
 		}
-		return error("Invalid credentials.");
+		return ctx.error("Invalid credentials.");
 	},
 );
 
@@ -37,13 +36,13 @@ server.tool(
 			city: z.string().describe("City name"),
 		}),
 	},
-	async (args) => {
+	async (args, ctx) => {
 		// Fake weather data
 		const conditions = ["Sunny", "Cloudy", "Rainy", "Snowy"];
 		const temp = Math.floor(Math.random() * 35) + 5;
 		const condition =
 			conditions[Math.floor(Math.random() * conditions.length)];
-		return text(`${args.city}: ${temp}°C, ${condition}`);
+		return ctx.text(`${args.city}: ${temp}°C, ${condition}`);
 	},
 );
 
@@ -64,7 +63,7 @@ server.tool(
 			[];
 		notes.push({ title: args.title, content: args.content });
 		ctx.session.set("notes", notes);
-		return text(`Saved note "${args.title}" (${notes.length} total).`);
+		return ctx.text(`Saved note "${args.title}" (${notes.length} total).`);
 	},
 );
 
@@ -102,11 +101,11 @@ server.tool(
 		);
 
 		if (result.action !== "accept") {
-			return text("Configuration cancelled.");
+			return ctx.text("Configuration cancelled.");
 		}
 
 		ctx.session.set("preferences", result.content);
-		return text(`Preferences saved: ${JSON.stringify(result.content)}`);
+		return ctx.text(`Preferences saved: ${JSON.stringify(result.content)}`);
 	},
 );
 
@@ -124,7 +123,7 @@ server.task(
 		ctx.task.progress(50, "Halfway...");
 		await new Promise((r) => setTimeout(r, 2000));
 		ctx.task.progress(100, "Complete");
-		return text(`Analysis result for: ${args.query}`);
+		return ctx.text(`Analysis result for: ${args.query}`);
 	},
 );
 
@@ -139,12 +138,12 @@ server.tool(
 	async (_args, ctx) => {
 		const roots = await ctx.roots();
 		if (roots.length === 0) {
-			return text("No roots provided by client");
+			return ctx.text("No roots provided by client");
 		}
 		const list = roots
 			.map((r) => `${r.name ?? "unnamed"}: ${r.uri}`)
 			.join("\n");
-		return text(`Available roots:\n${list}`);
+		return ctx.text(`Available roots:\n${list}`);
 	},
 );
 
@@ -161,7 +160,7 @@ server.tool(
 			system: "You are a helpful assistant. Be concise.",
 			maxTokens: 256,
 		});
-		return text(answer);
+		return ctx.text(answer);
 	},
 );
 
