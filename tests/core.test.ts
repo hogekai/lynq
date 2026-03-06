@@ -116,7 +116,7 @@ describe("middleware", () => {
 		const result = await t.callTool("test", { name: "world" });
 
 		expect(order).toEqual(["global", "per-tool", "handler"]);
-		expect(result).toEqual(text("ok"));
+		expect(result.content).toEqual(text("ok").content);
 
 		await t.close();
 	});
@@ -335,7 +335,7 @@ describe("onResult", () => {
 		const t = await createTestClient(server);
 		const result = await t.callTool("test");
 
-		expect(result).toEqual(text("modified"));
+		expect(result.content).toEqual(text("modified").content);
 
 		await t.close();
 	});
@@ -361,7 +361,7 @@ describe("onResult", () => {
 		const t = await createTestClient(server);
 		const result = await t.callTool("test");
 
-		expect(result).toEqual(text("blocked"));
+		expect(result.content).toEqual(text("blocked").content);
 		expect(resultCalled).not.toHaveBeenCalled();
 
 		await t.close();

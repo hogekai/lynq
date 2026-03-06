@@ -4,6 +4,7 @@ import type {
 	CreateMessageResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { z } from "zod";
+import type { ToolResponse } from "./response.js";
 
 // === Server Info ===
 
@@ -101,14 +102,14 @@ export interface ToolContext {
 	roots: () => Promise<RootInfo[]>;
 	/** Request LLM inference from the client. */
 	sample: Sample;
-	/** Create a text response. */
-	text(value: string): CallToolResult;
-	/** Create a JSON response. */
-	json(value: unknown): CallToolResult;
-	/** Create an error response. */
-	error(message: string): CallToolResult;
-	/** Create an image response. */
-	image(data: string, mimeType: string): CallToolResult;
+	/** Create a text response. Chainable. */
+	text(value: string): ToolResponse;
+	/** Create a JSON response. Chainable. */
+	json(value: unknown): ToolResponse;
+	/** Create an error response. Chainable. */
+	error(message: string): ToolResponse;
+	/** Create an image response. Chainable. */
+	image(data: string, mimeType: string): ToolResponse;
 }
 
 // === Middleware ===

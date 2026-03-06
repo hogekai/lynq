@@ -22,7 +22,7 @@ MCP is bidirectional -- servers can push tool list changes to clients at any tim
   The official `@modelcontextprotocol/sdk` already converts Zod schemas to JSON Schema via `toJsonSchemaCompat`. lynq calls it internally and never parses schemas itself. If the SDK improves its conversion, lynq gets the improvement for free.
 
 - **Design heritage.**
-  lynq follows the same philosophy as [vide](https://github.com/nicepkg/vide): defaults are minimal, extensions are explicit, nothing is implicit. `createMCPServer(info)` is the entire API surface -- no config files, no directory scanning, no magic. Middleware is opt-in per tool, not a global interceptor you have to fight.
+  lynq follows the same philosophy as [vide](https://github.com/hogekai/vide): defaults are minimal, extensions are explicit, nothing is implicit. `createMCPServer(info)` is the entire API surface -- no config files, no directory scanning, no magic. Middleware is opt-in per tool, not a global interceptor you have to fight.
 
 - **One runtime dependency.**
   `@modelcontextprotocol/sdk` as a peer dependency. Nothing else in core. Framework types (`hono`, `express`) are peer deps of their respective adapters. The dependency tree stays flat.

@@ -37,9 +37,9 @@ npx tsx server.ts
 
 That's it. One tool, stdio transport, zero config.
 
-## Connect to Claude Desktop
+## Connect to Claude Code
 
-Add to your Claude Desktop config (`claude_desktop_config.json`):
+Add to your Claude Code config (`claude_code_config.json`):
 
 ```json
 {
@@ -52,7 +52,7 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 }
 ```
 
-Restart Claude Desktop. The `greet` tool appears in the tool list.
+Restart Claude Code. The `greet` tool appears in the tool list.
 
 :::tip Under the hood
 `server.stdio()` creates an `StdioServerTransport` from the MCP SDK and connects it to the internal server. The client spawns your process, then communicates over stdin/stdout using JSON-RPC. All MCP protocol negotiation (capabilities, initialization) is handled by the SDK.
