@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
+import { text, error, json } from "../src/response.js";
 
 const server = createMCPServer({ name: "lynq-demo", version: "1.0.0" });
 
@@ -18,19 +19,11 @@ server.tool(
 		if (args.username === "admin" && args.password === "1234") {
 			ctx.session.set("user", { name: args.username });
 			ctx.session.authorize("auth");
-			return {
-				content: [
-					{
-						type: "text",
-						text: `Welcome, ${args.username}. You now have access to weather and notes tools.`,
-					},
-				],
-			};
+			return text(
+				`Welcome, ${args.username}. You now have access to weather and notes tools.`,
+			);
 		}
-		return {
-			content: [{ type: "text", text: "Invalid credentials." }],
-			isError: true,
-		};
+		return error("Invalid credentials.");
 	},
 );
 
@@ -50,14 +43,7 @@ server.tool(
 		const temp = Math.floor(Math.random() * 35) + 5;
 		const condition =
 			conditions[Math.floor(Math.random() * conditions.length)];
-		return {
-			content: [
-				{
-					type: "text",
-					text: `${args.city}: ${temp}°C, ${condition}`,
-				},
-			],
-		};
+		return text(`${args.city}: ${temp}°C, ${condition}`);
 	},
 );
 
@@ -78,14 +64,7 @@ server.tool(
 			[];
 		notes.push({ title: args.title, content: args.content });
 		ctx.session.set("notes", notes);
-		return {
-			content: [
-				{
-					type: "text",
-					text: `Saved note "${args.title}" (${notes.length} total).`,
-				},
-			],
-		};
+		return text(`Saved note "${args.title}" (${notes.length} total).`);
 	},
 );
 
@@ -114,31 +93,20 @@ server.tool(
 		input: z.object({}),
 	},
 	async (_args, ctx) => {
-		const result = await ctx.elicit.form({
-			message: "Set your preferences",
-			schema: {
-				theme: {
-					type: "string",
-					enum: ["light", "dark"],
-					description: "Color theme",
-				},
-				language: { type: "string", description: "Preferred language" },
-			},
-		});
+		const result = await ctx.elicit.form(
+			"Set your preferences",
+			z.object({
+				theme: z.enum(["light", "dark"]).describe("Color theme"),
+				language: z.string().describe("Preferred language"),
+			}),
+		);
 
 		if (result.action !== "accept") {
-			return { content: [{ type: "text", text: "Configuration cancelled." }] };
+			return text("Configuration cancelled.");
 		}
 
 		ctx.session.set("preferences", result.content);
-		return {
-			content: [
-				{
-					type: "text",
-					text: `Preferences saved: ${JSON.stringify(result.content)}`,
-				},
-			],
-		};
+		return text(`Preferences saved: ${JSON.stringify(result.content)}`);
 	},
 );
 
@@ -156,11 +124,7 @@ server.task(
 		ctx.task.progress(50, "Halfway...");
 		await new Promise((r) => setTimeout(r, 2000));
 		ctx.task.progress(100, "Complete");
-		return {
-			content: [
-				{ type: "text", text: `Analysis result for: ${args.query}` },
-			],
-		};
+		return text(`Analysis result for: ${args.query}`);
 	},
 );
 
@@ -175,14 +139,12 @@ server.tool(
 	async (_args, ctx) => {
 		const roots = await ctx.roots();
 		if (roots.length === 0) {
-			return {
-				content: [{ type: "text", text: "No roots provided by client" }],
-			};
+			return text("No roots provided by client");
 		}
 		const list = roots
 			.map((r) => `${r.name ?? "unnamed"}: ${r.uri}`)
 			.join("\n");
-		return { content: [{ type: "text", text: `Available roots:\n${list}` }] };
+		return text(`Available roots:\n${list}`);
 	},
 );
 
@@ -199,7 +161,7 @@ server.tool(
 			system: "You are a helpful assistant. Be concise.",
 			maxTokens: 256,
 		});
-		return { content: [{ type: "text", text: answer }] };
+		return text(answer);
 	},
 );
 

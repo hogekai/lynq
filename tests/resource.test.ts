@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
+import { text, error } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
 import type { ToolMiddleware } from "../src/types.js";
 
@@ -69,9 +70,9 @@ describe("resource visibility", () => {
 		const server = createTestServer();
 		const mw: ToolMiddleware = { name: "guard", onRegister: () => false };
 
-		server.tool("guarded-tool", mw, { description: "t" }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool("guarded-tool", mw, { description: "t" }, async () =>
+			text("ok"),
+		);
 		server.resource("data://guarded", mw, { name: "Guarded" }, async () => ({
 			text: "ok",
 		}));
@@ -90,9 +91,7 @@ describe("resource visibility", () => {
 		const server = createTestServer();
 		const mw: ToolMiddleware = { name: "auth", onRegister: () => false };
 
-		server.tool("t", mw, { description: "t" }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool("t", mw, { description: "t" }, async () => text("ok"));
 		server.resource("data://r", mw, { name: "R" }, async () => ({
 			text: "ok",
 		}));
@@ -127,9 +126,7 @@ describe("resource visibility", () => {
 		const mw: ToolMiddleware = { name: "global", onRegister: () => false };
 
 		server.use(mw);
-		server.tool("tool-a", { description: "t" }, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool("tool-a", { description: "t" }, async () => text("ok"));
 		server.resource("data://r", { name: "R" }, async () => ({ text: "ok" }));
 
 		// Tool is hidden by global middleware
@@ -208,8 +205,8 @@ describe("resources/read integration", () => {
 
 		const t = await createTestClient(server);
 
-		const text = await t.readResource("config://settings");
-		expect(text).toBe('{"theme":"dark"}');
+		const txt = await t.readResource("config://settings");
+		expect(txt).toBe('{"theme":"dark"}');
 
 		await t.close();
 	});
@@ -229,8 +226,8 @@ describe("resources/read integration", () => {
 
 		const t = await createTestClient(server);
 
-		const text = await t.readResource("file:///src/main.ts");
-		expect(text).toBe("content of file:///src/main.ts");
+		const txt = await t.readResource("file:///src/main.ts");
+		expect(txt).toBe("content of file:///src/main.ts");
 		expect(receivedUri).toBe("file:///src/main.ts");
 
 		await t.close();

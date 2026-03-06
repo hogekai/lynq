@@ -27,6 +27,8 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **`ctx.sample()` requests LLM inference from the client.** `ctx.sample(prompt, options?)` → `Promise<string>`. `ctx.sample.raw(sdkParams)` → `Promise<CreateMessageResult>`. Available in tool and task handlers. Not in resource handlers.
 - **`server.http(options?)` returns a Web Standard request handler.** `(req: Request) => Promise<Response>`. Mounts in Hono, Deno, Cloudflare Workers — any framework. Lazy-imports `WebStandardStreamableHTTPServerTransport` from the SDK. Stateful mode (default): per-session Server+Transport, session IDs via `Mcp-Session-Id` header. Sessionless mode: new Server+Transport per request. `enableJsonResponse` option returns JSON instead of SSE.
 - **`onResult` hook for post-handler result transformation.** `ToolMiddleware.onResult?(result, ctx)` runs after the handler returns. Execution order: `onCall` chain → handler → `onResult` (reverse middleware order) → `onCall` post-next processing. If `onCall` short-circuits (doesn't call `next()`), `onResult` does not run.
+- **Response helpers are standalone pure functions.** `text(value)`, `json(value)`, `error(message)`, `image(data, mimeType)` — exported from `lynq`. No ctx dependency. Use everywhere instead of raw `{ content: [{ type: "text", text: ... }] }`.
+- **`ctx.elicit.form(message, zodSchema)` uses Zod for schemas.** Positional args, not property objects. Internally converts to JSON Schema via `inputToJsonSchema()`. `ctx.elicit.url(message, url)` — same positional pattern.
 - **Framework adapters are optional entry points.** `lynq/hono` and `lynq/express` provide `mountLynq(app, server, options?)`. DNS rebinding protection included by default for localhost. No additional runtime dependencies — framework types are peer deps.
 
 ## Out of scope
@@ -46,7 +48,7 @@ TypeScript strict · ESM · tsup · vitest · Biome · pnpm · VitePress · Type
 ## Structure
 
 Single package, multiple entry points via `exports` field:
-- `lynq` — core (`createMCPServer` + types)
+- `lynq` — core (`createMCPServer` + types + response helpers: `text()`, `json()`, `error()`, `image()`)
 - `lynq/auth` — auth middleware (`auth()`)
 - `lynq/stdio` — re-export of `StdioServerTransport`
 - `lynq/hono` — Hono adapter (`mountLynq`)
@@ -58,6 +60,7 @@ src/
 ├── index.ts          — public exports
 ├── types.ts          — all type definitions
 ├── core.ts           — createMCPServer + state management + request handlers
+├── response.ts       — response helpers (text, json, error, image)
 ├── test.ts           — test helpers (createTestClient, matchers)
 ├── helpers.ts        — pure functions (isVisible, buildMiddlewareChain, parseMiddlewareArgs, etc.)
 ├── context.ts        — ctx factories (createElicit, createRootsAccessor, createSample, createToolContext)

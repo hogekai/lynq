@@ -5,7 +5,7 @@ Resources use the same middleware and visibility system as tools. Hidden resourc
 ## auth() on a Resource
 
 ```ts
-import { createMCPServer } from "@lynq/lynq";
+import { createMCPServer, text } from "@lynq/lynq";
 import { auth } from "@lynq/lynq/auth";
 
 const server = createMCPServer({ name: "docs", version: "1.0.0" });
@@ -38,7 +38,7 @@ server.tool(
     ctx.session.set("user", args.user);
     ctx.session.authorize("auth");
     // Both "admin-panel" tool and "config://secrets" resource appear
-    return { content: [{ type: "text", text: "Logged in" }] };
+    return text("Logged in");
   },
 );
 
@@ -46,9 +46,7 @@ server.tool(
   "admin-panel",
   auth(),
   { description: "Admin operations" },
-  async () => ({
-    content: [{ type: "text", text: "Admin panel data" }],
-  }),
+  async () => text("Admin panel data"),
 );
 ```
 
@@ -57,7 +55,7 @@ server.tool(
 Use `enableResources()` / `disableResources()` for fine-grained control independent of middleware authorization.
 
 ```ts
-import type { ToolMiddleware } from "@lynq/lynq";
+import { text, type ToolMiddleware } from "@lynq/lynq";
 
 function hidden(name: string): ToolMiddleware {
   return { name, onRegister: () => false };
@@ -82,7 +80,7 @@ server.tool(
   { description: "Unlock only the daily report" },
   async (_args, ctx) => {
     ctx.session.enableResources("report://daily");
-    return { content: [{ type: "text", text: "Daily report unlocked" }] };
+    return text("Daily report unlocked");
   },
 );
 ```

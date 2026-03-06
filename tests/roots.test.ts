@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { text, error } from "../src/response.js";
 
 function createTestServer() {
 	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
@@ -48,9 +49,7 @@ describe("ctx.roots()", () => {
 			{ description: "Check", input: z.object({}) },
 			async (_args: any, ctx: any) => {
 				const roots = await ctx.roots();
-				return {
-					content: [{ type: "text", text: JSON.stringify(roots) }],
-				};
+				return text(JSON.stringify(roots));
 			},
 		);
 
@@ -76,9 +75,7 @@ describe("ctx.roots()", () => {
 			{ description: "Check", input: z.object({}) },
 			async (_args: any, ctx: any) => {
 				const roots = await ctx.roots();
-				return {
-					content: [{ type: "text", text: JSON.stringify(roots) }],
-				};
+				return text(JSON.stringify(roots));
 			},
 		);
 
@@ -96,9 +93,7 @@ describe("ctx.roots()", () => {
 			{ description: "Check", input: z.object({}) },
 			async (_args: any, ctx: any) => {
 				const roots = await ctx.roots();
-				return {
-					content: [{ type: "text", text: String(roots.length) }],
-				};
+				return text(String(roots.length));
 			},
 		);
 

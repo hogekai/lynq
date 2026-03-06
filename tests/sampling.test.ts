@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { text, error } from "../src/response.js";
 
 function createTestServer() {
 	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
@@ -47,8 +48,8 @@ describe("ctx.sample()", () => {
 			"test",
 			{ description: "Test", input: z.object({ prompt: z.string() }) },
 			async (args: any, ctx: any) => {
-				const text = await ctx.sample(args.prompt);
-				return { content: [{ type: "text", text }] };
+				const txt = await ctx.sample(args.prompt);
+				return text(txt);
 			},
 		);
 
@@ -84,7 +85,7 @@ describe("ctx.sample()", () => {
 					temperature: 0.7,
 					stopSequences: ["\n"],
 				});
-				return { content: [{ type: "text", text: "ok" }] };
+				return text("ok");
 			},
 		);
 
@@ -115,7 +116,7 @@ describe("ctx.sample()", () => {
 			{ description: "Test", input: z.object({}) },
 			async (_args: any, ctx: any) => {
 				await ctx.sample("prompt", { model: "claude-opus-4-6" });
-				return { content: [{ type: "text", text: "ok" }] };
+				return text("ok");
 			},
 		);
 
@@ -145,7 +146,7 @@ describe("ctx.sample()", () => {
 			{ description: "Test", input: z.object({}) },
 			async (_args: any, ctx: any) => {
 				await ctx.sample("prompt");
-				return { content: [{ type: "text", text: "ok" }] };
+				return text("ok");
 			},
 		);
 
@@ -170,8 +171,8 @@ describe("ctx.sample()", () => {
 			"test",
 			{ description: "Test", input: z.object({}) },
 			async (_args: any, ctx: any) => {
-				const text = await ctx.sample("prompt");
-				return { content: [{ type: "text", text }] };
+				const txt = await ctx.sample("prompt");
+				return text(txt);
 			},
 		);
 
@@ -201,18 +202,11 @@ describe("ctx.sample.raw()", () => {
 					],
 					maxTokens: 100,
 				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify({
-								model: result.model,
-								role: result.role,
-								contentType: result.content.type,
-							}),
-						},
-					],
-				};
+				return text(JSON.stringify({
+					model: result.model,
+					role: result.role,
+					contentType: result.content.type,
+				}));
 			},
 		);
 

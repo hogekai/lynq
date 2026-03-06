@@ -5,7 +5,7 @@ The stdio transport connects your MCP server over standard input/output. This is
 ## Usage
 
 ```ts
-import { createMCPServer } from "@lynq/lynq";
+import { createMCPServer, text } from "@lynq/lynq";
 import { z } from "zod";
 
 const server = createMCPServer({
@@ -19,9 +19,7 @@ server.tool(
     description: "Greet someone by name",
     input: z.object({ name: z.string() }),
   },
-  (args) => ({
-    content: [{ type: "text", text: `Hello, ${args.name}!` }],
-  }),
+  (args) => text(`Hello, ${args.name}!`),
 );
 
 server.stdio();

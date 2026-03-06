@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
+import { text, error } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
 
 function createTestServer() {
@@ -14,16 +15,16 @@ describe("task() registration", () => {
 		server.task(
 			"deploy",
 			{ description: "Deploy", input: z.object({ branch: z.string() }) },
-			async () => ({ content: [{ type: "text", text: "done" }] }),
+			async () => text("done"),
 		);
 		expect(server._isTaskVisible("deploy", "default")).toBe(true);
 	});
 
 	it("registers a task with middleware", () => {
 		const server = createTestServer();
-		server.task("deploy", auth(), { description: "Deploy" }, async () => ({
-			content: [{ type: "text", text: "done" }],
-		}));
+		server.task("deploy", auth(), { description: "Deploy" }, async () =>
+			text("done"),
+		);
 		expect(server._isTaskVisible("deploy", "default")).toBe(false);
 	});
 });
@@ -31,9 +32,9 @@ describe("task() registration", () => {
 describe("task visibility", () => {
 	it("auth() hides task until authorized", () => {
 		const server = createTestServer();
-		server.task("deploy", auth(), { description: "Deploy" }, async () => ({
-			content: [{ type: "text", text: "done" }],
-		}));
+		server.task("deploy", auth(), { description: "Deploy" }, async () =>
+			text("done"),
+		);
 
 		expect(server._isTaskVisible("deploy", "s1")).toBe(false);
 
@@ -46,9 +47,9 @@ describe("task visibility", () => {
 	it("global middleware applies to tasks", () => {
 		const server = createTestServer();
 		server.use(auth());
-		server.task("deploy", { description: "Deploy" }, async () => ({
-			content: [{ type: "text", text: "done" }],
-		}));
+		server.task("deploy", { description: "Deploy" }, async () =>
+			text("done"),
+		);
 
 		expect(server._isTaskVisible("deploy", "s1")).toBe(false);
 
@@ -60,9 +61,9 @@ describe("task visibility", () => {
 
 	it("disableTools hides task, enableTools reveals it", () => {
 		const server = createTestServer();
-		server.task("deploy", { description: "Deploy" }, async () => ({
-			content: [{ type: "text", text: "done" }],
-		}));
+		server.task("deploy", { description: "Deploy" }, async () =>
+			text("done"),
+		);
 
 		const session = server._createSessionAPI("s1");
 		expect(server._isTaskVisible("deploy", "s1")).toBe(true);
@@ -81,7 +82,7 @@ describe("task in tools/list", () => {
 		server.task(
 			"deploy",
 			{ description: "Deploy", input: z.object({ branch: z.string() }) },
-			async () => ({ content: [{ type: "text", text: "done" }] }),
+			async () => text("done"),
 		);
 
 		// Need raw client to inspect execution field on tool listing
@@ -109,9 +110,9 @@ describe("task in tools/list", () => {
 
 	it("hidden task does not appear in tools/list", async () => {
 		const server = createTestServer();
-		server.task("deploy", auth(), { description: "Deploy" }, async () => ({
-			content: [{ type: "text", text: "done" }],
-		}));
+		server.task("deploy", auth(), { description: "Deploy" }, async () =>
+			text("done"),
+		);
 
 		const t = await createTestClient(server);
 		const tools = await t.listTools();
@@ -121,12 +122,12 @@ describe("task in tools/list", () => {
 
 	it("coexists with regular tools", async () => {
 		const server = createTestServer();
-		server.tool("greet", { description: "Greet" }, async () => ({
-			content: [{ type: "text", text: "hi" }],
-		}));
-		server.task("deploy", { description: "Deploy" }, async () => ({
-			content: [{ type: "text", text: "done" }],
-		}));
+		server.tool("greet", { description: "Greet" }, async () =>
+			text("hi"),
+		);
+		server.task("deploy", { description: "Deploy" }, async () =>
+			text("done"),
+		);
 
 		const t = await createTestClient(server);
 		const tools = await t.listTools();
@@ -150,18 +151,16 @@ describe("task argument validation", () => {
 	it("throws if config is missing", () => {
 		const server = createTestServer();
 		expect(() =>
-			server.task("deploy", async () => ({
-				content: [{ type: "text", text: "done" }],
-			})),
+			server.task("deploy", async () => text("done")),
 		).toThrow("config object");
 	});
 
 	it("throws if middleware has no name", () => {
 		const server = createTestServer();
 		expect(() =>
-			server.task("deploy", {} as any, { description: "Deploy" }, async () => ({
-				content: [{ type: "text", text: "done" }],
-			})),
+			server.task("deploy", {} as any, { description: "Deploy" }, async () =>
+				text("done"),
+			),
 		).toThrow('"name" property');
 	});
 });

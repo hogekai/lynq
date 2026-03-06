@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { text, error } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
 import type { ToolMiddleware } from "../src/types.js";
 
@@ -23,9 +24,7 @@ describe("createMCPServer", () => {
 		server.tool(
 			"greet",
 			{ input: z.object({ name: z.string() }) },
-			async (args: any) => ({
-				content: [{ type: "text", text: `Hello ${args.name}` }],
-			}),
+			async (args: any) => text(`Hello ${args.name}`),
 		);
 		expect(server._isToolVisible("greet", "default")).toBe(true);
 	});
@@ -38,9 +37,7 @@ describe("createMCPServer", () => {
 				description: "Greet someone",
 				input: z.object({ name: z.string() }),
 			},
-			async (args: any) => ({
-				content: [{ type: "text", text: `Hello ${args.name}` }],
-			}),
+			async (args: any) => text(`Hello ${args.name}`),
 		);
 		expect(server._isToolVisible("greet", "default")).toBe(true);
 	});
@@ -57,9 +54,7 @@ describe("middleware", () => {
 		server.tool(
 			"hidden",
 			{ input: z.object({ name: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 		expect(server._isToolVisible("hidden", "default")).toBe(false);
 	});
@@ -74,16 +69,12 @@ describe("middleware", () => {
 			"guarded",
 			mw,
 			{ input: z.object({ name: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 		server.tool(
 			"open",
 			{ input: z.object({ name: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 		expect(server._isToolVisible("guarded", "default")).toBe(false);
 		expect(server._isToolVisible("open", "default")).toBe(true);
@@ -116,7 +107,7 @@ describe("middleware", () => {
 			{ input: z.object({ name: z.string() }) },
 			async () => {
 				order.push("handler");
-				return { content: [{ type: "text", text: "ok" }] };
+				return text("ok");
 			},
 		);
 
@@ -125,7 +116,7 @@ describe("middleware", () => {
 		const result = await t.callTool("test", { name: "world" });
 
 		expect(order).toEqual(["global", "per-tool", "handler"]);
-		expect(result.content).toEqual([{ type: "text", text: "ok" }]);
+		expect(result).toEqual(text("ok"));
 
 		await t.close();
 	});
@@ -142,9 +133,7 @@ describe("middleware", () => {
 			"spied",
 			mw,
 			{ input: z.object({ name: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 
 		// onRegister called once at registration
@@ -194,9 +183,7 @@ describe("session", () => {
 			"protected",
 			mw,
 			{ input: z.object({ name: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 
 		expect(server._isToolVisible("protected", "s1")).toBe(false);
@@ -217,9 +204,7 @@ describe("session", () => {
 			"protected",
 			mw,
 			{ input: z.object({ name: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 
 		const session = server._createSessionAPI("s1");
@@ -235,16 +220,12 @@ describe("session", () => {
 		server.tool(
 			"tool-a",
 			{ input: z.object({ name: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 		server.tool(
 			"tool-b",
 			{ input: z.object({ name: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 
 		const session = server._createSessionAPI("s1");
@@ -273,9 +254,7 @@ describe("tool() argument validation", () => {
 	it("throws when config is not a plain object", () => {
 		const server = createTestServer();
 		expect(() => {
-			server.tool("bad", "not-a-config", async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}));
+			server.tool("bad", "not-a-config", async () => text("ok"));
 		}).toThrow('tool("bad"): second-to-last argument must be a config object');
 	});
 
@@ -286,9 +265,7 @@ describe("tool() argument validation", () => {
 				"bad",
 				{ noName: true } as any,
 				{ input: z.object({ name: z.string() }) },
-				async () => ({
-					content: [{ type: "text", text: "ok" }],
-				}),
+				async () => text("ok"),
 			);
 		}).toThrow('tool("bad"): each middleware must have a "name" property');
 	});
@@ -325,7 +302,7 @@ describe("onResult", () => {
 
 		server.tool("test", mw1, mw2, {}, async () => {
 			order.push("handler");
-			return { content: [{ type: "text", text: "ok" }] };
+			return text("ok");
 		});
 
 		const t = await createTestClient(server);
@@ -348,22 +325,17 @@ describe("onResult", () => {
 
 		const truncateMw: ToolMiddleware = {
 			name: "truncate",
-			onResult(result) {
-				return {
-					...result,
-					content: [{ type: "text" as const, text: "modified" }],
-				};
+			onResult() {
+				return text("modified");
 			},
 		};
 
-		server.tool("test", truncateMw, {}, async () => ({
-			content: [{ type: "text", text: "original" }],
-		}));
+		server.tool("test", truncateMw, {}, async () => text("original"));
 
 		const t = await createTestClient(server);
 		const result = await t.callTool("test");
 
-		expect(result.content).toEqual([{ type: "text", text: "modified" }]);
+		expect(result).toEqual(text("modified"));
 
 		await t.close();
 	});
@@ -376,7 +348,7 @@ describe("onResult", () => {
 			name: "blocker",
 			async onCall() {
 				// Does not call next()
-				return { content: [{ type: "text", text: "blocked" }] };
+				return text("blocked");
 			},
 			onResult(result) {
 				resultCalled();
@@ -384,14 +356,12 @@ describe("onResult", () => {
 			},
 		};
 
-		server.tool("test", blockMw, {}, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool("test", blockMw, {}, async () => text("ok"));
 
 		const t = await createTestClient(server);
 		const result = await t.callTool("test");
 
-		expect(result.content).toEqual([{ type: "text", text: "blocked" }]);
+		expect(result).toEqual(text("blocked"));
 		expect(resultCalled).not.toHaveBeenCalled();
 
 		await t.close();
@@ -418,9 +388,7 @@ describe("onResult", () => {
 		};
 
 		server.use(globalMw);
-		server.tool("test", localMw, {}, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool("test", localMw, {}, async () => text("ok"));
 
 		const t = await createTestClient(server);
 		await t.callTool("test");
@@ -443,17 +411,13 @@ describe("tools/list integration", () => {
 		server.tool(
 			"public",
 			{ input: z.object({ query: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 		server.tool(
 			"private",
 			mw,
 			{ input: z.object({ query: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 
 		const t = await createTestClient(server);

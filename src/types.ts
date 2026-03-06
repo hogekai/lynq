@@ -35,27 +35,11 @@ export interface Session {
 
 // === Elicitation ===
 
-export interface ElicitFormParams {
-	message: string;
-	schema: Record<
-		string,
-		{
-			type: "string" | "number" | "boolean";
-			description?: string;
-			enum?: string[];
-			default?: unknown;
-		}
-	>;
-}
-
-export interface ElicitFormResult {
+export interface ElicitFormResult<
+	T = Record<string, string | number | boolean | string[]>,
+> {
 	action: "accept" | "decline" | "cancel";
-	content: Record<string, string | number | boolean | string[]>;
-}
-
-export interface ElicitUrlParams {
-	message: string;
-	url: string;
+	content: T;
 }
 
 export interface ElicitUrlResult {
@@ -64,9 +48,12 @@ export interface ElicitUrlResult {
 
 export interface Elicit {
 	/** Request structured data from the user via a form. */
-	form(params: ElicitFormParams): Promise<ElicitFormResult>;
+	form<T extends z.ZodObject<z.ZodRawShape>>(
+		message: string,
+		schema: T,
+	): Promise<ElicitFormResult<z.infer<T>>>;
 	/** Direct the user to an external URL. */
-	url(params: ElicitUrlParams): Promise<ElicitUrlResult>;
+	url(message: string, url: string): Promise<ElicitUrlResult>;
 }
 
 // === Sampling ===
@@ -114,6 +101,14 @@ export interface ToolContext {
 	roots: () => Promise<RootInfo[]>;
 	/** Request LLM inference from the client. */
 	sample: Sample;
+	/** Create a text response. */
+	text(value: string): CallToolResult;
+	/** Create a JSON response. */
+	json(value: unknown): CallToolResult;
+	/** Create an error response. */
+	error(message: string): CallToolResult;
+	/** Create an image response. */
+	image(data: string, mimeType: string): CallToolResult;
 }
 
 // === Middleware ===

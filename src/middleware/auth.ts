@@ -1,3 +1,4 @@
+import { error } from "../response.js";
 import type { ToolMiddleware } from "../types.js";
 
 export interface AuthOptions {
@@ -20,10 +21,7 @@ export function auth(options?: AuthOptions): ToolMiddleware {
 		async onCall(ctx, next) {
 			const value = ctx.session.get(sessionKey);
 			if (!value) {
-				return {
-					content: [{ type: "text", text: message }],
-					isError: true,
-				};
+				return error(message);
 			}
 			return next();
 		},

@@ -62,6 +62,8 @@ server.use(logger);
 ## onRegister: initial visibility
 
 ```ts
+import { error } from "@lynq/lynq";
+
 function adminOnly(): ToolMiddleware {
   return {
     name: "admin",
@@ -70,7 +72,7 @@ function adminOnly(): ToolMiddleware {
     },
     onCall(ctx, next) {
       if (!ctx.session.get("isAdmin")) {
-        return { content: [{ type: "text", text: "Admin only." }], isError: true };
+        return error("Admin only.");
       }
       return next();
     },

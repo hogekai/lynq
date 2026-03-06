@@ -12,7 +12,7 @@ npm install express
 
 ```ts
 import express from "express";
-import { createMCPServer } from "@lynq/lynq";
+import { createMCPServer, text } from "@lynq/lynq";
 import { mountLynq } from "@lynq/lynq/express";
 import { z } from "zod";
 
@@ -24,9 +24,7 @@ server.tool(
     description: "Add two numbers",
     input: z.object({ a: z.number(), b: z.number() }),
   },
-  (args) => ({
-    content: [{ type: "text", text: String(args.a + args.b) }],
-  }),
+  (args) => text(String(args.a + args.b)),
 );
 
 const app = express();

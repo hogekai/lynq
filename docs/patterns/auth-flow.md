@@ -23,7 +23,7 @@ sequenceDiagram
 ## Server Code
 
 ```ts
-import { createMCPServer } from "@lynq/lynq";
+import { createMCPServer, text, error } from "@lynq/lynq";
 import { auth } from "@lynq/lynq/auth";
 import { z } from "zod";
 
@@ -39,13 +39,13 @@ server.tool(
   async (args, ctx) => {
     // Your auth logic here
     if (args.user !== "admin" || args.pass !== "secret") {
-      return { content: [{ type: "text", text: "Invalid credentials" }], isError: true };
+      return error("Invalid credentials");
     }
 
     ctx.session.set("user", { name: args.user });
     ctx.session.authorize("auth");
 
-    return { content: [{ type: "text", text: "Logged in" }] };
+    return text("Logged in");
   },
 );
 
@@ -57,9 +57,7 @@ server.tool(
     description: "Get current weather",
     input: z.object({ city: z.string() }),
   },
-  async (args) => ({
-    content: [{ type: "text", text: `Sunny in ${args.city}` }],
-  }),
+  async (args) => text(`Sunny in ${args.city}`),
 );
 
 // Also hidden until auth() is authorized
@@ -69,7 +67,7 @@ server.tool(
   { description: "List saved notes" },
   async (_args, ctx) => {
     const user = ctx.session.get<{ name: string }>("user");
-    return { content: [{ type: "text", text: `Notes for ${user?.name}` }] };
+    return text(`Notes for ${user?.name}`);
   },
 );
 
@@ -93,7 +91,7 @@ server.tool(
   async (_args, ctx) => {
     ctx.session.set("user", undefined);
     ctx.session.revoke("auth");
-    return { content: [{ type: "text", text: "Logged out" }] };
+    return text("Logged out");
   },
 );
 ```

@@ -3,6 +3,7 @@ import type {
 	CreateMessageRequestParamsBase,
 	CreateMessageResult,
 } from "@modelcontextprotocol/sdk/types.js";
+import { inputToJsonSchema } from "./helpers.js";
 import type {
 	Elicit,
 	RootInfo,
@@ -14,21 +15,20 @@ import type {
 
 export function createElicit(sdkServer: Server): Elicit {
 	return {
-		async form({ message, schema }) {
+		async form(message, schema) {
+			const jsonSchema = inputToJsonSchema(schema);
 			const r = await sdkServer.elicitInput({
 				message,
-				// biome-ignore lint/suspicious/noExplicitAny: SDK's PrimitiveSchemaDefinition union is too narrow for our simplified schema type
-				requestedSchema: { type: "object", properties: schema as any },
+				// biome-ignore lint/suspicious/noExplicitAny: SDK's PrimitiveSchemaDefinition union is too narrow for converted JSON Schema
+				requestedSchema: jsonSchema as any,
 			});
 			return {
 				action: r.action,
-				content: (r.content ?? {}) as Record<
-					string,
-					string | number | boolean | string[]
-				>,
+				// biome-ignore lint/suspicious/noExplicitAny: content shape is inferred from Zod schema via generics
+				content: (r.content ?? {}) as any,
 			};
 		},
-		async url({ message, url }) {
+		async url(message, url) {
 			const r = await sdkServer.elicitInput({
 				mode: "url",
 				message,

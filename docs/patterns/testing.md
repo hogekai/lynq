@@ -30,7 +30,7 @@ const text = await t.callToolText("ping");
 
 ```ts
 import { describe, expect, it, afterEach } from "vitest";
-import { createMCPServer } from "@lynq/lynq";
+import { createMCPServer, text, error } from "@lynq/lynq";
 import { createTestClient, matchers } from "@lynq/lynq/test";
 
 expect.extend(matchers);
@@ -49,12 +49,8 @@ import { auth } from "@lynq/lynq/auth";
 
 it("auth-guarded tools are hidden then revealed", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("public", {}, async () => ({
-    content: [{ type: "text", text: "ok" }],
-  }));
-  server.tool("secret", auth(), {}, async () => ({
-    content: [{ type: "text", text: "classified" }],
-  }));
+  server.tool("public", {}, async () => text("ok"));
+  server.tool("secret", auth(), {}, async () => text("classified"));
 
   t = await createTestClient(server);
 
@@ -82,9 +78,7 @@ it("callTool returns the full result", async () => {
   server.tool(
     "greet",
     { input: z.object({ name: z.string() }) },
-    async (args) => ({
-      content: [{ type: "text", text: `Hello ${args.name}` }],
-    }),
+    async (args) => text(`Hello ${args.name}`),
   );
 
   t = await createTestClient(server);
@@ -94,13 +88,8 @@ it("callTool returns the full result", async () => {
 
 it("callToolText extracts text and throws on errors", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("echo", {}, async () => ({
-    content: [{ type: "text", text: "hello" }],
-  }));
-  server.tool("fail", {}, async () => ({
-    content: [{ type: "text", text: "something broke" }],
-    isError: true,
-  }));
+  server.tool("echo", {}, async () => text("hello"));
+  server.tool("fail", {}, async () => error("something broke"));
 
   t = await createTestClient(server);
   expect(await t.callToolText("echo")).toBe("hello");
@@ -144,9 +133,7 @@ expect.extend(matchers);
 
 it("toHaveTextContent checks for substring", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("weather", {}, async () => ({
-    content: [{ type: "text", text: "sunny in Tokyo" }],
-  }));
+  server.tool("weather", {}, async () => text("sunny in Tokyo"));
 
   t = await createTestClient(server);
   const result = await t.callTool("weather");
@@ -155,10 +142,7 @@ it("toHaveTextContent checks for substring", async () => {
 
 it("toBeError checks isError flag", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("fail", {}, async () => ({
-    content: [{ type: "text", text: "denied" }],
-    isError: true,
-  }));
+  server.tool("fail", {}, async () => error("denied"));
 
   t = await createTestClient(server);
   const result = await t.callTool("fail");

@@ -6,7 +6,7 @@
 Lightweight MCP server framework. Tool visibility control through middleware.
 
 ```ts
-import { createMCPServer } from "lynq";
+import { createMCPServer, text, error } from "lynq";
 import { auth } from "lynq/auth";
 import { z } from "zod";
 
@@ -19,7 +19,7 @@ server.tool("login", {
   const user = await authenticate(args.username, args.password);
   ctx.session.set("user", user);
   ctx.session.authorize("auth");
-  return { content: [{ type: "text", text: `Welcome, ${user.name}` }] };
+  return text(`Welcome, ${user.name}`);
 });
 
 // Weather tool — hidden until authenticated
@@ -28,7 +28,7 @@ server.tool("weather", auth(), {
   input: z.object({ city: z.string() }),
 }, async (args) => {
   const data = await fetchWeather(args.city);
-  return { content: [{ type: "text", text: JSON.stringify(data) }] };
+  return text(JSON.stringify(data));
 });
 
 await server.stdio();
@@ -62,15 +62,11 @@ Register a tool. Middlewares are optional, config holds `description` and `input
 server.tool("greet", {
   description: "Greet someone",
   input: z.object({ name: z.string() }),
-}, async (args) => ({
-  content: [{ type: "text", text: `Hello ${args.name}` }],
-}));
+}, async (args) => text(`Hello ${args.name}`));
 
 server.tool("secret", auth(), {
   input: z.object({ query: z.string() }),
-}, async (args) => ({
-  content: [{ type: "text", text: args.query }],
-}));
+}, async (args) => text(args.query));
 ```
 
 ### `server.resource(uri, ...middlewares?, config, handler)`
@@ -129,16 +125,14 @@ lynq ships a test helper that eliminates MCP boilerplate. No manual `Client`/`In
 
 ```ts
 import { createTestClient } from "lynq/test";
-import { createMCPServer } from "lynq";
+import { createMCPServer, text, error } from "lynq";
 import { auth } from "lynq/auth";
 import { z } from "zod";
 
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });
 server.tool("weather", auth(), {
   input: z.object({ city: z.string() }),
-}, async (args) => ({
-  content: [{ type: "text", text: `Sunny in ${args.city}` }],
-}));
+}, async (args) => text(`Sunny in ${args.city}`));
 
 const t = await createTestClient(server);
 

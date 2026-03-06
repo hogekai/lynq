@@ -10,6 +10,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { createRootsAccessor, createToolContext } from "./context.js";
+import { error as errorResponse } from "./response.js";
 import {
 	buildMiddlewareChain,
 	buildTemplatePattern,
@@ -226,16 +227,12 @@ export function createMCPServer(info: {
 				const { name, arguments: args } = request.params;
 				const sessionId = extra.sessionId ?? "default";
 
-				const toolErr = (msg: string) => ({
-					content: [{ type: "text" as const, text: msg }],
-					isError: true as const,
-				});
 
 				// Regular tool
 				const tool = tools.get(name);
 				if (tool) {
 					if (!isToolVisible(tool, sessionId))
-						return toolErr(`Tool not available: ${name}`);
+						return errorResponse(`Tool not available: ${name}`);
 
 					const ctx = createToolContext(
 						sdkServer,
@@ -259,9 +256,9 @@ export function createMCPServer(info: {
 				const task = tasks.get(name);
 				if (task) {
 					if (!isTaskVisible(task, sessionId))
-						return toolErr(`Tool not available: ${name}`);
+						return errorResponse(`Tool not available: ${name}`);
 					const requestTaskStore = extra.taskStore;
-					if (!requestTaskStore) return toolErr("Task store not available");
+					if (!requestTaskStore) return errorResponse("Task store not available");
 
 					const createdTask = await requestTaskStore.createTask({
 						pollInterval: 1000,
@@ -307,10 +304,7 @@ export function createMCPServer(info: {
 								if (!cancelledTaskIds.has(taskId)) {
 									const msg = err instanceof Error ? err.message : String(err);
 									await requestTaskStore
-										.storeTaskResult(taskId, "failed", {
-											content: [{ type: "text", text: msg }],
-											isError: true,
-										})
+										.storeTaskResult(taskId, "failed", errorResponse(msg))
 										.catch(() => {});
 								}
 							}
@@ -326,7 +320,7 @@ export function createMCPServer(info: {
 					return chain();
 				}
 
-				return toolErr(`Unknown tool: ${name}`);
+				return errorResponse(`Unknown tool: ${name}`);
 			},
 		);
 

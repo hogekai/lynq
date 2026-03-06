@@ -7,7 +7,7 @@ Three patterns for controlling tool visibility at runtime beyond simple auth gat
 Problem: A wizard flow where step 2 only appears after step 1 completes.
 
 ```ts
-import { createMCPServer, type ToolMiddleware } from "@lynq/lynq";
+import { createMCPServer, text, type ToolMiddleware } from "@lynq/lynq";
 
 function step(name: string): ToolMiddleware {
   return {
@@ -24,7 +24,7 @@ server.tool(
   async (args, ctx) => {
     ctx.session.set("name", args.name);
     ctx.session.enableTools("step2_choose_plan");
-    return { content: [{ type: "text", text: `Name set to ${args.name}` }] };
+    return text(`Name set to ${args.name}`);
   },
 );
 
@@ -35,7 +35,7 @@ server.tool(
   async (args, ctx) => {
     ctx.session.set("plan", args.plan);
     ctx.session.enableTools("step3_confirm");
-    return { content: [{ type: "text", text: `Plan: ${args.plan}` }] };
+    return text(`Plan: ${args.plan}`);
   },
 );
 
@@ -46,7 +46,7 @@ server.tool(
   async (_args, ctx) => {
     const name = ctx.session.get("name");
     const plan = ctx.session.get("plan");
-    return { content: [{ type: "text", text: `Welcome ${name} (${plan})!` }] };
+    return text(`Welcome ${name} (${plan})!`);
   },
 );
 ```
@@ -56,7 +56,7 @@ server.tool(
 Problem: Free users see basic tools; premium users see everything.
 
 ```ts
-import { createMCPServer, type ToolMiddleware } from "@lynq/lynq";
+import { createMCPServer, text, type ToolMiddleware } from "@lynq/lynq";
 
 function premium(): ToolMiddleware {
   return { name: "premium", onRegister: () => false };
@@ -74,30 +74,26 @@ server.tool(
     if (user.plan === "premium") {
       ctx.session.authorize("premium");
     }
-    return { content: [{ type: "text", text: `Welcome ${user.name}` }] };
+    return text(`Welcome ${user.name}`);
   },
 );
 
-server.tool("search", { description: "Basic search" }, async (args) => ({
-  content: [{ type: "text", text: `Results for ${args.query}` }],
-}));
+server.tool("search", { description: "Basic search" }, async (args) =>
+  text(`Results for ${args.query}`),
+);
 
 server.tool(
   "analytics",
   premium(),
   { description: "Advanced analytics (premium)" },
-  async () => ({
-    content: [{ type: "text", text: "Analytics data..." }],
-  }),
+  async () => text("Analytics data..."),
 );
 
 server.tool(
   "export",
   premium(),
   { description: "Export to CSV (premium)" },
-  async () => ({
-    content: [{ type: "text", text: "Exported." }],
-  }),
+  async () => text("Exported."),
 );
 ```
 
@@ -106,7 +102,7 @@ server.tool(
 Problem: Tool A's output determines which tool appears next.
 
 ```ts
-import { createMCPServer, type ToolMiddleware } from "@lynq/lynq";
+import { createMCPServer, text, type ToolMiddleware } from "@lynq/lynq";
 
 function hidden(name: string): ToolMiddleware {
   return { name, onRegister: () => false };
@@ -126,7 +122,7 @@ server.tool(
       ctx.session.enableTools("configure_cloudflare");
     }
 
-    return { content: [{ type: "text", text: `Target: ${args.target}` }] };
+    return text(`Target: ${args.target}`);
   },
 );
 
@@ -134,18 +130,14 @@ server.tool(
   "configure_aws",
   hidden("aws-config"),
   { description: "Configure AWS deployment" },
-  async (args) => ({
-    content: [{ type: "text", text: `AWS region: ${args.region}` }],
-  }),
+  async (args) => text(`AWS region: ${args.region}`),
 );
 
 server.tool(
   "configure_cloudflare",
   hidden("cf-config"),
   { description: "Configure Cloudflare deployment" },
-  async (args) => ({
-    content: [{ type: "text", text: `CF zone: ${args.zone}` }],
-  }),
+  async (args) => text(`CF zone: ${args.zone}`),
 );
 ```
 

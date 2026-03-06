@@ -2,12 +2,11 @@ import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { mountLynq } from "../../src/adapters/hono.js";
 import { createMCPServer } from "../../src/core.js";
+import { text, error } from "../../src/response.js";
 
 function createApp(options?: Parameters<typeof mountLynq>[2]) {
 	const server = createMCPServer({ name: "test", version: "1.0.0" });
-	server.tool("ping", {}, async () => ({
-		content: [{ type: "text", text: "pong" }],
-	}));
+	server.tool("ping", {}, async () => text("pong"));
 	const app = new Hono();
 	mountLynq(app, server, options);
 	return app;

@@ -10,7 +10,7 @@ npm install @lynq/lynq @modelcontextprotocol/sdk zod
 
 ```ts
 // server.ts
-import { createMCPServer } from "@lynq/lynq";
+import { createMCPServer, text } from "@lynq/lynq";
 import { z } from "zod";
 
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });
@@ -21,9 +21,7 @@ server.tool(
     description: "Say hello",
     input: z.object({ name: z.string() }),
   },
-  async (args) => ({
-    content: [{ type: "text", text: `Hello, ${args.name}!` }],
-  }),
+  async (args) => text(`Hello, ${args.name}!`),
 );
 
 await server.stdio();
@@ -60,7 +58,7 @@ lynq's core feature is session-scoped tool visibility. Tools guarded by `auth()`
 
 ```ts
 // server.ts
-import { createMCPServer } from "@lynq/lynq";
+import { createMCPServer, text, error } from "@lynq/lynq";
 import { auth } from "@lynq/lynq/auth";
 import { z } from "zod";
 
@@ -80,14 +78,9 @@ server.tool(
     if (args.username === "admin" && args.password === "1234") {
       ctx.session.set("user", { name: args.username });
       ctx.session.authorize("auth");
-      return {
-        content: [{ type: "text", text: `Welcome, ${args.username}.` }],
-      };
+      return text(`Welcome, ${args.username}.`);
     }
-    return {
-      content: [{ type: "text", text: "Invalid credentials." }],
-      isError: true,
-    };
+    return error("Invalid credentials.");
   },
 );
 
@@ -99,9 +92,7 @@ server.tool(
     description: "Get current weather for a city",
     input: z.object({ city: z.string() }),
   },
-  async (args) => ({
-    content: [{ type: "text", text: `${args.city}: 22C, Sunny` }],
-  }),
+  async (args) => text(`${args.city}: 22C, Sunny`),
 );
 
 await server.stdio();

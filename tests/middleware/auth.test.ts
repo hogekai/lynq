@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
 import { auth } from "../../src/middleware/auth.js";
+import { text, error } from "../../src/response.js";
 import { createTestClient } from "../../src/test.js";
 
 function createTestServer() {
@@ -15,9 +16,7 @@ describe("auth middleware", () => {
 			"secret",
 			auth(),
 			{ input: z.object({ query: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 
 		expect(server._isToolVisible("secret", "s1")).toBe(false);
@@ -29,9 +28,7 @@ describe("auth middleware", () => {
 			"secret",
 			auth(),
 			{ input: z.object({ query: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 
 		const session = server._createSessionAPI("s1");
@@ -46,9 +43,7 @@ describe("auth middleware", () => {
 			"secret",
 			auth(),
 			{ input: z.object({ query: z.string() }) },
-			async (args: any) => ({
-				content: [{ type: "text", text: `Result: ${args.query}` }],
-			}),
+			async (args: any) => text(`Result: ${args.query}`),
 		);
 
 		// Authorize the middleware so the tool is visible, but don't set user
@@ -73,16 +68,14 @@ describe("auth middleware", () => {
 			async (args: any, ctx: any) => {
 				ctx.session.set("user", { name: args.username });
 				ctx.session.authorize("auth");
-				return { content: [{ type: "text", text: "Logged in" }] };
+				return text("Logged in");
 			},
 		);
 		server.tool(
 			"secret",
 			auth(),
 			{ input: z.object({ query: z.string() }) },
-			async (args: any) => ({
-				content: [{ type: "text", text: `Secret: ${args.query}` }],
-			}),
+			async (args: any) => text(`Secret: ${args.query}`),
 		);
 
 		const t = await createTestClient(server);
@@ -108,9 +101,7 @@ describe("auth middleware", () => {
 			"api",
 			customAuth,
 			{ input: z.object({ query: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 
 		expect(server._isToolVisible("api", "s1")).toBe(false);
@@ -123,16 +114,12 @@ describe("auth middleware", () => {
 		server.tool(
 			"tool-a",
 			{ input: z.object({ query: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 		server.tool(
 			"tool-b",
 			{ input: z.object({ query: z.string() }) },
-			async () => ({
-				content: [{ type: "text", text: "ok" }],
-			}),
+			async () => text("ok"),
 		);
 
 		expect(server._isToolVisible("tool-a", "s1")).toBe(false);

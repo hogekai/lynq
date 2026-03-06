@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
+import { text, error } from "../src/response.js";
 
 const PROTOCOL_VERSION = "2025-03-26";
 
@@ -78,9 +79,7 @@ describe("server.http()", () => {
 				description: "Greet",
 				input: z.object({ name: z.string() }),
 			},
-			async (args) => ({
-				content: [{ type: "text" as const, text: `Hello ${args.name}` }],
-			}),
+			async (args) => text(`Hello ${args.name}`),
 		);
 
 		const handler = server.http({ enableJsonResponse: true });
@@ -105,9 +104,7 @@ describe("server.http()", () => {
 				description: "Greet",
 				input: z.object({ name: z.string() }),
 			},
-			async (args) => ({
-				content: [{ type: "text" as const, text: `Hello ${args.name}` }],
-			}),
+			async (args) => text(`Hello ${args.name}`),
 		);
 
 		const handler = server.http({ enableJsonResponse: true });
@@ -143,15 +140,13 @@ describe("server.http()", () => {
 			{ description: "Login", input: z.object({ user: z.string() }) },
 			async (args, ctx) => {
 				ctx.session.authorize("auth");
-				return {
-					content: [{ type: "text" as const, text: `Welcome ${args.user}` }],
-				};
+				return text(`Welcome ${args.user}`);
 			},
 		);
 
-		server.tool("secret", auth(), { description: "Secret tool" }, async () => ({
-			content: [{ type: "text" as const, text: "secret data" }],
-		}));
+		server.tool("secret", auth(), { description: "Secret tool" }, async () =>
+			text("secret data"),
+		);
 
 		const handler = server.http({ enableJsonResponse: true });
 
@@ -181,9 +176,9 @@ describe("server.http()", () => {
 
 	it("works in sessionless mode", async () => {
 		const server = createMCPServer({ name: "test", version: "1.0.0" });
-		server.tool("ping", { description: "Ping" }, async () => ({
-			content: [{ type: "text" as const, text: "pong" }],
-		}));
+		server.tool("ping", { description: "Ping" }, async () =>
+			text("pong"),
+		);
 
 		const handler = server.http({
 			sessionless: true,

@@ -33,7 +33,7 @@ server.tool("search", truncate(1000), config, handler);
 Session-scoped call limit per tool.
 
 ```ts
-import type { ToolMiddleware } from "@lynq/lynq";
+import { error, type ToolMiddleware } from "@lynq/lynq";
 
 function rateLimit(max: number): ToolMiddleware {
   return {
@@ -42,10 +42,7 @@ function rateLimit(max: number): ToolMiddleware {
       const key = `rateLimit:${ctx.toolName}`;
       const count = ctx.session.get<number>(key) ?? 0;
       if (count >= max) {
-        return {
-          content: [{ type: "text", text: `Rate limit exceeded (${max} calls).` }],
-          isError: true,
-        };
+        return error(`Rate limit exceeded (${max} calls).`);
       }
       ctx.session.set(key, count + 1);
       return next();
@@ -112,17 +109,14 @@ server.tool("weather", cache(30_000), config, handler);
 Guard tools that need specific session state before execution.
 
 ```ts
-import type { ToolMiddleware } from "@lynq/lynq";
+import { error, type ToolMiddleware } from "@lynq/lynq";
 
 function requireSession(key: string, message?: string): ToolMiddleware {
   return {
     name: "requireSession",
     onCall(ctx, next) {
       if (!ctx.session.get(key)) {
-        return {
-          content: [{ type: "text", text: message ?? `Missing required session key: ${key}` }],
-          isError: true,
-        };
+        return error(message ?? `Missing required session key: ${key}`);
       }
       return next();
     },

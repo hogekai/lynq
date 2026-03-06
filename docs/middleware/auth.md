@@ -5,13 +5,13 @@ Built-in middleware for session-scoped tool visibility. Tools start hidden and a
 ## Usage
 
 ```ts
-import { createMCPServer } from "@lynq/lynq";
+import { createMCPServer, text } from "@lynq/lynq";
 import { auth } from "@lynq/lynq/auth";
 
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });
 
 server.tool("secret", auth(), { description: "Protected tool" }, (args, ctx) => {
-  return { content: [{ type: "text", text: "secret data" }] };
+  return text("secret data");
 });
 ```
 
@@ -42,7 +42,7 @@ auth({ sessionKey: "apiKey", message: "API key required." })
 A login tool that authenticates the session, and a protected tool that becomes visible after login.
 
 ```ts
-import { createMCPServer } from "@lynq/lynq";
+import { createMCPServer, text, error } from "@lynq/lynq";
 import { auth } from "@lynq/lynq/auth";
 import { z } from "zod";
 
@@ -61,9 +61,9 @@ server.tool(
       ctx.session.set("user", { username: args.username });
       // Reveal all auth()-guarded tools for this session
       ctx.session.authorize("auth");
-      return { content: [{ type: "text", text: "Logged in." }] };
+      return text("Logged in.");
     }
-    return { content: [{ type: "text", text: "Invalid credentials." }], isError: true };
+    return error("Invalid credentials.");
   },
 );
 
@@ -77,9 +77,7 @@ server.tool(
   },
   (args, ctx) => {
     const user = ctx.session.get<{ username: string }>("user");
-    return {
-      content: [{ type: "text", text: `Secret for ${user?.username}: ${args.key}=42` }],
-    };
+    return text(`Secret for ${user?.username}: ${args.key}=42`);
   },
 );
 
@@ -90,7 +88,7 @@ server.tool(
   { description: "Delete secret data" },
   (_args, ctx) => {
     ctx.session.revoke("auth");
-    return { content: [{ type: "text", text: "Logged out. Tools hidden again." }] };
+    return text("Logged out. Tools hidden again.");
   },
 );
 ```

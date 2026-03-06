@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { text, error } from "../src/response.js";
 import type { ToolMiddleware } from "../src/types.js";
 
 function createTestServer() {
@@ -39,17 +40,13 @@ describe("elicitation — form mode", () => {
 			"setup",
 			{ description: "Setup", input: z.object({}) },
 			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.form({
-					message: "Enter API key",
-					schema: {
-						apiKey: { type: "string", description: "Your API key" },
-					},
-				});
-				return {
-					content: [
-						{ type: "text", text: `${result.action}:${result.content.apiKey}` },
-					],
-				};
+				const result = await ctx.elicit.form(
+					"Enter API key",
+					z.object({
+						apiKey: z.string().describe("Your API key"),
+					}),
+				);
+				return text(`${result.action}:${result.content.apiKey}`);
 			},
 		);
 
@@ -71,11 +68,13 @@ describe("elicitation — form mode", () => {
 			"setup",
 			{ description: "Setup", input: z.object({}) },
 			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.form({
-					message: "Enter key",
-					schema: { key: { type: "string" } },
-				});
-				return { content: [{ type: "text", text: result.action }] };
+				const result = await ctx.elicit.form(
+					"Enter key",
+					z.object({
+						key: z.string(),
+					}),
+				);
+				return text(result.action);
 			},
 		);
 
@@ -93,11 +92,13 @@ describe("elicitation — form mode", () => {
 			"setup",
 			{ description: "Setup", input: z.object({}) },
 			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.form({
-					message: "Enter key",
-					schema: { key: { type: "string" } },
-				});
-				return { content: [{ type: "text", text: result.action }] };
+				const result = await ctx.elicit.form(
+					"Enter key",
+					z.object({
+						key: z.string(),
+					}),
+				);
+				return text(result.action);
 			},
 		);
 
@@ -117,18 +118,11 @@ describe("elicitation — url mode", () => {
 			"login",
 			{ description: "Login", input: z.object({}) },
 			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.url({
-					message: "Complete auth",
-					url: "https://auth.example.com/oauth",
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: `${result.action}:${result.content === undefined}`,
-						},
-					],
-				};
+				const result = await ctx.elicit.url(
+					"Complete auth",
+					"https://auth.example.com/oauth",
+				);
+				return text(`${result.action}:${result.content === undefined}`);
 			},
 		);
 
@@ -149,11 +143,11 @@ describe("elicitation — url mode", () => {
 			"login",
 			{ description: "Login", input: z.object({}) },
 			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.url({
-					message: "Auth",
-					url: "https://example.com",
-				});
-				return { content: [{ type: "text", text: result.action }] };
+				const result = await ctx.elicit.url(
+					"Auth",
+					"https://example.com",
+				);
+				return text(result.action);
 			},
 		);
 
@@ -175,15 +169,14 @@ describe("elicitation — middleware", () => {
 			onRegister: () => undefined,
 			async onCall(ctx, next) {
 				if (!ctx.session.get("apiKey")) {
-					const result = await ctx.elicit.form({
-						message: "API key required",
-						schema: { apiKey: { type: "string" } },
-					});
+					const result = await ctx.elicit.form(
+						"API key required",
+						z.object({
+							apiKey: z.string(),
+						}),
+					);
 					if (result.action !== "accept") {
-						return {
-							content: [{ type: "text", text: "key required" }],
-							isError: true,
-						};
+						return error("key required");
 					}
 					ctx.session.set("apiKey", result.content.apiKey);
 				}
@@ -195,9 +188,7 @@ describe("elicitation — middleware", () => {
 			"query",
 			apiKeyMw,
 			{ description: "Query", input: z.object({}) },
-			async (_args: any, ctx: any) => ({
-				content: [{ type: "text", text: `key=${ctx.session.get("apiKey")}` }],
-			}),
+			async (_args: any, ctx: any) => text(`key=${ctx.session.get("apiKey")}`),
 		);
 
 		const client = await createConnectedPair(server, async () => ({

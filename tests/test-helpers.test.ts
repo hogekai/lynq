@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
+import { text, error } from "../src/response.js";
 import { createTestClient, matchers } from "../src/test.js";
 
 expect.extend(matchers);
@@ -13,9 +14,7 @@ function createTestServer() {
 describe("createTestClient", () => {
 	it("returns a connected test client", async () => {
 		const server = createTestServer();
-		server.tool("ping", {}, async () => ({
-			content: [{ type: "text", text: "pong" }],
-		}));
+		server.tool("ping", {}, async () => text("pong"));
 
 		const t = await createTestClient(server);
 		expect(t).toBeDefined();
@@ -27,12 +26,8 @@ describe("createTestClient", () => {
 
 	it("listTools returns tool name array", async () => {
 		const server = createTestServer();
-		server.tool("alpha", {}, async () => ({
-			content: [{ type: "text", text: "a" }],
-		}));
-		server.tool("beta", {}, async () => ({
-			content: [{ type: "text", text: "b" }],
-		}));
+		server.tool("alpha", {}, async () => text("a"));
+		server.tool("beta", {}, async () => text("b"));
 
 		const t = await createTestClient(server);
 		const tools = await t.listTools();
@@ -46,9 +41,7 @@ describe("createTestClient", () => {
 		server.tool(
 			"greet",
 			{ input: z.object({ name: z.string() }) },
-			async (args: any) => ({
-				content: [{ type: "text", text: `Hello ${args.name}` }],
-			}),
+			async (args: any) => text(`Hello ${args.name}`),
 		);
 
 		const t = await createTestClient(server);
@@ -59,22 +52,17 @@ describe("createTestClient", () => {
 
 	it("callToolText returns text string", async () => {
 		const server = createTestServer();
-		server.tool("echo", {}, async () => ({
-			content: [{ type: "text", text: "hello" }],
-		}));
+		server.tool("echo", {}, async () => text("hello"));
 
 		const t = await createTestClient(server);
-		const text = await t.callToolText("echo");
-		expect(text).toBe("hello");
+		const txt = await t.callToolText("echo");
+		expect(txt).toBe("hello");
 		await t.close();
 	});
 
 	it("callToolText throws on error result", async () => {
 		const server = createTestServer();
-		server.tool("fail", {}, async () => ({
-			content: [{ type: "text", text: "something broke" }],
-			isError: true,
-		}));
+		server.tool("fail", {}, async () => error("something broke"));
 
 		const t = await createTestClient(server);
 		await expect(t.callToolText("fail")).rejects.toThrow("something broke");
@@ -83,9 +71,7 @@ describe("createTestClient", () => {
 
 	it("authorize/revoke toggle tool visibility", async () => {
 		const server = createTestServer();
-		server.tool("secret", auth(), {}, async () => ({
-			content: [{ type: "text", text: "ok" }],
-		}));
+		server.tool("secret", auth(), {}, async () => text("ok"));
 
 		const t = await createTestClient(server);
 
@@ -122,8 +108,8 @@ describe("createTestClient", () => {
 		}));
 
 		const t = await createTestClient(server);
-		const text = await t.readResource("config://settings");
-		expect(text).toBe('{"theme":"dark"}');
+		const txt = await t.readResource("config://settings");
+		expect(txt).toBe('{"theme":"dark"}');
 		await t.close();
 	});
 
@@ -148,34 +134,25 @@ describe("createTestClient", () => {
 
 describe("matchers", () => {
 	it("toHaveTextContent passes when text matches", () => {
-		const result = {
-			content: [{ type: "text" as const, text: "sunny in Tokyo" }],
-		};
+		const result = text("sunny in Tokyo");
 		const { pass } = matchers.toHaveTextContent(result, "sunny");
 		expect(pass).toBe(true);
 	});
 
 	it("toHaveTextContent fails when text does not match", () => {
-		const result = {
-			content: [{ type: "text" as const, text: "rainy" }],
-		};
+		const result = text("rainy");
 		const { pass } = matchers.toHaveTextContent(result, "sunny");
 		expect(pass).toBe(false);
 	});
 
 	it("toBeError passes when isError is true", () => {
-		const result = {
-			content: [{ type: "text" as const, text: "err" }],
-			isError: true as const,
-		};
+		const result = error("err");
 		const { pass } = matchers.toBeError(result);
 		expect(pass).toBe(true);
 	});
 
 	it("toBeError fails when isError is not set", () => {
-		const result = {
-			content: [{ type: "text" as const, text: "ok" }],
-		};
+		const result = text("ok");
 		const { pass } = matchers.toBeError(result);
 		expect(pass).toBe(false);
 	});
