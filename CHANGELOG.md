@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-03-06
+
+### Added
+
+- VitePress documentation site with 14 pages (Guide, Middleware, Adapters, Patterns)
+- TypeDoc API reference auto-generation
+- GitHub Pages deployment workflow (`.github/workflows/docs.yml`)
+
 ## [0.1.0] - 2025-06-01
 
 ### Added
