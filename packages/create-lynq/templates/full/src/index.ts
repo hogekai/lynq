@@ -1,3 +1,4 @@
+import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { createMCPServer, text, json } from "@lynq/lynq";
 import { guard } from "@lynq/lynq/guard";
@@ -91,5 +92,6 @@ mountLynq(app, mcp, {
 	},
 });
 
-console.log("MCP server running on http://localhost:3000/mcp");
-export default { port: 3000, fetch: app.fetch };
+serve({ fetch: app.fetch, port: 3000 }, () => {
+	console.log("MCP server running on http://localhost:3000/mcp");
+});

@@ -38,7 +38,7 @@ describe("MCP Server", () => {
 
 	it("search is hidden before login", async () => {
 		t = await createTestClient(mcp);
-		const tools = await t.listToolNames();
+		const tools = await t.listTools();
 		expect(tools).toContain("login");
 		expect(tools).not.toContain("search");
 	});
@@ -46,7 +46,7 @@ describe("MCP Server", () => {
 	it("search appears after login", async () => {
 		t = await createTestClient(mcp);
 		await t.callTool("login", { username: "admin" });
-		const tools = await t.listToolNames();
+		const tools = await t.listTools();
 		expect(tools).toContain("search");
 	});
 
