@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [create-lynq 0.1.1] - 2026-03-11
+
+### Fixed
+
+- Add `@hono/node-server` + `serve()` to hono/full templates (was Bun-only)
+- Fix `listToolNames()` → `listTools()` in full template test
+
 ## [0.7.1] - 2026-03-11
 
 ### Fixed

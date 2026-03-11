@@ -1,6 +1,6 @@
 {
 	"name": "create-lynq",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Scaffold a new lynq MCP server project",
 	"type": "module",
 	"bin": {
