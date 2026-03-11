@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-03-11
+
+### Added
+
+- `guard()` middleware — visibility gate (replaces deprecated `auth()`)
+- `credentials()` middleware — form-based authentication via elicitation
+- `logger()` middleware — request/response logging
+- `rateLimit()` middleware — per-session rate limiting
+- `truncate()` middleware — response truncation
+- `some()`, `every()`, `except()` — middleware combinators
+- `urlAction()` middleware — URL-based elicitation with completion tracking
+- `oauth()` middleware — OAuth flow via elicitation
+- `payment()` middleware — payment flow via elicitation
+- `bearer()` middleware — Bearer token verification
+- `jwt()` middleware — JWT verification (requires `jose` peer dep)
+- `githubOAuth()` + `handleGitHubCallback()` — GitHub OAuth provider
+- `googleOAuth()` + `handleGoogleCallback()` — Google OAuth provider
+- `onRequest` hook for `server.http()` — inject HTTP headers into MCP sessions
+
+### Changed
+
+- Renamed context parameter from `ctx` to `c` for Hono-style brevity
+- Docs overhauled for new middleware and API style
+
 ## [0.3.0] - 2026-03-06
 
 ### Added
