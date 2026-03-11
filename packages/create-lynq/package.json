@@ -1,0 +1,32 @@
+{
+	"name": "create-lynq",
+	"version": "0.1.0",
+	"description": "Scaffold a new lynq MCP server project",
+	"type": "module",
+	"bin": {
+		"create-lynq": "./dist/index.mjs"
+	},
+	"files": ["dist", "templates"],
+	"scripts": {
+		"build": "tsup",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@types/node": "^22.0.0",
+		"tsup": "^8.0.0",
+		"typescript": "^5.6.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/hogekai/lynq",
+		"directory": "packages/create-lynq"
+	},
+	"keywords": ["mcp", "lynq", "scaffold", "cli"],
+	"license": "MIT",
+	"engines": {
+		"node": ">=18"
+	}
+}

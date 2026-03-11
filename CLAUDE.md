@@ -54,7 +54,11 @@ TypeScript strict · ESM · tsup · vitest · Biome · pnpm · VitePress · Type
 
 ## Structure
 
-Single package, multiple entry points via `exports` field:
+pnpm workspace monorepo with two packages:
+
+### `packages/lynq/` — `@lynq/lynq`
+
+The core framework. Multiple entry points via `exports` field:
 - `lynq` — core (`createMCPServer` + `memoryStore` + types + response helpers: `text()`, `json()`, `error()`, `image()`)
 - `lynq/guard` — visibility gate middleware (`guard()`)
 - `lynq/auth` — deprecated re-export of `guard()` as `auth()`
@@ -79,42 +83,89 @@ Single package, multiple entry points via `exports` field:
 - `lynq/express` — Express adapter (`mountLynq`)
 - `lynq/test` — test helpers (`createTestClient`, `matchers`)
 
+### `packages/create-lynq/` — `create-lynq`
+
+CLI scaffold tool. `npm create lynq` / `pnpm create lynq`. Zero runtime dependencies. Templates: minimal, hono, full.
+
 ```
-src/
-├── index.ts          — public exports
-├── types.ts          — all type definitions
-├── core.ts           — createMCPServer + state management + request handlers
-├── response.ts       — response helpers (text, json, error, image)
-├── store.ts          — memoryStore, resolveUserId, createUserStore
-├── test.ts           — test helpers (createTestClient, matchers)
-├── helpers.ts        — pure functions (isVisible, buildMiddlewareChain, parseMiddlewareArgs, etc.)
-├── context.ts        — context factories (createElicit, createRootsAccessor, createSample, createToolContext)
-├── internal-types.ts — internal interfaces (InternalTool, InternalResource, etc.)
-├── middleware/
-│   ├── guard.ts        — guard() visibility gate
-│   ├── auth.ts         — deprecated re-export of guard()
-│   ├── logger.ts       — logger() middleware
-│   ├── rate-limit.ts   — rateLimit() middleware
-│   ├── truncate.ts     — truncate() middleware
-│   ├── combine.ts      — some() / every() / except()
-│   ├── credentials.ts  — credentials() form mode auth
-│   ├── url-action.ts   — urlAction() URL-based elicitation
-│   ├── oauth.ts        — oauth() flow middleware
-│   ├── payment.ts      — payment() flow middleware
-│   ├── bearer.ts       — bearer() token verification
-│   ├── jwt.ts          — jwt() JWT verification
-│   ├── github.ts       — github() + handleCallback()
-│   ├── google.ts       — google() + handleCallback()
-│   ├── stripe.ts       — stripe() + handleCallback()
-│   ├── crypto.ts       — crypto() + handleCallback()
-│   └── tip.ts          — tip() onResult middleware
-└── adapters/
-    ├── stdio.ts      — stdio transport re-export
-    ├── shared.ts     — validateHost utility for DNS rebinding protection
-    ├── pages.ts      — HTML templates + handlers for adapter pages
-    ├── hono.ts       — mountLynq for Hono
-    └── express.ts    — mountLynq for Express
-docs/
+packages/
+├── lynq/
+│   ├── src/
+│   │   ├── index.ts          — public exports
+│   │   ├── types.ts          — all type definitions
+│   │   ├── core.ts           — createMCPServer + state management + request handlers
+│   │   ├── response.ts       — response helpers (text, json, error, image)
+│   │   ├── store.ts          — memoryStore, resolveUserId, createUserStore
+│   │   ├── test.ts           — test helpers (createTestClient, matchers)
+│   │   ├── helpers.ts        — pure functions (isVisible, buildMiddlewareChain, parseMiddlewareArgs, etc.)
+│   │   ├── context.ts        — context factories (createElicit, createRootsAccessor, createSample, createToolContext)
+│   │   ├── internal-types.ts — internal interfaces (InternalTool, InternalResource, etc.)
+│   │   ├── middleware/
+│   │   │   ├── guard.ts        — guard() visibility gate
+│   │   │   ├── auth.ts         — deprecated re-export of guard()
+│   │   │   ├── logger.ts       — logger() middleware
+│   │   │   ├── rate-limit.ts   — rateLimit() middleware
+│   │   │   ├── truncate.ts     — truncate() middleware
+│   │   │   ├── combine.ts      — some() / every() / except()
+│   │   │   ├── credentials.ts  — credentials() form mode auth
+│   │   │   ├── url-action.ts   — urlAction() URL-based elicitation
+│   │   │   ├── oauth.ts        — oauth() flow middleware
+│   │   │   ├── payment.ts      — payment() flow middleware
+│   │   │   ├── bearer.ts       — bearer() token verification
+│   │   │   ├── jwt.ts          — jwt() JWT verification
+│   │   │   ├── github.ts       — github() + handleCallback()
+│   │   │   ├── google.ts       — google() + handleCallback()
+│   │   │   ├── stripe.ts       — stripe() + handleCallback()
+│   │   │   ├── crypto.ts       — crypto() + handleCallback()
+│   │   │   └── tip.ts          — tip() onResult middleware
+│   │   └── adapters/
+│   │       ├── stdio.ts      — stdio transport re-export
+│   │       ├── shared.ts     — validateHost utility for DNS rebinding protection
+│   │       ├── pages.ts      — HTML templates + handlers for adapter pages
+│   │       ├── hono.ts       — mountLynq for Hono
+│   │       └── express.ts    — mountLynq for Express
+│   ├── tests/
+│   │   ├── store.test.ts
+│   │   ├── core.test.ts
+│   │   ├── http.test.ts
+│   │   ├── resource.test.ts
+│   │   ├── sampling.test.ts
+│   │   ├── task.test.ts
+│   │   ├── test-helpers.test.ts
+│   │   ├── middleware/
+│   │   │   ├── auth.test.ts
+│   │   │   ├── guard.test.ts
+│   │   │   ├── logger.test.ts
+│   │   │   ├── rate-limit.test.ts
+│   │   │   ├── truncate.test.ts
+│   │   │   ├── combine.test.ts
+│   │   │   ├── credentials.test.ts
+│   │   │   ├── url-action.test.ts
+│   │   │   ├── oauth.test.ts
+│   │   │   ├── payment.test.ts
+│   │   │   ├── bearer.test.ts
+│   │   │   ├── jwt.test.ts
+│   │   │   ├── github.test.ts
+│   │   │   ├── google.test.ts
+│   │   │   ├── stripe.test.ts
+│   │   │   ├── crypto.test.ts
+│   │   │   └── tip.test.ts
+│   │   └── adapters/
+│   │       ├── hono.test.ts
+│   │       ├── hono-pages.test.ts
+│   │       ├── express.test.ts
+│   │       └── express-pages.test.ts
+│   └── example/
+│
+├── create-lynq/
+│   ├── src/
+│   │   └── index.ts      — CLI entry point
+│   └── templates/
+│       ├── minimal/       — stdio + 1 tool
+│       ├── hono/          — Hono HTTP + guard + auth flow
+│       └── full/          — GitHub OAuth + Stripe + Store + tests
+│
+docs/                      — VitePress (root-level)
 ├── index.md              — VitePress landing page
 ├── why-lynq.md
 ├── api/overview.md
@@ -123,35 +174,4 @@ docs/
 ├── guides/               — auth-flow, dynamic-tools, resource-gating, custom-middleware, middleware-recipes, testing
 ├── api-reference/        — auto-generated by TypeDoc (gitignored)
 └── .vitepress/config.ts  — VitePress configuration
-tests/
-├── store.test.ts
-├── core.test.ts
-├── http.test.ts
-├── resource.test.ts
-├── sampling.test.ts
-├── task.test.ts
-├── test-helpers.test.ts
-├── middleware/
-│   ├── auth.test.ts
-│   ├── guard.test.ts
-│   ├── logger.test.ts
-│   ├── rate-limit.test.ts
-│   ├── truncate.test.ts
-│   ├── combine.test.ts
-│   ├── credentials.test.ts
-│   ├── url-action.test.ts
-│   ├── oauth.test.ts
-│   ├── payment.test.ts
-│   ├── bearer.test.ts
-│   ├── jwt.test.ts
-│   ├── github.test.ts
-│   ├── google.test.ts
-│   ├── stripe.test.ts
-│   ├── crypto.test.ts
-│   └── tip.test.ts
-└── adapters/
-    ├── hono.test.ts
-    ├── hono-pages.test.ts
-    ├── express.test.ts
-    └── express-pages.test.ts
 ```

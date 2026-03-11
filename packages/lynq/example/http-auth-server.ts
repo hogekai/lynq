@@ -5,10 +5,10 @@
  * Connect MCP client to http://localhost:3000/mcp
  */
 import { Hono } from "hono";
+import { z } from "zod";
 import { createMCPServer } from "../src/index.js";
 import { oauth } from "../src/middleware/oauth.js";
 import { payment } from "../src/middleware/payment.js";
-import { z } from "zod";
 
 const mcp = createMCPServer({ name: "auth-demo", version: "1.0.0" });
 

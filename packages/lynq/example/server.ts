@@ -40,8 +40,7 @@ server.tool(
 		// Fake weather data
 		const conditions = ["Sunny", "Cloudy", "Rainy", "Snowy"];
 		const temp = Math.floor(Math.random() * 35) + 5;
-		const condition =
-			conditions[Math.floor(Math.random() * conditions.length)];
+		const condition = conditions[Math.floor(Math.random() * conditions.length)];
 		return c.text(`${args.city}: ${temp}°C, ${condition}`);
 	},
 );
@@ -59,8 +58,7 @@ server.tool(
 	},
 	async (args, c) => {
 		const notes =
-			c.session.get<Array<{ title: string; content: string }>>("notes") ??
-			[];
+			c.session.get<Array<{ title: string; content: string }>>("notes") ?? [];
 		notes.push({ title: args.title, content: args.content });
 		c.session.set("notes", notes);
 		return c.text(`Saved note "${args.title}" (${notes.length} total).`);

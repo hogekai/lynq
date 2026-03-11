@@ -5,8 +5,8 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
-      - 'src/**'
-      - 'package.json'
+      - 'packages/lynq/src/**'
+      - 'packages/lynq/package.json'
       - 'typedoc.json'
   workflow_dispatch:
 

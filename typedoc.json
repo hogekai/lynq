@@ -1,12 +1,13 @@
 {
 	"$schema": "https://typedoc.org/schema.json",
 	"entryPoints": [
-		"src/index.ts",
-		"src/middleware/auth.ts",
-		"src/adapters/hono.ts",
-		"src/adapters/express.ts",
-		"src/test.ts"
+		"packages/lynq/src/index.ts",
+		"packages/lynq/src/middleware/auth.ts",
+		"packages/lynq/src/adapters/hono.ts",
+		"packages/lynq/src/adapters/express.ts",
+		"packages/lynq/src/test.ts"
 	],
+	"tsconfig": "packages/lynq/tsconfig.json",
 	"out": "docs/api-reference",
 	"plugin": ["typedoc-plugin-markdown"],
 	"excludePrivate": true,

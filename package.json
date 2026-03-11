@@ -1,197 +1,27 @@
 {
-	"name": "@lynq/lynq",
-	"version": "0.6.0",
-	"description": "Lightweight MCP server framework. Tool visibility control through middleware.",
-	"type": "module",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.mjs"
-		},
-		"./auth": {
-			"types": "./dist/middleware/auth.d.ts",
-			"import": "./dist/middleware/auth.mjs"
-		},
-		"./stdio": {
-			"types": "./dist/adapters/stdio.d.ts",
-			"import": "./dist/adapters/stdio.mjs"
-		},
-		"./hono": {
-			"types": "./dist/adapters/hono.d.ts",
-			"import": "./dist/adapters/hono.mjs"
-		},
-		"./express": {
-			"types": "./dist/adapters/express.d.ts",
-			"import": "./dist/adapters/express.mjs"
-		},
-		"./test": {
-			"types": "./dist/test.d.ts",
-			"import": "./dist/test.mjs"
-		},
-		"./guard": {
-			"types": "./dist/middleware/guard.d.ts",
-			"import": "./dist/middleware/guard.mjs"
-		},
-		"./logger": {
-			"types": "./dist/middleware/logger.d.ts",
-			"import": "./dist/middleware/logger.mjs"
-		},
-		"./rate-limit": {
-			"types": "./dist/middleware/rate-limit.d.ts",
-			"import": "./dist/middleware/rate-limit.mjs"
-		},
-		"./truncate": {
-			"types": "./dist/middleware/truncate.d.ts",
-			"import": "./dist/middleware/truncate.mjs"
-		},
-		"./combine": {
-			"types": "./dist/middleware/combine.d.ts",
-			"import": "./dist/middleware/combine.mjs"
-		},
-		"./credentials": {
-			"types": "./dist/middleware/credentials.d.ts",
-			"import": "./dist/middleware/credentials.mjs"
-		},
-		"./url-action": {
-			"types": "./dist/middleware/url-action.d.ts",
-			"import": "./dist/middleware/url-action.mjs"
-		},
-		"./oauth": {
-			"types": "./dist/middleware/oauth.d.ts",
-			"import": "./dist/middleware/oauth.mjs"
-		},
-		"./payment": {
-			"types": "./dist/middleware/payment.d.ts",
-			"import": "./dist/middleware/payment.mjs"
-		},
-		"./bearer": {
-			"types": "./dist/middleware/bearer.d.ts",
-			"import": "./dist/middleware/bearer.mjs"
-		},
-		"./jwt": {
-			"types": "./dist/middleware/jwt.d.ts",
-			"import": "./dist/middleware/jwt.mjs"
-		},
-		"./github": {
-			"types": "./dist/middleware/github.d.ts",
-			"import": "./dist/middleware/github.mjs"
-		},
-		"./github-oauth": {
-			"types": "./dist/middleware/github.d.ts",
-			"import": "./dist/middleware/github.mjs"
-		},
-		"./google": {
-			"types": "./dist/middleware/google.d.ts",
-			"import": "./dist/middleware/google.mjs"
-		},
-		"./google-oauth": {
-			"types": "./dist/middleware/google.d.ts",
-			"import": "./dist/middleware/google.mjs"
-		},
-		"./stripe": {
-			"types": "./dist/middleware/stripe.d.ts",
-			"import": "./dist/middleware/stripe.mjs"
-		},
-		"./crypto": {
-			"types": "./dist/middleware/crypto.d.ts",
-			"import": "./dist/middleware/crypto.mjs"
-		},
-		"./usdc": {
-			"types": "./dist/middleware/crypto.d.ts",
-			"import": "./dist/middleware/crypto.mjs"
-		},
-		"./tip": {
-			"types": "./dist/middleware/tip.d.ts",
-			"import": "./dist/middleware/tip.mjs"
-		},
-		"./store": {
-			"types": "./dist/store.d.ts",
-			"import": "./dist/store.mjs"
-		}
-	},
-	"files": [
-		"dist"
-	],
-	"sideEffects": false,
+	"private": true,
 	"scripts": {
-		"build": "tsup",
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"lint": "biome check src tests",
-		"lint:fix": "biome check --write src tests",
-		"typecheck": "tsc --noEmit",
+		"build": "pnpm -r build",
+		"test": "pnpm -r test",
+		"lint": "biome check packages/",
+		"lint:fix": "biome check --write packages/",
+		"typecheck": "pnpm -r typecheck",
 		"docs:api": "typedoc",
 		"docs:dev": "vitepress dev docs",
 		"docs:build": "vitepress build docs",
-		"docs:preview": "vitepress preview docs",
-		"prepublishOnly": "pnpm build"
-	},
-	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.27.0"
+		"docs:preview": "vitepress preview docs"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.0",
-		"@types/express": "^5.0.6",
-		"express": "^5.2.1",
-		"hono": "^4.12.5",
-		"jose": "^6.2.1",
-		"stripe": "^20.4.1",
-		"tsup": "^8.0.0",
 		"typedoc": "^0.28.17",
 		"typedoc-plugin-markdown": "^4.10.0",
 		"typescript": "^5.6.0",
-		"vitepress": "^1.6.4",
-		"vitest": "^2.0.0",
-		"zod": "^3.24.0"
+		"vitepress": "^1.6.4"
 	},
-	"peerDependencies": {
-		"express": "^5.0.0",
-		"hono": "^4.0.0",
-		"jose": "^6.0.0",
-		"stripe": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0",
-		"zod": "^3.0.0"
-	},
-	"peerDependenciesMeta": {
-		"zod": {
-			"optional": true
-		},
-		"hono": {
-			"optional": true
-		},
-		"express": {
-			"optional": true
-		},
-		"jose": {
-			"optional": true
-		},
-		"stripe": {
-			"optional": true
-		}
-	},
-	"publishConfig": {
-		"access": "public"
-	},
-	"keywords": [
-		"mcp",
-		"model-context-protocol",
-		"framework",
-		"middleware",
-		"ai",
-		"agent"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/hogekai/lynq"
-	},
-	"bugs": {
-		"url": "https://github.com/hogekai/lynq/issues"
-	},
-	"homepage": "https://github.com/hogekai/lynq#readme",
-	"license": "MIT",
+	"packageManager": "pnpm@10.30.1",
 	"engines": {
 		"node": ">=18"
 	},
-	"packageManager": "pnpm@10.30.1",
 	"pnpm": {
 		"onlyBuiltDependencies": [
 			"@biomejs/biome",
