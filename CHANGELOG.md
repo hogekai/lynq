@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-03-11
+
+### Added
+
+- pnpm workspace monorepo migration (`packages/lynq/`, `packages/create-lynq/`)
+- `create-lynq` CLI — scaffold new lynq projects with `pnpm create lynq`
+- Three project templates: `minimal` (stdio), `hono` (HTTP + guard), `full` (GitHub OAuth + Stripe + Store + tests)
+- Docs: "Create a Project" getting started page
+
+### Changed
+
+- Source moved from root `src/` to `packages/lynq/src/`
+- CI workflows updated for monorepo (`pnpm -r build`, `pnpm -r test`)
+- Release workflow supports per-package publishing (`v*` for lynq, `create-lynq-v*` for create-lynq)
+
 ## [0.6.0] - 2026-03-11
 
 ### Added
