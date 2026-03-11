@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-03-11
+
+### Added
+
+- `Store` abstraction for persistent state across connections (`memoryStore()` default)
+- `c.store` (global) and `c.userStore` (user-scoped) KV stores in tool/resource/task handlers
+- `stripe()` + `handleCallback()` — Stripe Checkout payment provider
+- `crypto()` + `handleCallback()` — crypto payment provider (replaces `usdcPayment`)
+- `tip()` middleware — post-result tip link appender via `onResult`
+- `persistent` option for `urlAction`, `oauth`, `payment` — state via `c.userStore` instead of session
+- `skipIf` / `onComplete` hooks for all URL-based middleware — custom persistence without Store
+- Adapter `pages` option — `mountLynq(app, server, { pages: { ... } })` auto-registers OAuth/payment callback routes + success pages
+- Docs: Store concept page, payment section (Stripe, crypto, tip), middleware overview
+
+### Changed
+
+- Unified middleware naming — dropped domain suffixes: `githubOAuth()` → `github()`, `googleOAuth()` → `google()`, `stripePayment()` → `stripe()`, `usdcPayment()` → `crypto()`
+- Deprecated aliases added for old names (`lynq/github-oauth`, `lynq/google-oauth`, `lynq/usdc`)
+- `buildUrl` in `urlAction`/`oauth`/`payment` now supports async functions
+- Docs restructured into middleware, auth, payment, adapters sections
+
 ## [0.4.0] - 2026-03-11
 
 ### Added
