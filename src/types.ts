@@ -140,13 +140,13 @@ export interface ToolMiddleware {
 	onRegister?(tool: ToolInfo): boolean | undefined;
 	/** Called when a tool is invoked. Must call next() to continue the chain. */
 	onCall?(
-		ctx: ToolContext,
+		c: ToolContext,
 		next: () => Promise<CallToolResult>,
 	): Promise<CallToolResult>;
 	/** Called after the handler returns. Runs in reverse middleware order. */
 	onResult?(
 		result: CallToolResult,
-		ctx: ToolContext,
+		c: ToolContext,
 	): CallToolResult | Promise<CallToolResult>;
 }
 
@@ -163,7 +163,7 @@ export interface ToolConfig<TInput = unknown> {
 
 export type ToolHandler<TInput = unknown> = (
 	args: InferInput<TInput>,
-	ctx: ToolContext,
+	c: ToolContext,
 ) => CallToolResult | Promise<CallToolResult>;
 
 // === Task (@experimental) ===
@@ -190,7 +190,7 @@ export interface TaskContext extends ToolContext {
 /** @experimental */
 export type TaskHandler<TInput = unknown> = (
 	args: InferInput<TInput>,
-	ctx: TaskContext,
+	c: TaskContext,
 ) => CallToolResult | Promise<CallToolResult>;
 
 // === Resource ===
@@ -217,7 +217,7 @@ export interface ResourceContext {
 
 export type ResourceHandler = (
 	uri: string,
-	ctx: ResourceContext,
+	c: ResourceContext,
 ) => ResourceContent | Promise<ResourceContent>;
 
 // === HTTP Adapter ===

@@ -24,7 +24,7 @@ server.tool(
     description: "Add two numbers",
     input: z.object({ a: z.number(), b: z.number() }),
   },
-  (args, ctx) => ctx.text(String(args.a + args.b)),
+  (args, c) => c.text(String(args.a + args.b)),
 );
 
 const app = express();

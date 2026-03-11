@@ -62,9 +62,9 @@ describe("guard middleware", () => {
 		server.tool(
 			"login",
 			{ input: z.object({ username: z.string() }) },
-			async (args: any, ctx: any) => {
-				ctx.session.set("user", { name: args.username });
-				ctx.session.authorize("guard");
+			async (args: any, c: any) => {
+				c.session.set("user", { name: args.username });
+				c.session.authorize("guard");
 				return text("Logged in");
 			},
 		);

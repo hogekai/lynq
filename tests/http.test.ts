@@ -138,8 +138,8 @@ describe("server.http()", () => {
 		server.tool(
 			"login",
 			{ description: "Login", input: z.object({ user: z.string() }) },
-			async (args, ctx) => {
-				ctx.session.authorize("auth");
+			async (args, c) => {
+				c.session.authorize("auth");
 				return text(`Welcome ${args.user}`);
 			},
 		);

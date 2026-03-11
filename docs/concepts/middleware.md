@@ -14,13 +14,13 @@ interface ToolMiddleware {
   onRegister?(tool: ToolInfo): boolean | undefined;
   /** Called when a tool is invoked. Must call next() to continue the chain. */
   onCall?(
-    ctx: ToolContext,
+    c: ToolContext,
     next: () => Promise<CallToolResult>,
   ): Promise<CallToolResult>;
   /** Called after the handler returns. Runs in reverse middleware order. */
   onResult?(
     result: CallToolResult,
-    ctx: ToolContext,
+    c: ToolContext,
   ): CallToolResult | Promise<CallToolResult>;
 }
 ```
@@ -68,8 +68,8 @@ import type { ToolMiddleware } from "@lynq/lynq";
 
 const logger: ToolMiddleware = {
   name: "logger",
-  onCall(ctx, next) {
-    console.log(`[${ctx.toolName}] called`);
+  onCall(c, next) {
+    console.log(`[${c.toolName}] called`);
     return next();
   },
 };

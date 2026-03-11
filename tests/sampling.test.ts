@@ -41,14 +41,14 @@ async function createConnectedPair(
 	return client;
 }
 
-describe("ctx.sample()", () => {
+describe("c.sample()", () => {
 	it("returns text from client response", async () => {
 		const server = createTestServer();
 		server.tool(
 			"test",
 			{ description: "Test", input: z.object({ prompt: z.string() }) },
-			async (args: any, ctx: any) => {
-				const txt = await ctx.sample(args.prompt);
+			async (args: any, c: any) => {
+				const txt = await c.sample(args.prompt);
 				return text(txt);
 			},
 		);
@@ -78,8 +78,8 @@ describe("ctx.sample()", () => {
 		server.tool(
 			"test",
 			{ description: "Test", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				await ctx.sample("prompt", {
+			async (_args: any, c: any) => {
+				await c.sample("prompt", {
 					maxTokens: 500,
 					system: "Be brief.",
 					temperature: 0.7,
@@ -114,8 +114,8 @@ describe("ctx.sample()", () => {
 		server.tool(
 			"test",
 			{ description: "Test", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				await ctx.sample("prompt", { model: "claude-opus-4-6" });
+			async (_args: any, c: any) => {
+				await c.sample("prompt", { model: "claude-opus-4-6" });
 				return text("ok");
 			},
 		);
@@ -144,8 +144,8 @@ describe("ctx.sample()", () => {
 		server.tool(
 			"test",
 			{ description: "Test", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				await ctx.sample("prompt");
+			async (_args: any, c: any) => {
+				await c.sample("prompt");
 				return text("ok");
 			},
 		);
@@ -170,8 +170,8 @@ describe("ctx.sample()", () => {
 		server.tool(
 			"test",
 			{ description: "Test", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const txt = await ctx.sample("prompt");
+			async (_args: any, c: any) => {
+				const txt = await c.sample("prompt");
 				return text(txt);
 			},
 		);
@@ -189,14 +189,14 @@ describe("ctx.sample()", () => {
 	});
 });
 
-describe("ctx.sample.raw()", () => {
+describe("c.sample.raw()", () => {
 	it("returns full CreateMessageResult", async () => {
 		const server = createTestServer();
 		server.tool(
 			"test",
 			{ description: "Test", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const result = await ctx.sample.raw({
+			async (_args: any, c: any) => {
+				const result = await c.sample.raw({
 					messages: [
 						{ role: "user", content: { type: "text", text: "hello" } },
 					],

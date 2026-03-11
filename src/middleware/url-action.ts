@@ -27,18 +27,18 @@ export function urlAction(options: UrlActionOptions): ToolMiddleware {
 		onRegister() {
 			return false;
 		},
-		async onCall(ctx, next) {
-			if (ctx.session.get(sessionKey)) {
+		async onCall(c, next) {
+			if (c.session.get(sessionKey)) {
 				return next();
 			}
 
 			const elicitationId = crypto.randomUUID();
 			const url = options.buildUrl({
-				sessionId: ctx.sessionId,
+				sessionId: c.sessionId,
 				elicitationId,
 			});
 
-			const result = await ctx.elicit.url(options.message, url, {
+			const result = await c.elicit.url(options.message, url, {
 				elicitationId,
 				waitForCompletion: true,
 				timeout,
@@ -48,11 +48,11 @@ export function urlAction(options: UrlActionOptions): ToolMiddleware {
 				return error(declineMessage);
 			}
 
-			if (!ctx.session.get(sessionKey)) {
+			if (!c.session.get(sessionKey)) {
 				return error("Action was not completed.");
 			}
 
-			ctx.session.authorize(name);
+			c.session.authorize(name);
 			return next();
 		},
 	};

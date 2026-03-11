@@ -42,13 +42,13 @@ import type { ToolMiddleware } from "@lynq/lynq";
 function rateLimit(max: number): ToolMiddleware {
   return {
     name: "rateLimit",
-    onCall(ctx, next) {
-      const key = `rateLimit:${ctx.toolName}`;
-      const count = ctx.session.get<number>(key) ?? 0;
+    onCall(c, next) {
+      const key = `rateLimit:${c.toolName}`;
+      const count = c.session.get<number>(key) ?? 0;
       if (count >= max) {
-        return ctx.error(`Rate limit exceeded (${max} calls).`);
+        return c.error(`Rate limit exceeded (${max} calls).`);
       }
-      ctx.session.set(key, count + 1);
+      c.session.set(key, count + 1);
       return next();
     },
   };
@@ -66,12 +66,12 @@ import type { ToolMiddleware } from "@lynq/lynq";
 
 const logging: ToolMiddleware = {
   name: "logging",
-  async onCall(ctx, next) {
+  async onCall(c, next) {
     const start = performance.now();
     const result = await next();
     const ms = (performance.now() - start).toFixed(0);
     const status = result.isError ? "ERROR" : "OK";
-    console.log(`[${ctx.toolName}] ${status} ${ms}ms`);
+    console.log(`[${c.toolName}] ${status} ${ms}ms`);
     return result;
   },
 };
@@ -92,8 +92,8 @@ function cache(ttlMs: number = 60_000): ToolMiddleware {
 
   return {
     name: "cache",
-    async onCall(ctx, next) {
-      const key = ctx.toolName + ":" + ctx.sessionId;
+    async onCall(c, next) {
+      const key = c.toolName + ":" + c.sessionId;
       const cached = store.get(key);
       if (cached && Date.now() < cached.expires) {
         return cached.result;
@@ -118,9 +118,9 @@ import type { ToolMiddleware } from "@lynq/lynq";
 function requireSession(key: string, message?: string): ToolMiddleware {
   return {
     name: "requireSession",
-    onCall(ctx, next) {
-      if (!ctx.session.get(key)) {
-        return ctx.error(message ?? `Missing required session key: ${key}`);
+    onCall(c, next) {
+      if (!c.session.get(key)) {
+        return c.error(message ?? `Missing required session key: ${key}`);
       }
       return next();
     },
@@ -128,6 +128,55 @@ function requireSession(key: string, message?: string): ToolMiddleware {
 }
 
 server.tool("deploy", requireSession("env", "Set environment first."), config, handler);
+```
+
+## Combinators
+
+lynq provides three combinators from `@lynq/lynq/combine` to compose middleware logic.
+
+### `some()` -- first match wins
+
+Run middlewares in order. The first one that calls `next()` wins. If all short-circuit, the last error is returned.
+
+```ts
+import { some } from "@lynq/lynq/combine";
+import { guard } from "@lynq/lynq/guard";
+import { credentials } from "@lynq/lynq/credentials";
+
+// Allow access if EITHER already logged in OR submitting credentials
+server.tool("dashboard", some(guard(), credentials({
+  message: "Login required",
+  schema: z.object({ token: z.string() }),
+  verify: async (fields) => validateToken(fields.token),
+})), config, handler);
+```
+
+### `every()` -- all must pass
+
+Run all middlewares in sequence. If any short-circuits, the chain stops.
+
+```ts
+import { every } from "@lynq/lynq/combine";
+import { guard } from "@lynq/lynq/guard";
+import { rateLimit } from "@lynq/lynq/rate-limit";
+
+// Must be authenticated AND within rate limit
+server.tool("api", every(guard(), rateLimit({ max: 100 })), config, handler);
+```
+
+### `except()` -- conditional bypass
+
+Skip a middleware when a condition is true.
+
+```ts
+import { except } from "@lynq/lynq/combine";
+import { rateLimit } from "@lynq/lynq/rate-limit";
+
+// Rate limit everyone except admins
+server.tool("search", except(
+  (c) => c.session.get("role") === "admin",
+  rateLimit({ max: 10 }),
+), config, handler);
 ```
 
 :::tip Under the hood

@@ -10,12 +10,12 @@ export function logger(options?: LoggerOptions): ToolMiddleware {
 
 	return {
 		name: "logger",
-		async onCall(ctx, next) {
+		async onCall(c, next) {
 			const start = performance.now();
-			log(`[${ctx.toolName}] called (session: ${ctx.sessionId})`);
+			log(`[${c.toolName}] called (session: ${c.sessionId})`);
 			const result = await next();
 			const ms = (performance.now() - start).toFixed(1);
-			log(`[${ctx.toolName}] ${ms}ms${result.isError ? " ERROR" : ""}`);
+			log(`[${c.toolName}] ${ms}ms${result.isError ? " ERROR" : ""}`);
 			return result;
 		},
 	};

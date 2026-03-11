@@ -14,15 +14,15 @@ server.tool(
 			password: z.string(),
 		}),
 	},
-	async (args, ctx) => {
+	async (args, c) => {
 		if (args.username === "admin" && args.password === "1234") {
-			ctx.session.set("user", { name: args.username });
-			ctx.session.authorize("guard");
-			return ctx.text(
+			c.session.set("user", { name: args.username });
+			c.session.authorize("guard");
+			return c.text(
 				`Welcome, ${args.username}. You now have access to weather and notes tools.`,
 			);
 		}
-		return ctx.error("Invalid credentials.");
+		return c.error("Invalid credentials.");
 	},
 );
 
@@ -36,13 +36,13 @@ server.tool(
 			city: z.string().describe("City name"),
 		}),
 	},
-	async (args, ctx) => {
+	async (args, c) => {
 		// Fake weather data
 		const conditions = ["Sunny", "Cloudy", "Rainy", "Snowy"];
 		const temp = Math.floor(Math.random() * 35) + 5;
 		const condition =
 			conditions[Math.floor(Math.random() * conditions.length)];
-		return ctx.text(`${args.city}: ${temp}°C, ${condition}`);
+		return c.text(`${args.city}: ${temp}°C, ${condition}`);
 	},
 );
 
@@ -57,13 +57,13 @@ server.tool(
 			content: z.string().describe("Note content"),
 		}),
 	},
-	async (args, ctx) => {
+	async (args, c) => {
 		const notes =
-			ctx.session.get<Array<{ title: string; content: string }>>("notes") ??
+			c.session.get<Array<{ title: string; content: string }>>("notes") ??
 			[];
 		notes.push({ title: args.title, content: args.content });
-		ctx.session.set("notes", notes);
-		return ctx.text(`Saved note "${args.title}" (${notes.length} total).`);
+		c.session.set("notes", notes);
+		return c.text(`Saved note "${args.title}" (${notes.length} total).`);
 	},
 );
 
@@ -76,9 +76,9 @@ server.resource(
 		description: "All notes saved in this session",
 		mimeType: "application/json",
 	},
-	async (_uri, ctx) => {
+	async (_uri, c) => {
 		const notes =
-			ctx.session.get<Array<{ title: string; content: string }>>("notes") ?? [];
+			c.session.get<Array<{ title: string; content: string }>>("notes") ?? [];
 		return { text: JSON.stringify(notes) };
 	},
 );
@@ -91,8 +91,8 @@ server.tool(
 		description: "Configure your preferences (demonstrates elicitation)",
 		input: z.object({}),
 	},
-	async (_args, ctx) => {
-		const result = await ctx.elicit.form(
+	async (_args, c) => {
+		const result = await c.elicit.form(
 			"Set your preferences",
 			z.object({
 				theme: z.enum(["light", "dark"]).describe("Color theme"),
@@ -101,11 +101,11 @@ server.tool(
 		);
 
 		if (result.action !== "accept") {
-			return ctx.text("Configuration cancelled.");
+			return c.text("Configuration cancelled.");
 		}
 
-		ctx.session.set("preferences", result.content);
-		return ctx.text(`Preferences saved: ${JSON.stringify(result.content)}`);
+		c.session.set("preferences", result.content);
+		return c.text(`Preferences saved: ${JSON.stringify(result.content)}`);
 	},
 );
 
@@ -117,13 +117,13 @@ server.task(
 		description: "Run a slow data analysis (demonstrates async tasks)",
 		input: z.object({ query: z.string() }),
 	},
-	async (args, ctx) => {
-		ctx.task.progress(0, "Starting analysis...");
+	async (args, c) => {
+		c.task.progress(0, "Starting analysis...");
 		await new Promise((r) => setTimeout(r, 2000));
-		ctx.task.progress(50, "Halfway...");
+		c.task.progress(50, "Halfway...");
 		await new Promise((r) => setTimeout(r, 2000));
-		ctx.task.progress(100, "Complete");
-		return ctx.text(`Analysis result for: ${args.query}`);
+		c.task.progress(100, "Complete");
+		return c.text(`Analysis result for: ${args.query}`);
 	},
 );
 
@@ -135,15 +135,15 @@ server.tool(
 		description: "List client-provided filesystem roots",
 		input: z.object({}),
 	},
-	async (_args, ctx) => {
-		const roots = await ctx.roots();
+	async (_args, c) => {
+		const roots = await c.roots();
 		if (roots.length === 0) {
-			return ctx.text("No roots provided by client");
+			return c.text("No roots provided by client");
 		}
 		const list = roots
 			.map((r) => `${r.name ?? "unnamed"}: ${r.uri}`)
 			.join("\n");
-		return ctx.text(`Available roots:\n${list}`);
+		return c.text(`Available roots:\n${list}`);
 	},
 );
 
@@ -155,12 +155,12 @@ server.tool(
 		description: "Ask the client's LLM a question (demonstrates sampling)",
 		input: z.object({ question: z.string().describe("Question to ask") }),
 	},
-	async (args, ctx) => {
-		const answer = await ctx.sample(args.question, {
+	async (args, c) => {
+		const answer = await c.sample(args.question, {
 			system: "You are a helpful assistant. Be concise.",
 			maxTokens: 256,
 		});
-		return ctx.text(answer);
+		return c.text(answer);
 	},
 );
 

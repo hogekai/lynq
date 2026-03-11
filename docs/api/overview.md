@@ -36,7 +36,7 @@ Task handlers receive a `TaskContext` which extends `ToolContext` with:
 
 ## Session
 
-Available via `ctx.session` in all handlers.
+Available via `c.session` in all handlers.
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
@@ -59,8 +59,8 @@ All visibility changes trigger automatic `list_changed` notifications to the cli
 |------|-----------|-------------|
 | `name` | `string` | Unique identifier, used for `authorize()`/`revoke()` |
 | `onRegister` | `(tool: ToolInfo) => boolean \| undefined` | Called at registration. Return `false` to hide initially |
-| `onCall` | `(ctx: ToolContext, next: () => Promise<CallToolResult>) => Promise<CallToolResult>` | Called on invocation. Must call `next()` to continue |
-| `onResult` | `(result: CallToolResult, ctx: ToolContext) => CallToolResult \| Promise<CallToolResult>` | Post-handler transform. Runs in reverse middleware order |
+| `onCall` | `(c: ToolContext, next: () => Promise<CallToolResult>) => Promise<CallToolResult>` | Called on invocation. Must call `next()` to continue |
+| `onResult` | `(result: CallToolResult, c: ToolContext) => CallToolResult \| Promise<CallToolResult>` | Post-handler transform. Runs in reverse middleware order |
 
 ## HTTP Adapter Options
 

@@ -15,7 +15,7 @@ export function some(...middlewares: ToolMiddleware[]): ToolMiddleware {
 			return undefined;
 		},
 
-		async onCall(ctx: ToolContext, next: () => Promise<CallToolResult>) {
+		async onCall(c: ToolContext, next: () => Promise<CallToolResult>) {
 			let winner: ToolMiddleware | undefined;
 			let lastResult: CallToolResult | undefined;
 
@@ -32,7 +32,7 @@ export function some(...middlewares: ToolMiddleware[]): ToolMiddleware {
 					return next();
 				};
 
-				const result = await mw.onCall(ctx, probe);
+				const result = await mw.onCall(c, probe);
 				if (called) {
 					// This middleware called next() — it passed
 					winner = mw;
@@ -74,7 +74,7 @@ export function every(...middlewares: ToolMiddleware[]): ToolMiddleware {
 			return undefined;
 		},
 
-		async onCall(ctx: ToolContext, next: () => Promise<CallToolResult>) {
+		async onCall(c: ToolContext, next: () => Promise<CallToolResult>) {
 			// Chain all onCall middlewares, then call next
 			const callMiddlewares = middlewares.filter((mw) => mw.onCall);
 			let index = 0;
@@ -85,17 +85,17 @@ export function every(...middlewares: ToolMiddleware[]): ToolMiddleware {
 				}
 				const mw = callMiddlewares[index++];
 				// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onCall
-				return mw.onCall!(ctx, chain);
+				return mw.onCall!(c, chain);
 			};
 
 			return chain();
 		},
 
-		onResult(result: CallToolResult, ctx: ToolContext) {
+		onResult(result: CallToolResult, c: ToolContext) {
 			let current = result;
 			for (const mw of resultMiddlewares) {
 				// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onResult
-				const out = mw.onResult!(current, ctx);
+				const out = mw.onResult!(current, c);
 				if (out instanceof Promise) continue;
 				current = out;
 			}
@@ -106,7 +106,7 @@ export function every(...middlewares: ToolMiddleware[]): ToolMiddleware {
 
 /** Run middleware only when the condition is false. */
 export function except(
-	condition: (ctx: ToolContext) => boolean,
+	condition: (c: ToolContext) => boolean,
 	middleware: ToolMiddleware,
 ): ToolMiddleware {
 	return {
@@ -116,19 +116,19 @@ export function except(
 			return middleware.onRegister?.(tool);
 		},
 
-		async onCall(ctx: ToolContext, next: () => Promise<CallToolResult>) {
-			if (condition(ctx)) {
+		async onCall(c: ToolContext, next: () => Promise<CallToolResult>) {
+			if (condition(c)) {
 				return next();
 			}
 			if (middleware.onCall) {
-				return middleware.onCall(ctx, next);
+				return middleware.onCall(c, next);
 			}
 			return next();
 		},
 
-		onResult(result: CallToolResult, ctx: ToolContext) {
+		onResult(result: CallToolResult, c: ToolContext) {
 			if (middleware.onResult) {
-				return middleware.onResult(result, ctx);
+				return middleware.onResult(result, c);
 			}
 			return result;
 		},

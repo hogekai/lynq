@@ -82,7 +82,7 @@ describe("middleware", () => {
 
 		const globalMw: ToolMiddleware = {
 			name: "global",
-			async onCall(ctx, next) {
+			async onCall(c, next) {
 				order.push("global");
 				return next();
 			},
@@ -90,7 +90,7 @@ describe("middleware", () => {
 
 		const perToolMw: ToolMiddleware = {
 			name: "per-tool",
-			async onCall(ctx, next) {
+			async onCall(c, next) {
 				order.push("per-tool");
 				return next();
 			},
@@ -270,11 +270,11 @@ describe("onResult", () => {
 
 		const mw1: ToolMiddleware = {
 			name: "mw1",
-			async onCall(ctx, next) {
+			async onCall(c, next) {
 				order.push("mw1:call");
 				return next();
 			},
-			onResult(result, ctx) {
+			onResult(result, c) {
 				order.push("mw1:result");
 				return result;
 			},
@@ -282,11 +282,11 @@ describe("onResult", () => {
 
 		const mw2: ToolMiddleware = {
 			name: "mw2",
-			async onCall(ctx, next) {
+			async onCall(c, next) {
 				order.push("mw2:call");
 				return next();
 			},
-			onResult(result, ctx) {
+			onResult(result, c) {
 				order.push("mw2:result");
 				return result;
 			},

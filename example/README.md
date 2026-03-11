@@ -18,7 +18,7 @@ claude
 1. Only `login` is visible
 2. Call `login` with `admin` / `1234`
 3. `get_weather`, `save_note`, `configure`, and `slow_analysis` appear
-4. `configure` uses `ctx.elicit.form()` to ask for user preferences (theme, language)
+4. `configure` uses `c.elicit.form()` to ask for user preferences (theme, language)
 5. `slow_analysis` is an async task — it returns a task ID immediately, then sends progress notifications (`0%`, `50%`, `100%`) over ~4 seconds
 
 > **Note:** `configure` requires a client that supports elicitation (MCP protocol `elicitation/create`). Claude Desktop supports form mode.

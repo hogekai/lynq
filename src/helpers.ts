@@ -100,7 +100,7 @@ export function findResourceByUri(
 
 export function buildMiddlewareChain(
 	middlewares: ToolMiddleware[],
-	ctx: ToolContext,
+	c: ToolContext,
 	finalHandler: () => Promise<CallToolResult>,
 ): () => Promise<CallToolResult> {
 	const callMiddlewares = middlewares.filter((mw) => mw.onCall);
@@ -112,13 +112,13 @@ export function buildMiddlewareChain(
 			let result = await finalHandler();
 			for (const mw of resultMiddlewares) {
 				// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onResult
-				result = await mw.onResult!(result, ctx);
+				result = await mw.onResult!(result, c);
 			}
 			return result;
 		}
 		const mw = callMiddlewares[index++];
 		// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onCall
-		return mw.onCall!(ctx, next);
+		return mw.onCall!(c, next);
 	};
 
 	return next;

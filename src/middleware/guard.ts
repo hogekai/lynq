@@ -20,8 +20,8 @@ export function guard(options?: GuardOptions): ToolMiddleware {
 		onRegister() {
 			return false;
 		},
-		async onCall(ctx, next) {
-			const value = ctx.session.get(sessionKey);
+		async onCall(c, next) {
+			const value = c.session.get(sessionKey);
 			if (!value) {
 				return error(message);
 			}

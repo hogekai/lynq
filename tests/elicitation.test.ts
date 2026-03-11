@@ -34,13 +34,13 @@ async function createConnectedPair(
 }
 
 describe("elicitation — form mode", () => {
-	it("ctx.elicit.form() returns accepted content", async () => {
+	it("c.elicit.form() returns accepted content", async () => {
 		const server = createTestServer();
 		server.tool(
 			"setup",
 			{ description: "Setup", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.form(
+			async (_args: any, c: any) => {
+				const result = await c.elicit.form(
 					"Enter API key",
 					z.object({
 						apiKey: z.string().describe("Your API key"),
@@ -62,13 +62,13 @@ describe("elicitation — form mode", () => {
 		expect((result as any).content[0].text).toBe("accept:sk-123");
 	});
 
-	it("ctx.elicit.form() propagates decline", async () => {
+	it("c.elicit.form() propagates decline", async () => {
 		const server = createTestServer();
 		server.tool(
 			"setup",
 			{ description: "Setup", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.form(
+			async (_args: any, c: any) => {
+				const result = await c.elicit.form(
 					"Enter key",
 					z.object({
 						key: z.string(),
@@ -86,13 +86,13 @@ describe("elicitation — form mode", () => {
 		expect((result as any).content[0].text).toBe("decline");
 	});
 
-	it("ctx.elicit.form() propagates cancel", async () => {
+	it("c.elicit.form() propagates cancel", async () => {
 		const server = createTestServer();
 		server.tool(
 			"setup",
 			{ description: "Setup", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.form(
+			async (_args: any, c: any) => {
+				const result = await c.elicit.form(
 					"Enter key",
 					z.object({
 						key: z.string(),
@@ -112,13 +112,13 @@ describe("elicitation — form mode", () => {
 });
 
 describe("elicitation — url mode", () => {
-	it("ctx.elicit.url() returns action only", async () => {
+	it("c.elicit.url() returns action only", async () => {
 		const server = createTestServer();
 		server.tool(
 			"login",
 			{ description: "Login", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.url(
+			async (_args: any, c: any) => {
+				const result = await c.elicit.url(
 					"Complete auth",
 					"https://auth.example.com/oauth",
 				);
@@ -137,13 +137,13 @@ describe("elicitation — url mode", () => {
 		expect((result as any).content[0].text).toBe("accept:true");
 	});
 
-	it("ctx.elicit.url() propagates decline", async () => {
+	it("c.elicit.url() propagates decline", async () => {
 		const server = createTestServer();
 		server.tool(
 			"login",
 			{ description: "Login", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const result = await ctx.elicit.url("Auth", "https://example.com");
+			async (_args: any, c: any) => {
+				const result = await c.elicit.url("Auth", "https://example.com");
 				return text(result.action);
 			},
 		);
@@ -158,15 +158,15 @@ describe("elicitation — url mode", () => {
 });
 
 describe("elicitation — middleware", () => {
-	it("middleware can use ctx.elicit.form()", async () => {
+	it("middleware can use c.elicit.form()", async () => {
 		const server = createTestServer();
 
 		const apiKeyMw: ToolMiddleware = {
 			name: "apiKey",
 			onRegister: () => undefined,
-			async onCall(ctx, next) {
-				if (!ctx.session.get("apiKey")) {
-					const result = await ctx.elicit.form(
+			async onCall(c, next) {
+				if (!c.session.get("apiKey")) {
+					const result = await c.elicit.form(
 						"API key required",
 						z.object({
 							apiKey: z.string(),
@@ -175,7 +175,7 @@ describe("elicitation — middleware", () => {
 					if (result.action !== "accept") {
 						return error("key required");
 					}
-					ctx.session.set("apiKey", result.content.apiKey);
+					c.session.set("apiKey", result.content.apiKey);
 				}
 				return next();
 			},
@@ -185,7 +185,7 @@ describe("elicitation — middleware", () => {
 			"query",
 			apiKeyMw,
 			{ description: "Query", input: z.object({}) },
-			async (_args: any, ctx: any) => text(`key=${ctx.session.get("apiKey")}`),
+			async (_args: any, c: any) => text(`key=${c.session.get("apiKey")}`),
 		);
 
 		const client = await createConnectedPair(server, async () => ({

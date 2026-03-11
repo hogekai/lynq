@@ -28,17 +28,17 @@ server.resource(
 
 ## authorize() Reveals Both Tools and Resources
 
-A single `ctx.session.authorize("guard")` call reveals every tool **and** every resource guarded by the `"guard"` middleware. Both `tools/list_changed` and `resources/list_changed` notifications fire automatically.
+A single `c.session.authorize("guard")` call reveals every tool **and** every resource guarded by the `"guard"` middleware. Both `tools/list_changed` and `resources/list_changed` notifications fire automatically.
 
 ```ts
 server.tool(
   "login",
   { description: "Log in" },
-  async (args, ctx) => {
-    ctx.session.set("user", args.user);
-    ctx.session.authorize("guard");
+  async (args, c) => {
+    c.session.set("user", args.user);
+    c.session.authorize("guard");
     // Both "admin-panel" tool and "config://secrets" resource appear
-    return ctx.text("Logged in");
+    return c.text("Logged in");
   },
 );
 
@@ -46,7 +46,7 @@ server.tool(
   "admin-panel",
   guard(),
   { description: "Admin operations" },
-  async (_args, ctx) => ctx.text("Admin panel data"),
+  async (_args, c) => c.text("Admin panel data"),
 );
 ```
 
@@ -78,9 +78,9 @@ server.resource(
 server.tool(
   "unlock_daily",
   { description: "Unlock only the daily report" },
-  async (_args, ctx) => {
-    ctx.session.enableResources("report://daily");
-    return ctx.text("Daily report unlocked");
+  async (_args, c) => {
+    c.session.enableResources("report://daily");
+    return c.text("Daily report unlocked");
   },
 );
 ```

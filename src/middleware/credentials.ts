@@ -26,14 +26,14 @@ export function credentials<T extends z.ZodObject<z.ZodRawShape>>(
 		onRegister() {
 			return false;
 		},
-		async onCall(ctx, next) {
+		async onCall(c, next) {
 			// Already authenticated
-			if (ctx.session.get(sessionKey)) {
+			if (c.session.get(sessionKey)) {
 				return next();
 			}
 
 			// Ask user for credentials via elicit.form()
-			const result = await ctx.elicit.form(options.message, options.schema);
+			const result = await c.elicit.form(options.message, options.schema);
 
 			if (result.action !== "accept") {
 				return error("Authentication cancelled.");
@@ -46,8 +46,8 @@ export function credentials<T extends z.ZodObject<z.ZodRawShape>>(
 			}
 
 			// Store user and authorize
-			ctx.session.set(sessionKey, user);
-			ctx.session.authorize(name);
+			c.session.set(sessionKey, user);
+			c.session.authorize(name);
 			return next();
 		},
 	};

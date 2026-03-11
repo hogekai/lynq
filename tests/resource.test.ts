@@ -290,7 +290,7 @@ describe("resources/read integration", () => {
 
 		const mw: ToolMiddleware = {
 			name: "logger",
-			async onCall(_ctx, next) {
+			async onCall(_c, next) {
 				order.push("middleware");
 				return next();
 			},

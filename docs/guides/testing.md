@@ -49,8 +49,8 @@ import { guard } from "@lynq/lynq/guard";
 
 it("guard-protected tools are hidden then revealed", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("public", {}, async (_args, ctx) => ctx.text("ok"));
-  server.tool("secret", guard(), {}, async (_args, ctx) => ctx.text("classified"));
+  server.tool("public", {}, async (_args, c) => c.text("ok"));
+  server.tool("secret", guard(), {}, async (_args, c) => c.text("classified"));
 
   t = await createTestClient(server);
 
@@ -78,7 +78,7 @@ it("callTool returns the full result", async () => {
   server.tool(
     "greet",
     { input: z.object({ name: z.string() }) },
-    async (args, ctx) => ctx.text(`Hello ${args.name}`),
+    async (args, c) => c.text(`Hello ${args.name}`),
   );
 
   t = await createTestClient(server);
@@ -88,8 +88,8 @@ it("callTool returns the full result", async () => {
 
 it("callToolText extracts text and throws on errors", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("echo", {}, async (_args, ctx) => ctx.text("hello"));
-  server.tool("fail", {}, async (_args, ctx) => ctx.error("something broke"));
+  server.tool("echo", {}, async (_args, c) => c.text("hello"));
+  server.tool("fail", {}, async (_args, c) => c.error("something broke"));
 
   t = await createTestClient(server);
   expect(await t.callToolText("echo")).toBe("hello");
@@ -133,7 +133,7 @@ expect.extend(matchers);
 
 it("toHaveTextContent checks for substring", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("weather", {}, async (_args, ctx) => ctx.text("sunny in Tokyo"));
+  server.tool("weather", {}, async (_args, c) => c.text("sunny in Tokyo"));
 
   t = await createTestClient(server);
   const result = await t.callTool("weather");
@@ -142,7 +142,7 @@ it("toHaveTextContent checks for substring", async () => {
 
 it("toBeError checks isError flag", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
-  server.tool("fail", {}, async (_args, ctx) => ctx.error("denied"));
+  server.tool("fail", {}, async (_args, c) => c.error("denied"));
 
   t = await createTestClient(server);
   const result = await t.callTool("fail");
@@ -161,7 +161,7 @@ afterEach(async () => {
 ```
 
 :::tip Under the hood
-`createTestClient()` uses the MCP SDK's `InMemoryTransport.createLinkedPair()` to create a bidirectional in-memory channel. It connects a real `Client` to your server's internal `_server`. The `authorize()`/`revoke()` methods on the test client directly manipulate session state, simulating what `ctx.session.authorize()` does in production -- without needing a real transport or network.
+`createTestClient()` uses the MCP SDK's `InMemoryTransport.createLinkedPair()` to create a bidirectional in-memory channel. It connects a real `Client` to your server's internal `_server`. The `authorize()`/`revoke()` methods on the test client directly manipulate session state, simulating what `c.session.authorize()` does in production -- without needing a real transport or network.
 :::
 
 ## TestClient API Reference

@@ -15,7 +15,7 @@ function createTestServer() {
 function pass(name: string): ToolMiddleware {
 	return {
 		name,
-		async onCall(_ctx, next) {
+		async onCall(_c, next) {
 			return next();
 		},
 	};
@@ -162,7 +162,7 @@ describe("every()", () => {
 		const order: string[] = [];
 		const mwA: ToolMiddleware = {
 			name: "a",
-			async onCall(_ctx, next) {
+			async onCall(_c, next) {
 				return next();
 			},
 			onResult(result) {
@@ -172,7 +172,7 @@ describe("every()", () => {
 		};
 		const mwB: ToolMiddleware = {
 			name: "b",
-			async onCall(_ctx, next) {
+			async onCall(_c, next) {
 				return next();
 			},
 			onResult(result) {
@@ -240,7 +240,7 @@ describe("except()", () => {
 		server.tool(
 			"api",
 			except(
-				(ctx) => ctx.session.get("role") === "admin",
+				(c) => c.session.get("role") === "admin",
 				rateLimit({ max: 1 }),
 			),
 			{ input: z.object({}) },

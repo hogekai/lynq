@@ -11,17 +11,17 @@ server.tool(
     description: "Classify text sentiment",
     input: z.object({ text: z.string() }),
   },
-  async (args, ctx) => {
-    const sentiment = await ctx.sample(args.text, {
+  async (args, c) => {
+    const sentiment = await c.sample(args.text, {
       system: "Respond with exactly one word: positive, negative, or neutral.",
       maxTokens: 10,
     });
-    return ctx.text(`Sentiment: ${sentiment}`);
+    return c.text(`Sentiment: ${sentiment}`);
   },
 );
 ```
 
-`ctx.sample(prompt, options?)` sends a prompt and returns the response as a string.
+`c.sample(prompt, options?)` sends a prompt and returns the response as a string.
 
 ## Options
 
@@ -38,21 +38,26 @@ server.tool(
 For full control over the SDK's `CreateMessageRequestParams`:
 
 ```ts
-const result = await ctx.sample.raw({
+const result = await c.sample.raw({
   messages: [
     { role: "user", content: { type: "text", text: "Hello" } },
   ],
   maxTokens: 256,
 });
-// result: CreateMessageResult
+// result: CreateMessageResult — full SDK response with content, model, stopReason
 ```
+
+Use `c.sample.raw()` when you need:
+- Multi-turn conversations (multiple messages)
+- Access to `stopReason` or `model` in the response
+- Non-text content types in the response
 
 ## Availability
 
-Sampling is available in **tool handlers** and **task handlers**. It is **not** available in resource handlers.
+Sampling is available in **tool handlers** and **task handlers**. It is **not** available in resource handlers (resources are read-only data and should not trigger LLM inference).
 
 :::tip Under the hood
-`ctx.sample()` calls the MCP SDK's `server.createMessage()`, which sends a `sampling/createMessage` request to the client. The client chooses which model to invoke -- the `model` option is a hint, not a command. The response content is extracted: if `content.type === "text"`, the text string is returned; otherwise an empty string.
+`c.sample()` calls the MCP SDK's `server.createMessage()`, which sends a `sampling/createMessage` request to the client. The client chooses which model to invoke -- the `model` option is a hint, not a command. The response content is extracted: if `content.type === "text"`, the text string is returned; otherwise an empty string.
 :::
 
 ## What's Next

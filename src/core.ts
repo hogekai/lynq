@@ -291,7 +291,7 @@ export function createMCPServer(info: {
 					if (!isToolVisible(tool, sessionId))
 						return errorResponse(`Tool not available: ${name}`);
 
-					const ctx = createToolContext(
+					const c = createToolContext(
 						sdkServer,
 						sessionId,
 						createSessionAPI(sessionId),
@@ -302,10 +302,10 @@ export function createMCPServer(info: {
 					);
 
 					const finalHandler = () =>
-						Promise.resolve(tool.handler(args ?? {}, ctx));
+						Promise.resolve(tool.handler(args ?? {}, c));
 					const chain = buildMiddlewareChain(
 						tool.middlewares,
-						ctx,
+						c,
 						finalHandler,
 					);
 					return chain();
@@ -338,7 +338,7 @@ export function createMCPServer(info: {
 						},
 					};
 
-					const ctx: TaskContext = {
+					const c: TaskContext = {
 						...createToolContext(
 							sdkServer,
 							sessionId,
@@ -354,7 +354,7 @@ export function createMCPServer(info: {
 					const finalHandler = async (): Promise<CallToolResult> => {
 						(async () => {
 							try {
-								const result = await task.handler(args ?? {}, ctx);
+								const result = await task.handler(args ?? {}, c);
 								if (!cancelledTaskIds.has(taskId)) {
 									await requestTaskStore.storeTaskResult(
 										taskId,
@@ -376,7 +376,7 @@ export function createMCPServer(info: {
 
 					const chain = buildMiddlewareChain(
 						task.middlewares,
-						ctx,
+						c,
 						finalHandler,
 					);
 					return chain();
@@ -446,7 +446,7 @@ export function createMCPServer(info: {
 
 				const session = createSessionAPI(sessionId);
 
-				const ctx: ResourceContext = {
+				const c: ResourceContext = {
 					uri,
 					session,
 					sessionId,
@@ -454,7 +454,7 @@ export function createMCPServer(info: {
 				};
 
 				// Run middleware onCall chain using a ToolContext adapter
-				const toolCtx = createToolContext(
+				const toolC = createToolContext(
 					sdkServer,
 					sessionId,
 					session,
@@ -465,7 +465,7 @@ export function createMCPServer(info: {
 				);
 
 				const finalHandler = async () => {
-					const content = await res.handler(uri, ctx);
+					const content = await res.handler(uri, c);
 					return {
 						contents: [
 							{
@@ -480,7 +480,7 @@ export function createMCPServer(info: {
 
 				const chain = buildMiddlewareChain(
 					res.middlewares,
-					toolCtx,
+					toolC,
 					finalHandler as unknown as () => Promise<CallToolResult>,
 				);
 

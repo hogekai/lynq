@@ -7,8 +7,8 @@ lynq's core concept: tools and resources appear and disappear per session. Every
 Store and retrieve arbitrary data scoped to the current session:
 
 ```ts
-ctx.session.set("user", { name: "admin" });
-const user = ctx.session.get<{ name: string }>("user");
+c.session.set("user", { name: "admin" });
+const user = c.session.get<{ name: string }>("user");
 ```
 
 State is isolated per session. One client's state never leaks to another.
@@ -21,10 +21,10 @@ Reveal or hide **all** tools and resources guarded by a middleware name:
 
 ```ts
 // In a login handler:
-ctx.session.authorize("guard");  // reveals all guard()-guarded tools and resources
+c.session.authorize("guard");  // reveals all guard()-guarded tools and resources
 
 // In a logout handler:
-ctx.session.revoke("guard");     // hides them again
+c.session.revoke("guard");     // hides them again
 ```
 
 ### enableTools / disableTools
@@ -32,8 +32,8 @@ ctx.session.revoke("guard");     // hides them again
 Reveal or hide **specific** tools by name:
 
 ```ts
-ctx.session.enableTools("step2", "step3");
-ctx.session.disableTools("step1");
+c.session.enableTools("step2", "step3");
+c.session.disableTools("step1");
 ```
 
 ### enableResources / disableResources
@@ -41,8 +41,8 @@ ctx.session.disableTools("step1");
 Same pattern for resources:
 
 ```ts
-ctx.session.enableResources("config://secrets");
-ctx.session.disableResources("config://secrets");
+c.session.enableResources("config://secrets");
+c.session.disableResources("config://secrets");
 ```
 
 ## authorize vs enableTools
@@ -78,7 +78,7 @@ lynq ships `guard()` as a built-in middleware for the visibility pattern:
 ```ts
 import { guard } from "@lynq/lynq/guard";
 
-// Hidden until ctx.session.authorize("guard") is called
+// Hidden until c.session.authorize("guard") is called
 server.tool("secret", guard(), { description: "Protected" }, handler);
 ```
 

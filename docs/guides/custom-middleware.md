@@ -13,11 +13,11 @@ function adminOnly(): ToolMiddleware {
   return {
     name: "admin",
     onRegister() {
-      return false; // hidden until ctx.session.authorize("admin")
+      return false; // hidden until c.session.authorize("admin")
     },
-    onCall(ctx, next) {
-      if (!ctx.session.get("isAdmin")) {
-        return ctx.error("Admin only.");
+    onCall(c, next) {
+      if (!c.session.get("isAdmin")) {
+        return c.error("Admin only.");
       }
       return next();
     },
@@ -58,11 +58,11 @@ Code before `next()` runs on the way in; code after runs on the way out.
 ```ts
 const timer: ToolMiddleware = {
   name: "timer",
-  async onCall(ctx, next) {
+  async onCall(c, next) {
     const start = performance.now();
     const result = await next();
     const ms = (performance.now() - start).toFixed(0);
-    console.log(`[${ctx.toolName}] ${ms}ms`);
+    console.log(`[${c.toolName}] ${ms}ms`);
     return result;
   },
 };
@@ -76,8 +76,8 @@ If `onCall` doesn't call `next()`, the handler and all `onResult` hooks are skip
 function maintenanceMode(): ToolMiddleware {
   return {
     name: "maintenance",
-    onCall(ctx) {
-      return ctx.error("Service is under maintenance.");
+    onCall(c) {
+      return c.error("Service is under maintenance.");
     },
   };
 }

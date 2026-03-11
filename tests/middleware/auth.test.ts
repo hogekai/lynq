@@ -67,9 +67,9 @@ describe("auth middleware (deprecated, backward compat)", () => {
 		server.tool(
 			"login",
 			{ input: z.object({ username: z.string() }) },
-			async (args: any, ctx: any) => {
-				ctx.session.set("user", { name: args.username });
-				ctx.session.authorize("auth");
+			async (args: any, c: any) => {
+				c.session.set("user", { name: args.username });
+				c.session.authorize("auth");
 				return text("Logged in");
 			},
 		);

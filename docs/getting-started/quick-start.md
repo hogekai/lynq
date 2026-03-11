@@ -23,7 +23,7 @@ server.tool(
     description: "Say hello",
     input: z.object({ name: z.string() }),
   },
-  async (args, ctx) => ctx.text(`Hello, ${args.name}!`),
+  async (args, c) => c.text(`Hello, ${args.name}!`),
 );
 
 await server.stdio();
@@ -79,17 +79,17 @@ server.tool(
       password: z.string(),
     }),
   },
-  async (args, ctx) => {
+  async (args, c) => {
     if (args.username === "admin" && args.password === "1234") {
-      ctx.session.set("user", { name: args.username });
-      ctx.session.authorize("guard");
-      return ctx.text(`Welcome, ${args.username}.`);
+      c.session.set("user", { name: args.username });
+      c.session.authorize("guard");
+      return c.text(`Welcome, ${args.username}.`);
     }
-    return ctx.error("Invalid credentials.");
+    return c.error("Invalid credentials.");
   },
 );
 
-// Hidden until ctx.session.authorize("guard") is called
+// Hidden until c.session.authorize("guard") is called
 server.tool(
   "get_weather",
   guard(),
@@ -97,7 +97,7 @@ server.tool(
     description: "Get current weather for a city",
     input: z.object({ city: z.string() }),
   },
-  async (args, ctx) => ctx.text(`${args.city}: 22C, Sunny`),
+  async (args, c) => c.text(`${args.city}: 22C, Sunny`),
 );
 
 await server.stdio();

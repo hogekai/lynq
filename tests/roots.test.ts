@@ -41,14 +41,14 @@ async function createConnectedPair(
 	return client;
 }
 
-describe("ctx.roots()", () => {
+describe("c.roots()", () => {
 	it("returns roots provided by client", async () => {
 		const server = createTestServer();
 		server.tool(
 			"check",
 			{ description: "Check", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const roots = await ctx.roots();
+			async (_args: any, c: any) => {
+				const roots = await c.roots();
 				return text(JSON.stringify(roots));
 			},
 		);
@@ -73,8 +73,8 @@ describe("ctx.roots()", () => {
 		server.tool(
 			"check",
 			{ description: "Check", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const roots = await ctx.roots();
+			async (_args: any, c: any) => {
+				const roots = await c.roots();
 				return text(JSON.stringify(roots));
 			},
 		);
@@ -91,8 +91,8 @@ describe("ctx.roots()", () => {
 		server.tool(
 			"check",
 			{ description: "Check", input: z.object({}) },
-			async (_args: any, ctx: any) => {
-				const roots = await ctx.roots();
+			async (_args: any, c: any) => {
+				const roots = await c.roots();
 				return text(String(roots.length));
 			},
 		);

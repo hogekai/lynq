@@ -18,13 +18,13 @@ export function rateLimit(options: RateLimitOptions): ToolMiddleware {
 
 	return {
 		name: "rateLimit",
-		async onCall(ctx, next) {
-			const key = `rateLimit:${ctx.toolName}`;
-			const state = ctx.session.get<{ count: number; resetAt: number }>(key);
+		async onCall(c, next) {
+			const key = `rateLimit:${c.toolName}`;
+			const state = c.session.get<{ count: number; resetAt: number }>(key);
 			const now = Date.now();
 
 			if (!state || now >= state.resetAt) {
-				ctx.session.set(key, { count: 1, resetAt: now + windowMs });
+				c.session.set(key, { count: 1, resetAt: now + windowMs });
 				return next();
 			}
 
@@ -32,7 +32,7 @@ export function rateLimit(options: RateLimitOptions): ToolMiddleware {
 				return error(message);
 			}
 
-			ctx.session.set(key, { ...state, count: state.count + 1 });
+			c.session.set(key, { ...state, count: state.count + 1 });
 			return next();
 		},
 	};

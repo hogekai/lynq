@@ -20,15 +20,15 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **One runtime dependency.** `@modelcontextprotocol/sdk` as direct dependency. Nothing else in core.
 - **`createMCPServer(info)` is the entire API surface.** No config files, no directory scanning.
 - **Middleware is Hono-style.** Global via `server.use(middleware)`. Per-tool via `server.tool("name", middleware, config, handler)`. Per-resource via `server.resource("uri", middleware, config, handler)`. Per-task via `server.task("name", middleware, config, handler)`. `server.use()` applies to tools and tasks.
-- **Tool, resource, and task visibility is session-scoped.** `tool()`, `resource()`, and `task()` share the same middleware pattern. `ctx.session.authorize()` / `ctx.session.revoke()` affect all. Bidirectional notification is internal — users never touch it.
+- **Tool, resource, and task visibility is session-scoped.** `tool()`, `resource()`, and `task()` share the same middleware pattern. `c.session.authorize()` / `c.session.revoke()` affect all. Bidirectional notification is internal — users never touch it.
 - **`@experimental` marks unstable APIs.** `server.task()` depends on the MCP SDK's experimental Tasks API. User-facing interface is stable; internal SDK wiring may change.
-- **ctx follows Hono's Context pattern.** `ctx.session.set()` / `ctx.session.get()`.
-- **`ctx.roots()` queries client-provided filesystem roots.** Returns `Promise<RootInfo[]>`. Empty array if client lacks roots capability. No caching — each call queries the client.
-- **`ctx.sample()` requests LLM inference from the client.** `ctx.sample(prompt, options?)` → `Promise<string>`. `ctx.sample.raw(sdkParams)` → `Promise<CreateMessageResult>`. Available in tool and task handlers. Not in resource handlers.
+- **`c` follows Hono's Context pattern.** `c.session.set()` / `c.session.get()`. Short name for minimal cognitive load.
+- **`c.roots()` queries client-provided filesystem roots.** Returns `Promise<RootInfo[]>`. Empty array if client lacks roots capability. No caching — each call queries the client.
+- **`c.sample()` requests LLM inference from the client.** `c.sample(prompt, options?)` → `Promise<string>`. `c.sample.raw(sdkParams)` → `Promise<CreateMessageResult>`. Available in tool and task handlers. Not in resource handlers.
 - **`server.http(options?)` returns a Web Standard request handler.** `(req: Request) => Promise<Response>`. Mounts in Hono, Deno, Cloudflare Workers — any framework. Lazy-imports `WebStandardStreamableHTTPServerTransport` from the SDK. Stateful mode (default): per-session Server+Transport, session IDs via `Mcp-Session-Id` header. Sessionless mode: new Server+Transport per request. `enableJsonResponse` option returns JSON instead of SSE.
-- **`onResult` hook for post-handler result transformation.** `ToolMiddleware.onResult?(result, ctx)` runs after the handler returns. Execution order: `onCall` chain → handler → `onResult` (reverse middleware order) → `onCall` post-next processing. If `onCall` short-circuits (doesn't call `next()`), `onResult` does not run.
-- **Response helpers are standalone pure functions.** `text(value)`, `json(value)`, `error(message)`, `image(data, mimeType)` — exported from `lynq`. No ctx dependency. Use everywhere instead of raw `{ content: [{ type: "text", text: ... }] }`.
-- **`ctx.elicit.form(message, zodSchema)` uses Zod for schemas.** Positional args, not property objects. Internally converts to JSON Schema via `inputToJsonSchema()`. `ctx.elicit.url(message, url)` — same positional pattern.
+- **`onResult` hook for post-handler result transformation.** `ToolMiddleware.onResult?(result, c)` runs after the handler returns. Execution order: `onCall` chain → handler → `onResult` (reverse middleware order) → `onCall` post-next processing. If `onCall` short-circuits (doesn't call `next()`), `onResult` does not run.
+- **Response helpers are standalone pure functions.** `text(value)`, `json(value)`, `error(message)`, `image(data, mimeType)` — exported from `lynq`. Also available as `c.text()`, `c.json()`, etc. on the context object. Chainable: `c.text("done").json({ id: 1 })`.
+- **`c.elicit.form(message, zodSchema)` uses Zod for schemas.** Positional args, not property objects. Internally converts to JSON Schema via `inputToJsonSchema()`. `c.elicit.url(message, url)` — same positional pattern.
 - **Framework adapters are optional entry points.** `lynq/hono` and `lynq/express` provide `mountLynq(app, server, options?)`. DNS rebinding protection included by default for localhost. No additional runtime dependencies — framework types are peer deps.
 
 ## Out of scope
@@ -69,7 +69,7 @@ src/
 ├── response.ts       — response helpers (text, json, error, image)
 ├── test.ts           — test helpers (createTestClient, matchers)
 ├── helpers.ts        — pure functions (isVisible, buildMiddlewareChain, parseMiddlewareArgs, etc.)
-├── context.ts        — ctx factories (createElicit, createRootsAccessor, createSample, createToolContext)
+├── context.ts        — context factories (createElicit, createRootsAccessor, createSample, createToolContext)
 ├── internal-types.ts — internal interfaces (InternalTool, InternalResource, etc.)
 ├── middleware/
 │   ├── guard.ts        — guard() visibility gate

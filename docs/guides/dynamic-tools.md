@@ -21,10 +21,10 @@ const server = createMCPServer({ name: "onboarding", version: "1.0.0" });
 server.tool(
   "step1_set_name",
   { description: "Set your display name" },
-  async (args, ctx) => {
-    ctx.session.set("name", args.name);
-    ctx.session.enableTools("step2_choose_plan");
-    return ctx.text(`Name set to ${args.name}`);
+  async (args, c) => {
+    c.session.set("name", args.name);
+    c.session.enableTools("step2_choose_plan");
+    return c.text(`Name set to ${args.name}`);
   },
 );
 
@@ -32,10 +32,10 @@ server.tool(
   "step2_choose_plan",
   step("onboarding-step2"),
   { description: "Choose your plan" },
-  async (args, ctx) => {
-    ctx.session.set("plan", args.plan);
-    ctx.session.enableTools("step3_confirm");
-    return ctx.text(`Plan: ${args.plan}`);
+  async (args, c) => {
+    c.session.set("plan", args.plan);
+    c.session.enableTools("step3_confirm");
+    return c.text(`Plan: ${args.plan}`);
   },
 );
 
@@ -43,10 +43,10 @@ server.tool(
   "step3_confirm",
   step("onboarding-step3"),
   { description: "Confirm and finish setup" },
-  async (_args, ctx) => {
-    const name = ctx.session.get("name");
-    const plan = ctx.session.get("plan");
-    return ctx.text(`Welcome ${name} (${plan})!`);
+  async (_args, c) => {
+    const name = c.session.get("name");
+    const plan = c.session.get("plan");
+    return c.text(`Welcome ${name} (${plan})!`);
   },
 );
 ```
@@ -67,33 +67,33 @@ const server = createMCPServer({ name: "saas", version: "1.0.0" });
 server.tool(
   "login",
   { description: "Log in" },
-  async (args, ctx) => {
+  async (args, c) => {
     const user = await fetchUser(args.token); // your logic
-    ctx.session.set("user", user);
+    c.session.set("user", user);
 
     if (user.plan === "premium") {
-      ctx.session.authorize("premium");
+      c.session.authorize("premium");
     }
-    return ctx.text(`Welcome ${user.name}`);
+    return c.text(`Welcome ${user.name}`);
   },
 );
 
-server.tool("search", { description: "Basic search" }, async (args, ctx) =>
-  ctx.text(`Results for ${args.query}`),
+server.tool("search", { description: "Basic search" }, async (args, c) =>
+  c.text(`Results for ${args.query}`),
 );
 
 server.tool(
   "analytics",
   premium(),
   { description: "Advanced analytics (premium)" },
-  async (_args, ctx) => ctx.text("Analytics data..."),
+  async (_args, c) => c.text("Analytics data..."),
 );
 
 server.tool(
   "export",
   premium(),
   { description: "Export to CSV (premium)" },
-  async (_args, ctx) => ctx.text("Exported."),
+  async (_args, c) => c.text("Exported."),
 );
 ```
 
@@ -113,16 +113,16 @@ const server = createMCPServer({ name: "deploy", version: "1.0.0" });
 server.tool(
   "choose_target",
   { description: "Where to deploy?" },
-  async (args, ctx) => {
-    ctx.session.set("target", args.target);
+  async (args, c) => {
+    c.session.set("target", args.target);
 
     if (args.target === "aws") {
-      ctx.session.enableTools("configure_aws");
+      c.session.enableTools("configure_aws");
     } else if (args.target === "cloudflare") {
-      ctx.session.enableTools("configure_cloudflare");
+      c.session.enableTools("configure_cloudflare");
     }
 
-    return ctx.text(`Target: ${args.target}`);
+    return c.text(`Target: ${args.target}`);
   },
 );
 
@@ -130,14 +130,14 @@ server.tool(
   "configure_aws",
   hidden("aws-config"),
   { description: "Configure AWS deployment" },
-  async (args, ctx) => ctx.text(`AWS region: ${args.region}`),
+  async (args, c) => c.text(`AWS region: ${args.region}`),
 );
 
 server.tool(
   "configure_cloudflare",
   hidden("cf-config"),
   { description: "Configure Cloudflare deployment" },
-  async (args, ctx) => ctx.text(`CF zone: ${args.zone}`),
+  async (args, c) => c.text(`CF zone: ${args.zone}`),
 );
 ```
 

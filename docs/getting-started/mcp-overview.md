@@ -30,7 +30,7 @@ server.tool(
     description: "Get weather for a city",
     input: z.object({ city: z.string() }),
   },
-  async (args, ctx) => ctx.text(`${args.city}: 22°C, Sunny`),
+  async (args, c) => c.text(`${args.city}: 22°C, Sunny`),
 );
 ```
 
@@ -65,13 +65,13 @@ server.task(
     description: "Run data analysis",
     input: z.object({ query: z.string() }),
   },
-  async (args, ctx) => {
-    ctx.task.progress(0, "Starting...");
+  async (args, c) => {
+    c.task.progress(0, "Starting...");
     const data = await fetchData(args.query);
-    ctx.task.progress(50, "Processing...");
+    c.task.progress(50, "Processing...");
     const result = analyzeData(data);
-    ctx.task.progress(100, "Done");
-    return ctx.text(JSON.stringify(result));
+    c.task.progress(100, "Done");
+    return c.text(JSON.stringify(result));
   },
 );
 ```
@@ -89,12 +89,12 @@ server.tool(
     description: "Search GitHub repositories",
     input: z.object({ query: z.string() }),
   },
-  async (args, ctx) => {
+  async (args, c) => {
     const res = await fetch(
       `https://api.github.com/search/repositories?q=${args.query}`
     );
     const data = await res.json();
-    return ctx.json(data.items.map((r: any) => r.full_name));
+    return c.json(data.items.map((r: any) => r.full_name));
   },
 );
 ```
@@ -134,14 +134,14 @@ server.tool("search", rateLimit(10), config, handler); // per-tool
 **Session-scoped visibility** -- Tools can appear and disappear per session. The MCP protocol supports this via `notifications/tools/list_changed`, but wiring it by hand is tedious. lynq handles it automatically.
 
 ```ts
-// Hidden until ctx.session.authorize("guard")
+// Hidden until c.session.authorize("guard")
 server.tool("admin_panel", guard(), config, handler);
 ```
 
 **Elicitation** -- Ask the user for input during tool execution:
 
 ```ts
-const result = await ctx.elicit.form("Set preferences", z.object({
+const result = await c.elicit.form("Set preferences", z.object({
   theme: z.enum(["light", "dark"]),
 }));
 ```
@@ -149,7 +149,7 @@ const result = await ctx.elicit.form("Set preferences", z.object({
 **Sampling** -- Request LLM inference from the client:
 
 ```ts
-const answer = await ctx.sample("Summarize this text", { maxTokens: 100 });
+const answer = await c.sample("Summarize this text", { maxTokens: 100 });
 ```
 
 :::tip Under the hood

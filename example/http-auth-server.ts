@@ -21,9 +21,9 @@ mcp.tool(
 			`http://localhost:3000/login?session=${sessionId}&elicitation=${elicitationId}`,
 	}),
 	{ description: "Get your personal data", input: z.object({}) },
-	async (_args, ctx) => {
-		const user = ctx.session.get("user");
-		return ctx.text(`Data for user: ${JSON.stringify(user)}`);
+	async (_args, c) => {
+		const user = c.session.get("user");
+		return c.text(`Data for user: ${JSON.stringify(user)}`);
 	},
 );
 
@@ -36,8 +36,8 @@ mcp.tool(
 			`http://localhost:3000/pay?session=${sessionId}&elicitation=${elicitationId}`,
 	}),
 	{ description: "Premium feature", input: z.object({ query: z.string() }) },
-	async (args, ctx) => {
-		return ctx.text(`Premium result for: ${args.query}`);
+	async (args, c) => {
+		return c.text(`Premium result for: ${args.query}`);
 	},
 );
 
