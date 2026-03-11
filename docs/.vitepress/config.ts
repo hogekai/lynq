@@ -74,6 +74,12 @@ export default defineConfig({
 				text: "Payment Providers",
 				items: [
 					{ text: "Overview", link: "/payment/overview" },
+					{
+						text: "Stripe Checkout",
+						link: "/payment/stripe",
+					},
+					{ text: "USDC", link: "/payment/usdc" },
+					{ text: "tip()", link: "/payment/tip" },
 				],
 			},
 			{

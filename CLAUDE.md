@@ -63,6 +63,9 @@ Single package, multiple entry points via `exports` field:
 - `lynq/jwt` — JWT verification middleware (`jwt()`) — requires `jose` peer dep
 - `lynq/github-oauth` — GitHub OAuth provider (`githubOAuth()`, `handleGitHubCallback()`)
 - `lynq/google-oauth` — Google OAuth provider (`googleOAuth()`, `handleGoogleCallback()`)
+- `lynq/stripe` — Stripe Checkout payment provider (`stripePayment()`, `handleStripeCallback()`) — requires `stripe` peer dep
+- `lynq/usdc` — USDC payment provider (`usdcPayment()`, `handleUsdcCallback()`)
+- `lynq/tip` — post-result tip link appender (`tip()`)
 - `lynq/stdio` — re-export of `StdioServerTransport`
 - `lynq/hono` — Hono adapter (`mountLynq`)
 - `lynq/express` — Express adapter (`mountLynq`)
@@ -92,7 +95,10 @@ src/
 │   ├── bearer.ts       — bearer() token verification
 │   ├── jwt.ts          — jwt() JWT verification
 │   ├── github-oauth.ts — githubOAuth() + handleGitHubCallback()
-│   └── google-oauth.ts — googleOAuth() + handleGoogleCallback()
+│   ├── google-oauth.ts — googleOAuth() + handleGoogleCallback()
+│   ├── stripe.ts       — stripePayment() + handleStripeCallback()
+│   ├── usdc.ts         — usdcPayment() + handleUsdcCallback()
+│   └── tip.ts          — tip() onResult middleware
 └── adapters/
     ├── stdio.ts      — stdio transport re-export
     ├── shared.ts     — validateHost utility for DNS rebinding protection
@@ -128,7 +134,10 @@ tests/
 │   ├── bearer.test.ts
 │   ├── jwt.test.ts
 │   ├── github-oauth.test.ts
-│   └── google-oauth.test.ts
+│   ├── google-oauth.test.ts
+│   ├── stripe.test.ts
+│   ├── usdc.test.ts
+│   └── tip.test.ts
 └── adapters/
     ├── hono.test.ts
     └── express.test.ts

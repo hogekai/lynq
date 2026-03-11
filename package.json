@@ -79,6 +79,18 @@
 		"./google-oauth": {
 			"types": "./dist/middleware/google-oauth.d.ts",
 			"import": "./dist/middleware/google-oauth.mjs"
+		},
+		"./stripe": {
+			"types": "./dist/middleware/stripe.d.ts",
+			"import": "./dist/middleware/stripe.mjs"
+		},
+		"./usdc": {
+			"types": "./dist/middleware/usdc.d.ts",
+			"import": "./dist/middleware/usdc.mjs"
+		},
+		"./tip": {
+			"types": "./dist/middleware/tip.d.ts",
+			"import": "./dist/middleware/tip.mjs"
 		}
 	},
 	"files": [
@@ -107,6 +119,7 @@
 		"express": "^5.2.1",
 		"hono": "^4.12.5",
 		"jose": "^6.2.1",
+		"stripe": "^20.4.1",
 		"tsup": "^8.0.0",
 		"typedoc": "^0.28.17",
 		"typedoc-plugin-markdown": "^4.10.0",
@@ -119,6 +132,7 @@
 		"express": "^5.0.0",
 		"hono": "^4.0.0",
 		"jose": "^6.0.0",
+		"stripe": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0",
 		"zod": "^3.0.0"
 	},
 	"peerDependenciesMeta": {
@@ -132,6 +146,9 @@
 			"optional": true
 		},
 		"jose": {
+			"optional": true
+		},
+		"stripe": {
 			"optional": true
 		}
 	},

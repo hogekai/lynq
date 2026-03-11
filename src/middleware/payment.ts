@@ -9,7 +9,10 @@ export interface PaymentOptions {
 	/** Message shown to the user. Default: "Please complete payment to continue." */
 	message?: string;
 	/** Build the payment page URL. */
-	buildUrl: (params: { sessionId: string; elicitationId: string }) => string;
+	buildUrl: (params: {
+		sessionId: string;
+		elicitationId: string;
+	}) => string | Promise<string>;
 	/** Timeout in ms. Default: 300000 */
 	timeout?: number;
 }

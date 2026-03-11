@@ -9,7 +9,10 @@ export interface OAuthOptions {
 	/** Message shown to the user. Default: "Please sign in to continue." */
 	message?: string;
 	/** Build the OAuth authorization URL. */
-	buildUrl: (params: { sessionId: string; elicitationId: string }) => string;
+	buildUrl: (params: {
+		sessionId: string;
+		elicitationId: string;
+	}) => string | Promise<string>;
 	/** Timeout in ms. Default: 300000 */
 	timeout?: number;
 }

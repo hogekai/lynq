@@ -24,7 +24,7 @@ server.tool("premium", payment({
 | `name` | `string` | `"payment"` | Middleware name |
 | `sessionKey` | `string` | `"payment"` | Session key for payment status |
 | `message` | `string` | `"Please complete payment to continue."` | Elicitation message |
-| `buildUrl` | `(params: { sessionId: string; elicitationId: string }) => string` | — | **Required.** URL builder for payment page |
+| `buildUrl` | `(params: { sessionId: string; elicitationId: string }) => string \| Promise<string>` | — | **Required.** URL builder for payment page |
 | `timeout` | `number` | `300000` | Timeout in ms |
 
 ## Example
@@ -63,10 +63,12 @@ export default { port: 3000, fetch: app.fetch };
 
 ## Providers
 
-| Provider | Status | Description |
+| Provider | Import | Description |
 |----------|--------|-------------|
-| `payment()` | Available | Generic URL-based payment |
-| USDC (x402) | Coming soon | Autonomous agent payments |
+| [`payment()`](/payment/overview) | `@lynq/lynq/payment` | Generic URL-based payment |
+| [`stripePayment()`](/payment/stripe) | `@lynq/lynq/stripe` | Stripe Checkout integration |
+| [`usdcPayment()`](/payment/usdc) | `@lynq/lynq/usdc` | USDC on-chain payment |
+| [`tip()`](/payment/tip) | `@lynq/lynq/tip` | Post-result tip link (non-blocking) |
 
 :::tip Under the hood
 `payment()` wraps `urlAction()`. On tool call, it opens the payment URL via URL elicitation with `waitForCompletion: true`. The promise resolves when `server.completeElicitation(elicitationId)` is called from your payment callback, or when the timeout expires. The `sessionKey` defaults to `"payment"` (not `"user"`) to keep payment state separate from auth state.

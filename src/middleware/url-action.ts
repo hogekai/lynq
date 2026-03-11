@@ -9,7 +9,10 @@ export interface UrlActionOptions {
 	/** Message shown to the user in the elicitation. */
 	message: string;
 	/** Build the URL. Receives sessionId and elicitationId for callback routing. */
-	buildUrl: (params: { sessionId: string; elicitationId: string }) => string;
+	buildUrl: (params: {
+		sessionId: string;
+		elicitationId: string;
+	}) => string | Promise<string>;
 	/** Timeout in ms for waiting for external callback. Default: 300000 (5 min). */
 	timeout?: number;
 	/** Error message when user declines. Default: "Action cancelled." */
@@ -33,7 +36,7 @@ export function urlAction(options: UrlActionOptions): ToolMiddleware {
 			}
 
 			const elicitationId = crypto.randomUUID();
-			const url = options.buildUrl({
+			const url = await options.buildUrl({
 				sessionId: c.sessionId,
 				elicitationId,
 			});

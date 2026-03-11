@@ -27,6 +27,9 @@ importers:
       jose:
         specifier: ^6.2.1
         version: 6.2.1
+      stripe:
+        specifier: ^20.4.1
+        version: 20.4.1(@types/node@25.3.3)
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(postcss@8.5.8)(typescript@5.9.3)(yaml@2.8.2)
@@ -1585,6 +1588,15 @@ packages:
 
   stringify-entities@4.0.4:
     resolution: {integrity: sha512-IwfBptatlO+QCJUo19AqvrPNqlVMpW9YEL2LIVY+Rpv2qsjCGxaDLNRgeGsQWJhfItebuJhsGSLjaBbNSQ+ieg==}
+
+  stripe@20.4.1:
+    resolution: {integrity: sha512-axCguHItc8Sxt0HC6aSkdVRPffjYPV7EQqZRb2GkIa8FzWDycE7nHJM19C6xAIynH1Qp1/BHiopSi96jGBxT0w==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/node': '>=16'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   sucrase@3.35.1:
     resolution: {integrity: sha512-DhuTmvZWux4H1UOnWMB3sk0sbaCVOoQZjv8u1rDoTV0HTdGem9hkAZtl4JZy8P2z4Bg0nT+YMeOFyVr4zcG5Tw==}
@@ -3303,6 +3315,10 @@ snapshots:
     dependencies:
       character-entities-html4: 2.1.0
       character-entities-legacy: 3.0.0
+
+  stripe@20.4.1(@types/node@25.3.3):
+    optionalDependencies:
+      '@types/node': 25.3.3
 
   sucrase@3.35.1:
     dependencies:
