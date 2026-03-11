@@ -1,4 +1,4 @@
-# With Hono
+# Hono
 
 Deploy your MCP server over HTTP using Hono.
 
@@ -79,5 +79,7 @@ export default app;
 
 ## Next Steps
 
-- [Transports](/concepts/transports) -- stateful vs sessionless, runtime examples
+- [HTTP](/adapters/http) -- raw `server.http()` API, runtime examples
+- [Express](/adapters/express) -- Express adapter
+- [Transports](/concepts/transports) -- stateful vs sessionless
 - [Claude Code](/getting-started/claude-code) -- connect Claude Code to your HTTP server

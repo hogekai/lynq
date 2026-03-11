@@ -1,4 +1,4 @@
-# With Express
+# Express
 
 Deploy your MCP server over HTTP using Express.
 
@@ -62,5 +62,7 @@ Array of hostnames accepted in the `Host` header. Defaults to `["localhost", "12
 
 ## Next Steps
 
-- [Transports](/concepts/transports) -- stateful vs sessionless, runtime examples
+- [HTTP](/adapters/http) -- raw `server.http()` API, runtime examples
+- [Hono](/adapters/hono) -- Hono adapter
+- [Transports](/concepts/transports) -- stateful vs sessionless
 - [Claude Code](/getting-started/claude-code) -- connect Claude Code to your HTTP server

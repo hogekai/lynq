@@ -10,20 +10,27 @@ export default defineConfig({
 	themeConfig: {
 		nav: [
 			{ text: "Getting Started", link: "/getting-started/quick-start" },
-			{ text: "Concepts", link: "/concepts/middleware" },
+			{ text: "Middleware", link: "/middleware/overview" },
 			{ text: "API", link: "/api-reference/" },
 		],
 
 		sidebar: [
 			{
-				text: "Getting Started",
+				text: "Introduction",
 				items: [
-					{ text: "MCP Overview", link: "/getting-started/mcp-overview" },
-					{ text: "Quick Start", link: "/getting-started/quick-start" },
-					{ text: "With Hono", link: "/getting-started/with-hono" },
-					{ text: "With Express", link: "/getting-started/with-express" },
-					{ text: "Claude Code", link: "/getting-started/claude-code" },
 					{ text: "Why lynq", link: "/why-lynq" },
+					{
+						text: "MCP Overview",
+						link: "/getting-started/mcp-overview",
+					},
+					{
+						text: "Quick Start",
+						link: "/getting-started/quick-start",
+					},
+					{
+						text: "Claude Code",
+						link: "/getting-started/claude-code",
+					},
 				],
 			},
 			{
@@ -34,25 +41,60 @@ export default defineConfig({
 						text: "Session & Visibility",
 						link: "/concepts/session-and-visibility",
 					},
-					{ text: "Elicitation", link: "/concepts/elicitation" },
-					{ text: "Sampling", link: "/concepts/sampling" },
-					{ text: "Tasks", link: "/concepts/tasks" },
 					{ text: "Transports", link: "/concepts/transports" },
+				],
+			},
+			{
+				text: "Middleware",
+				items: [
+					{ text: "Overview", link: "/middleware/overview" },
+					{ text: "guard()", link: "/middleware/guard" },
+					{ text: "logger()", link: "/middleware/logger" },
+					{ text: "rateLimit()", link: "/middleware/rate-limit" },
+					{ text: "truncate()", link: "/middleware/truncate" },
+					{ text: "combine()", link: "/middleware/combine" },
+					{
+						text: "credentials()",
+						link: "/middleware/credentials",
+					},
+					{ text: "Custom", link: "/middleware/custom" },
+				],
+			},
+			{
+				text: "Auth Providers",
+				items: [
+					{ text: "Overview", link: "/auth/overview" },
+					{ text: "bearer()", link: "/auth/bearer" },
+					{ text: "jwt()", link: "/auth/jwt" },
+					{ text: "GitHub OAuth", link: "/auth/github" },
+					{ text: "Google OAuth", link: "/auth/google" },
+				],
+			},
+			{
+				text: "Payment Providers",
+				items: [
+					{ text: "Overview", link: "/payment/overview" },
+				],
+			},
+			{
+				text: "Adapters",
+				items: [
+					{ text: "Hono", link: "/adapters/hono" },
+					{ text: "Express", link: "/adapters/express" },
+					{ text: "HTTP (raw)", link: "/adapters/http" },
 				],
 			},
 			{
 				text: "Guides",
 				items: [
 					{ text: "Auth Flow", link: "/guides/auth-flow" },
-					{ text: "Dynamic Tools", link: "/guides/dynamic-tools" },
-					{ text: "Resource Gating", link: "/guides/resource-gating" },
 					{
-						text: "Custom Middleware",
-						link: "/guides/custom-middleware",
+						text: "Dynamic Tools",
+						link: "/guides/dynamic-tools",
 					},
 					{
-						text: "Middleware Recipes",
-						link: "/guides/middleware-recipes",
+						text: "Resource Gating",
+						link: "/guides/resource-gating",
 					},
 					{ text: "Testing", link: "/guides/testing" },
 				],

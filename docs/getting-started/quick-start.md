@@ -103,7 +103,7 @@ server.tool(
 await server.stdio();
 ```
 
-> `guard()` is a middleware that demonstrates the visibility pattern. For production use cases, write your own middleware tailored to your auth system -- see [Custom Middleware](/guides/custom-middleware).
+> `guard()` is a middleware that demonstrates the visibility pattern. For production use cases, write your own middleware tailored to your auth system -- see [Custom Middleware](/middleware/custom).
 
 ## Verify Visibility
 
@@ -127,4 +127,4 @@ The client receives the notification automatically. No manual `sendToolListChang
 
 - [Middleware](/concepts/middleware) -- understand the middleware model
 - [Session & Visibility](/concepts/session-and-visibility) -- lynq's core concept
-- [With Hono](/getting-started/with-hono) -- deploy over HTTP
+- [Hono Adapter](/adapters/hono) -- deploy over HTTP

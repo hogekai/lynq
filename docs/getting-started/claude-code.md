@@ -21,7 +21,7 @@ Claude Code spawns your server as a child process and communicates over stdin/st
 
 ## HTTP (Remote)
 
-If your server runs over HTTP (e.g. with [Hono](/getting-started/with-hono) or [Express](/getting-started/with-express)):
+If your server runs over HTTP (e.g. with [Hono](/adapters/hono) or [Express](/adapters/express)):
 
 ```json
 {

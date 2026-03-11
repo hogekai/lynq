@@ -47,79 +47,13 @@ export default { fetch: handler };
 
 Or use the framework adapters for batteries-included setup:
 
-- [With Hono](/getting-started/with-hono) -- `mountLynq(app, server)`
-- [With Express](/getting-started/with-express) -- `mountLynq(app, server)`
+- [Hono](/adapters/hono) -- `mountLynq(app, server)`
+- [Express](/adapters/express) -- `mountLynq(app, server)`
 
-## HTTP Options
+For full HTTP options, stateful vs sessionless, and the `onRequest` hook, see [HTTP Adapter](/adapters/http).
 
-```ts
-server.http({ sessionless: true });
-server.http({ sessionIdGenerator: () => crypto.randomUUID() });
-server.http({ enableJsonResponse: true });
-```
+## What's Next
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `sessionless` | `boolean` | `false` | New server+transport per request |
-| `sessionIdGenerator` | `() => string` | `crypto.randomUUID()` | Custom session ID generator |
-| `enableJsonResponse` | `boolean` | `false` | Return JSON instead of SSE streams |
-| `onRequest` | `(req, sessionId, session) => void \| Promise<void>` | — | Called on each request after session is resolved |
-
-### `onRequest` Hook
-
-Runs on every HTTP request after the session is resolved. Use it to inject HTTP-layer data (auth headers, cookies) into MCP sessions:
-
-```ts
-const handler = server.http({
-  onRequest(req, sessionId, session) {
-    const auth = req.headers.get("Authorization");
-    if (auth?.startsWith("Bearer ")) {
-      session.set("token", auth.slice(7));
-    }
-  },
-});
-```
-
-This bridges HTTP and MCP -- middleware like `bearer()` and `jwt()` can then read the token from the session without knowing about HTTP headers.
-
-## Stateful vs Sessionless
-
-### Stateful (default)
-
-Each client session is identified by the `Mcp-Session-Id` header. The server maintains a dedicated `Server` + `Transport` pair per session in an internal map.
-
-- Session state persists across requests.
-- `authorize()` / `revoke()` pushes tool list changes to the client in real time via SSE.
-- Middleware instances are shared across calls within a session.
-
-This is the right mode when you need session-scoped visibility, auth flows, or stateful middleware (rate limiting, caching).
-
-**Memory consideration:** Each active session holds a `Server` instance, a `Transport`, and session data in memory. For long-running servers, sessions accumulate until the client disconnects. Monitor session count in production.
-
-### Sessionless
-
-```ts
-const handler = server.http({ sessionless: true });
-```
-
-A fresh `Server` + `Transport` is created for every request and discarded after. No state between calls.
-
-- No `Mcp-Session-Id` header.
-- No tool list change notifications (no persistent connection).
-- Each request is isolated.
-
-Use for stateless APIs, edge deployments (Cloudflare Workers, Lambda@Edge), or when clients don't need session-aware features.
-
-### When to Choose
-
-| | Stateful | Sessionless |
-|---|---|---|
-| Tool visibility changes | Yes | No |
-| Auth flows | Yes | No |
-| Rate limiting | Per-session | Per-request only |
-| Edge deployment | Needs sticky sessions | Works anywhere |
-| Memory usage | Grows with sessions | Constant |
-
-:::tip Under the hood
-`server.http()` lazy-imports `WebStandardStreamableHTTPServerTransport` from the MCP SDK. In stateful mode, the `onsessioninitialized` callback stores the Server+Transport pair in the internal map. In sessionless mode, `sessionIdGenerator` is set to `undefined`, which tells the SDK transport to skip session management entirely.
-:::
+- [Hono Adapter](/adapters/hono) -- batteries-included Hono setup
+- [Express Adapter](/adapters/express) -- batteries-included Express setup
+- [HTTP (raw)](/adapters/http) -- full `server.http()` API reference

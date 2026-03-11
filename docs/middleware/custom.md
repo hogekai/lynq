@@ -89,7 +89,61 @@ server.use(maintenanceMode());
 The middleware chain is assembled once at `server.tool()` registration time. Global middlewares (from `server.use()`) are prepended to per-tool middlewares. The `onCall` chain follows the Koa pattern: each middleware calls `next()` to proceed, and can inspect or modify the result after `next()` resolves. `onResult` hooks run in reverse order after the handler completes, allowing outer middleware to see the final transformed result.
 :::
 
+## Recipes
+
+Copy-paste middleware for common patterns.
+
+### cache -- time-based result cache
+
+```ts
+import type { ToolMiddleware } from "@lynq/lynq";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+
+function cache(ttlMs: number = 60_000): ToolMiddleware {
+  const store = new Map<string, { result: CallToolResult; expires: number }>();
+  return {
+    name: "cache",
+    async onCall(c, next) {
+      const key = c.toolName + ":" + c.sessionId;
+      const cached = store.get(key);
+      if (cached && Date.now() < cached.expires) {
+        return cached.result;
+      }
+      const result = await next();
+      store.set(key, { result, expires: Date.now() + ttlMs });
+      return result;
+    },
+  };
+}
+
+server.tool("weather", cache(30_000), config, handler);
+```
+
+### requireSession -- guard specific session keys
+
+```ts
+import type { ToolMiddleware } from "@lynq/lynq";
+
+function requireSession(key: string, message?: string): ToolMiddleware {
+  return {
+    name: "requireSession",
+    onCall(c, next) {
+      if (!c.session.get(key)) {
+        return c.error(message ?? `Missing required session key: ${key}`);
+      }
+      return next();
+    },
+  };
+}
+
+server.tool("deploy", requireSession("env", "Set environment first."), config, handler);
+```
+
+:::tip Under the hood
+These recipes are pure functions returning plain objects. No class inheritance, no framework coupling. The `cache` recipe uses a closure-scoped `Map` -- this works because in stateful mode each session's middleware chain shares the same middleware instances. In sessionless mode, middleware instances are recreated per request, so cache would not persist across calls.
+:::
+
 ## What's Next
 
-- [Middleware Recipes](/guides/middleware-recipes) -- copy-paste middleware for common patterns
-- [Middleware](/concepts/middleware) -- interface definition and execution order
+- [Middleware Overview](/middleware/overview)
+- [Middleware Concepts](/concepts/middleware)
