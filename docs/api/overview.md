@@ -71,14 +71,27 @@ Passed to `server.http(options?)`.
 | `sessionless` | `boolean` | `false` | New server+transport per request |
 | `sessionIdGenerator` | `() => string` | `crypto.randomUUID()` | Custom session ID generator |
 | `enableJsonResponse` | `boolean` | `false` | Return JSON instead of SSE streams |
+| `onRequest` | `(req, sessionId, session) => void \| Promise<void>` | — | Called on each request after session is resolved |
 
 ## Entry Points
 
 | Import | Provides |
 |--------|----------|
 | `@lynq/lynq` | `createMCPServer`, `text`, `json`, `error`, `image`, all types |
-| `@lynq/lynq/guard` | `guard()` middleware |
-| `@lynq/lynq/auth` | `auth()` middleware (deprecated, use `@lynq/lynq/guard`) |
+| `@lynq/lynq/guard` | `guard()` visibility gate |
+| `@lynq/lynq/credentials` | `credentials()` form-based auth |
+| `@lynq/lynq/bearer` | `bearer()` Bearer token verification |
+| `@lynq/lynq/jwt` | `jwt()` JWT verification |
+| `@lynq/lynq/github-oauth` | `githubOAuth()`, `handleGitHubCallback()` |
+| `@lynq/lynq/google-oauth` | `googleOAuth()`, `handleGoogleCallback()` |
+| `@lynq/lynq/url-action` | `urlAction()` URL-based elicitation |
+| `@lynq/lynq/oauth` | `oauth()` generic OAuth flow |
+| `@lynq/lynq/payment` | `payment()` payment flow |
+| `@lynq/lynq/logger` | `logger()` logging |
+| `@lynq/lynq/rate-limit` | `rateLimit()` rate limiting |
+| `@lynq/lynq/truncate` | `truncate()` response truncation |
+| `@lynq/lynq/combine` | `some()`, `every()`, `except()` combinators |
+| `@lynq/lynq/auth` | `auth()` (deprecated, use `guard()`) |
 | `@lynq/lynq/stdio` | `StdioServerTransport` re-export |
 | `@lynq/lynq/hono` | `mountLynq` for Hono |
 | `@lynq/lynq/express` | `mountLynq` for Express |

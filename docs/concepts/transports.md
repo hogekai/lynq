@@ -63,6 +63,24 @@ server.http({ enableJsonResponse: true });
 | `sessionless` | `boolean` | `false` | New server+transport per request |
 | `sessionIdGenerator` | `() => string` | `crypto.randomUUID()` | Custom session ID generator |
 | `enableJsonResponse` | `boolean` | `false` | Return JSON instead of SSE streams |
+| `onRequest` | `(req, sessionId, session) => void \| Promise<void>` | — | Called on each request after session is resolved |
+
+### `onRequest` Hook
+
+Runs on every HTTP request after the session is resolved. Use it to inject HTTP-layer data (auth headers, cookies) into MCP sessions:
+
+```ts
+const handler = server.http({
+  onRequest(req, sessionId, session) {
+    const auth = req.headers.get("Authorization");
+    if (auth?.startsWith("Bearer ")) {
+      session.set("token", auth.slice(7));
+    }
+  },
+});
+```
+
+This bridges HTTP and MCP -- middleware like `bearer()` and `jwt()` can then read the token from the session without knowing about HTTP headers.
 
 ## Stateful vs Sessionless
 

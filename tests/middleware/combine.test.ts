@@ -239,10 +239,7 @@ describe("except()", () => {
 		const server = createTestServer();
 		server.tool(
 			"api",
-			except(
-				(c) => c.session.get("role") === "admin",
-				rateLimit({ max: 1 }),
-			),
+			except((c) => c.session.get("role") === "admin", rateLimit({ max: 1 })),
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);

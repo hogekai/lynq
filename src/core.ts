@@ -303,11 +303,7 @@ export function createMCPServer(info: {
 
 					const finalHandler = () =>
 						Promise.resolve(tool.handler(args ?? {}, c));
-					const chain = buildMiddlewareChain(
-						tool.middlewares,
-						c,
-						finalHandler,
-					);
+					const chain = buildMiddlewareChain(tool.middlewares, c, finalHandler);
 					return chain();
 				}
 
@@ -374,11 +370,7 @@ export function createMCPServer(info: {
 						return { task: createdTask } as unknown as CallToolResult;
 					};
 
-					const chain = buildMiddlewareChain(
-						task.middlewares,
-						c,
-						finalHandler,
-					);
+					const chain = buildMiddlewareChain(task.middlewares, c, finalHandler);
 					return chain();
 				}
 
@@ -669,7 +661,16 @@ export function createMCPServer(info: {
 			// Route to existing session
 			if (sessionId) {
 				const session = httpSessions.get(sessionId);
-				if (session) return session.transport.handleRequest(req);
+				if (session) {
+					if (options?.onRequest) {
+						await options.onRequest(
+							req,
+							sessionId,
+							createSessionAPI(sessionId),
+						);
+					}
+					return session.transport.handleRequest(req);
+				}
 				return new Response(
 					JSON.stringify({
 						jsonrpc: "2.0",
@@ -691,6 +692,9 @@ export function createMCPServer(info: {
 				onsessioninitialized: (sid: string) => {
 					httpSessions.set(sid, { server: srv, transport });
 					serverBySession.set(sid, srv);
+					if (options?.onRequest) {
+						options.onRequest(req, sid, createSessionAPI(sid));
+					}
 				},
 				onsessionclosed: (sid: string) => {
 					httpSessions.delete(sid);

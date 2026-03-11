@@ -63,6 +63,22 @@
 		"./payment": {
 			"types": "./dist/middleware/payment.d.ts",
 			"import": "./dist/middleware/payment.mjs"
+		},
+		"./bearer": {
+			"types": "./dist/middleware/bearer.d.ts",
+			"import": "./dist/middleware/bearer.mjs"
+		},
+		"./jwt": {
+			"types": "./dist/middleware/jwt.d.ts",
+			"import": "./dist/middleware/jwt.mjs"
+		},
+		"./github-oauth": {
+			"types": "./dist/middleware/github-oauth.d.ts",
+			"import": "./dist/middleware/github-oauth.mjs"
+		},
+		"./google-oauth": {
+			"types": "./dist/middleware/google-oauth.d.ts",
+			"import": "./dist/middleware/google-oauth.mjs"
 		}
 	},
 	"files": [
@@ -90,6 +106,7 @@
 		"@types/express": "^5.0.6",
 		"express": "^5.2.1",
 		"hono": "^4.12.5",
+		"jose": "^6.2.1",
 		"tsup": "^8.0.0",
 		"typedoc": "^0.28.17",
 		"typedoc-plugin-markdown": "^4.10.0",
@@ -101,6 +118,7 @@
 	"peerDependencies": {
 		"express": "^5.0.0",
 		"hono": "^4.0.0",
+		"jose": "^6.0.0",
 		"zod": "^3.0.0"
 	},
 	"peerDependenciesMeta": {
@@ -111,6 +129,9 @@
 			"optional": true
 		},
 		"express": {
+			"optional": true
+		},
+		"jose": {
 			"optional": true
 		}
 	},

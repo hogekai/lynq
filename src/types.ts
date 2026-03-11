@@ -229,6 +229,12 @@ export interface HttpAdapterOptions {
 	sessionIdGenerator?: () => string;
 	/** Return JSON instead of SSE streams. Default: false. */
 	enableJsonResponse?: boolean;
+	/** Called on each HTTP request after session is resolved. Use to inject auth headers into sessions. */
+	onRequest?: (
+		req: Request,
+		sessionId: string,
+		session: Session,
+	) => void | Promise<void>;
 }
 
 // === Server ===

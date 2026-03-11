@@ -88,11 +88,18 @@ lynq ships several middleware out of the box, each available from its own entry 
 | Middleware | Import | Description |
 |------------|--------|-------------|
 | `guard()` | `@lynq/lynq/guard` | Visibility gate. Hides tools until authorized. |
+| `credentials()` | `@lynq/lynq/credentials` | Form-based authentication via elicit. |
+| `bearer()` | `@lynq/lynq/bearer` | Bearer token verification. |
+| `jwt()` | `@lynq/lynq/jwt` | JWT verification (requires `jose` peer dep). |
+| `githubOAuth()` | `@lynq/lynq/github-oauth` | GitHub OAuth provider. |
+| `googleOAuth()` | `@lynq/lynq/google-oauth` | Google OAuth provider. |
+| `urlAction()` | `@lynq/lynq/url-action` | URL-based elicitation with completion tracking. |
+| `oauth()` | `@lynq/lynq/oauth` | Generic OAuth flow middleware. |
+| `payment()` | `@lynq/lynq/payment` | Payment flow middleware. |
 | `logger()` | `@lynq/lynq/logger` | Logs tool calls with timing. |
 | `rateLimit()` | `@lynq/lynq/rate-limit` | Session-scoped rate limiting per tool. |
 | `truncate()` | `@lynq/lynq/truncate` | Truncates text content in responses. |
 | `some()` / `every()` / `except()` | `@lynq/lynq/combine` | Combine multiple middlewares. |
-| `credentials()` | `@lynq/lynq/credentials` | Form-based authentication via elicit. |
 
 ```ts
 import { guard } from "@lynq/lynq/guard";
