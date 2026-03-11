@@ -421,3 +421,27 @@ describe("tools/list integration", () => {
 		await t.close();
 	});
 });
+
+describe("public session() and completeElicitation()", () => {
+	it("session() returns a working Session object", () => {
+		const server = createMCPServer({ name: "test", version: "1.0.0" });
+		const session = server.session("test-session");
+		session.set("key", "value");
+		expect(session.get("key")).toBe("value");
+	});
+
+	it("session() shares state with internal session", () => {
+		const server = createMCPServer({ name: "test", version: "1.0.0" }) as any;
+		const publicSession = server.session("s1");
+		publicSession.set("token", "abc");
+
+		const internalSession = server._createSessionAPI("s1");
+		expect(internalSession.get("token")).toBe("abc");
+	});
+
+	it("completeElicitation() is no-op for unknown id", () => {
+		const server = createMCPServer({ name: "test", version: "1.0.0" });
+		// Should not throw
+		server.completeElicitation("nonexistent-id");
+	});
+});

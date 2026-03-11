@@ -47,6 +47,15 @@ export interface ElicitUrlResult {
 	action: "accept" | "decline" | "cancel";
 }
 
+export interface ElicitUrlOptions {
+	/** Pre-generated elicitation ID. If omitted, a random UUID is used. */
+	elicitationId?: string;
+	/** If true, wait for completeElicitation() before resolving. Default: false. */
+	waitForCompletion?: boolean;
+	/** Timeout in ms for waiting. Default: 300000 (5 minutes). */
+	timeout?: number;
+}
+
 export interface Elicit {
 	/** Request structured data from the user via a form. */
 	form<T extends z.ZodObject<z.ZodRawShape>>(
@@ -54,7 +63,11 @@ export interface Elicit {
 		schema: T,
 	): Promise<ElicitFormResult<z.infer<T>>>;
 	/** Direct the user to an external URL. */
-	url(message: string, url: string): Promise<ElicitUrlResult>;
+	url(
+		message: string,
+		url: string,
+		options?: ElicitUrlOptions,
+	): Promise<ElicitUrlResult>;
 }
 
 // === Sampling ===
@@ -264,4 +277,10 @@ export interface MCPServer {
 
 	/** Start HTTP transport. Returns a Web Standard request handler. */
 	http(options?: HttpAdapterOptions): (req: Request) => Promise<Response>;
+
+	/** Access a session by ID (for external HTTP callback routes). Stateful mode only. */
+	session(sessionId: string): Session;
+
+	/** Complete a pending URL elicitation (called from external HTTP callback). */
+	completeElicitation(elicitationId: string): void;
 }

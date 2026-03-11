@@ -7,6 +7,7 @@ import { inputToJsonSchema } from "./helpers.js";
 import { error, image, json, text } from "./response.js";
 import type {
 	Elicit,
+	ElicitUrlOptions,
 	RootInfo,
 	Sample,
 	SampleOptions,
@@ -14,7 +15,11 @@ import type {
 	ToolContext,
 } from "./types.js";
 
-export function createElicit(sdkServer: Server): Elicit {
+export function createElicit(
+	sdkServer: Server,
+	registerElicitation?: (eid: string, srv: Server) => Promise<void>,
+	cancelElicitation?: (eid: string) => void,
+): Elicit {
 	return {
 		async form(message, schema) {
 			const jsonSchema = inputToJsonSchema(schema);
@@ -29,13 +34,33 @@ export function createElicit(sdkServer: Server): Elicit {
 				content: (r.content ?? {}) as any,
 			};
 		},
-		async url(message, url) {
+		async url(message, url, options?: ElicitUrlOptions) {
+			const elicitationId = options?.elicitationId ?? crypto.randomUUID();
+
+			// Register BEFORE sending to client to avoid race condition
+			let completionPromise: Promise<void> | undefined;
+			if (options?.waitForCompletion && registerElicitation) {
+				completionPromise = registerElicitation(elicitationId, sdkServer);
+			}
+
 			const r = await sdkServer.elicitInput({
 				mode: "url",
 				message,
 				url,
-				elicitationId: crypto.randomUUID(),
+				elicitationId,
 			});
+
+			if (r.action === "accept" && completionPromise) {
+				const timeout = options?.timeout ?? 300_000;
+				const timeoutPromise = new Promise<never>((_, reject) => {
+					setTimeout(() => reject(new Error("Elicitation timed out")), timeout);
+				});
+				await Promise.race([completionPromise, timeoutPromise]);
+			} else if (completionPromise && cancelElicitation) {
+				// Client declined/cancelled — clean up pending entry
+				cancelElicitation(elicitationId);
+			}
+
 			return { action: r.action };
 		},
 	};
@@ -96,13 +121,15 @@ export function createToolContext(
 	session: Session,
 	name: string,
 	signal: AbortSignal,
+	registerElicitation?: (eid: string, srv: Server) => Promise<void>,
+	cancelElicitation?: (eid: string) => void,
 ): ToolContext {
 	return {
 		toolName: name,
 		session,
 		signal,
 		sessionId,
-		elicit: createElicit(sdkServer),
+		elicit: createElicit(sdkServer, registerElicitation, cancelElicitation),
 		roots: createRootsAccessor(sdkServer),
 		sample: createSample(sdkServer),
 		text,

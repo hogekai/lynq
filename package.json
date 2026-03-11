@@ -27,6 +27,42 @@
 		"./test": {
 			"types": "./dist/test.d.ts",
 			"import": "./dist/test.mjs"
+		},
+		"./guard": {
+			"types": "./dist/middleware/guard.d.ts",
+			"import": "./dist/middleware/guard.mjs"
+		},
+		"./logger": {
+			"types": "./dist/middleware/logger.d.ts",
+			"import": "./dist/middleware/logger.mjs"
+		},
+		"./rate-limit": {
+			"types": "./dist/middleware/rate-limit.d.ts",
+			"import": "./dist/middleware/rate-limit.mjs"
+		},
+		"./truncate": {
+			"types": "./dist/middleware/truncate.d.ts",
+			"import": "./dist/middleware/truncate.mjs"
+		},
+		"./combine": {
+			"types": "./dist/middleware/combine.d.ts",
+			"import": "./dist/middleware/combine.mjs"
+		},
+		"./credentials": {
+			"types": "./dist/middleware/credentials.d.ts",
+			"import": "./dist/middleware/credentials.mjs"
+		},
+		"./url-action": {
+			"types": "./dist/middleware/url-action.d.ts",
+			"import": "./dist/middleware/url-action.mjs"
+		},
+		"./oauth": {
+			"types": "./dist/middleware/oauth.d.ts",
+			"import": "./dist/middleware/oauth.mjs"
+		},
+		"./payment": {
+			"types": "./dist/middleware/payment.d.ts",
+			"import": "./dist/middleware/payment.mjs"
 		}
 	},
 	"files": [
@@ -46,9 +82,11 @@
 		"docs:preview": "vitepress preview docs",
 		"prepublishOnly": "pnpm build"
 	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.27.0"
+	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.0",
-		"@modelcontextprotocol/sdk": "^1.27.0",
 		"@types/express": "^5.0.6",
 		"express": "^5.2.1",
 		"hono": "^4.12.5",
@@ -61,7 +99,6 @@
 		"zod": "^3.24.0"
 	},
 	"peerDependencies": {
-		"@modelcontextprotocol/sdk": "^1.27.0",
 		"express": "^5.0.0",
 		"hono": "^4.0.0",
 		"zod": "^3.0.0"

@@ -56,6 +56,64 @@ export function createMCPServer(info: {
 	const sessions = new Map<string, SessionState>();
 	const serverBySession = new Map<string, Server>();
 
+	// Elicitation completion tracking
+	interface PendingElicitation {
+		resolver: () => void;
+		completionNotifier: (() => Promise<void>) | undefined;
+		createdAt: number;
+	}
+	const pendingElicitations = new Map<string, PendingElicitation>();
+	const ELICITATION_TTL_MS = 3_600_000; // 1 hour
+
+	function cleanupExpiredElicitations(): void {
+		const now = Date.now();
+		for (const [id, e] of pendingElicitations) {
+			if (now - e.createdAt > ELICITATION_TTL_MS) {
+				pendingElicitations.delete(id);
+			}
+		}
+	}
+
+	function registerElicitation(
+		elicitationId: string,
+		_sessionId: string,
+		sdkServer: Server,
+	): Promise<void> {
+		cleanupExpiredElicitations();
+		return new Promise<void>((resolve) => {
+			let completionNotifier: (() => Promise<void>) | undefined;
+			try {
+				completionNotifier =
+					sdkServer.createElicitationCompletionNotifier(elicitationId);
+			} catch {
+				// Client may not support URL elicitation notifications
+			}
+			pendingElicitations.set(elicitationId, {
+				resolver: resolve,
+				completionNotifier,
+				createdAt: Date.now(),
+			});
+		});
+	}
+
+	function completeElicitation(elicitationId: string): void {
+		cleanupExpiredElicitations();
+		const pending = pendingElicitations.get(elicitationId);
+		if (!pending) return;
+		pendingElicitations.delete(elicitationId);
+		if (pending.completionNotifier) {
+			pending.completionNotifier().catch(() => {});
+		}
+		pending.resolver();
+	}
+
+	function cancelElicitation(elicitationId: string): void {
+		const pending = pendingElicitations.get(elicitationId);
+		if (!pending) return;
+		pendingElicitations.delete(elicitationId);
+		pending.resolver();
+	}
+
 	// Task infrastructure
 	const cancelledTaskIds = new Set<string>();
 	const baseTaskStore = new InMemoryTaskStore();
@@ -239,6 +297,8 @@ export function createMCPServer(info: {
 						createSessionAPI(sessionId),
 						name,
 						extra.signal,
+						(eid, srv) => registerElicitation(eid, sessionId, srv),
+						cancelElicitation,
 					);
 
 					const finalHandler = () =>
@@ -285,6 +345,8 @@ export function createMCPServer(info: {
 							createSessionAPI(sessionId),
 							name,
 							extra.signal,
+							(eid, srv) => registerElicitation(eid, sessionId, srv),
+							cancelElicitation,
 						),
 						task: taskControl,
 					};
@@ -398,6 +460,8 @@ export function createMCPServer(info: {
 					session,
 					res.uri,
 					extra.signal,
+					(eid, srv) => registerElicitation(eid, sessionId, srv),
+					cancelElicitation,
 				);
 
 				const finalHandler = async () => {
@@ -645,6 +709,8 @@ export function createMCPServer(info: {
 		task: task as MCPServer["task"],
 		stdio,
 		http,
+		session: createSessionAPI,
+		completeElicitation,
 		connect,
 		/** @internal Exposed for testing. */
 		_server: server,

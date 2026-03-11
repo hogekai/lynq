@@ -5,6 +5,7 @@ export type {
 	HttpAdapterOptions,
 	Elicit,
 	ElicitFormResult,
+	ElicitUrlOptions,
 	ElicitUrlResult,
 	RootInfo,
 	Sample,
