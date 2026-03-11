@@ -5,7 +5,7 @@ lynq is a framework for building [MCP](/getting-started/mcp-overview) servers wi
 ## Install
 
 ```sh
-npm install @lynq/lynq @modelcontextprotocol/sdk zod
+npm install @lynq/lynq zod
 ```
 
 ## Minimal Server
@@ -60,11 +60,11 @@ Restart Claude Code. The `greet` tool appears in the tool list.
 
 ## Add Auth-Protected Tools
 
-lynq's core feature is session-scoped tool visibility. Tools guarded by middleware are hidden until the session is authorized. Here's an example using the built-in `auth()` sample middleware:
+lynq's core feature is session-scoped tool visibility. Tools guarded by middleware are hidden until the session is authorized. Here's an example using the built-in `guard()` middleware:
 
 ```ts
 import { createMCPServer } from "@lynq/lynq";
-import { auth } from "@lynq/lynq/auth";
+import { guard } from "@lynq/lynq/guard";
 import { z } from "zod";
 
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });
@@ -82,17 +82,17 @@ server.tool(
   async (args, ctx) => {
     if (args.username === "admin" && args.password === "1234") {
       ctx.session.set("user", { name: args.username });
-      ctx.session.authorize("auth");
+      ctx.session.authorize("guard");
       return ctx.text(`Welcome, ${args.username}.`);
     }
     return ctx.error("Invalid credentials.");
   },
 );
 
-// Hidden until ctx.session.authorize("auth") is called
+// Hidden until ctx.session.authorize("guard") is called
 server.tool(
   "get_weather",
-  auth(),
+  guard(),
   {
     description: "Get current weather for a city",
     input: z.object({ city: z.string() }),
@@ -103,7 +103,7 @@ server.tool(
 await server.stdio();
 ```
 
-> `auth()` is a sample middleware that demonstrates the visibility pattern. For production use cases, write your own middleware tailored to your auth system -- see [Custom Middleware](/guides/custom-middleware).
+> `guard()` is a middleware that demonstrates the visibility pattern. For production use cases, write your own middleware tailored to your auth system -- see [Custom Middleware](/guides/custom-middleware).
 
 ## Verify Visibility
 

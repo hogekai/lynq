@@ -21,10 +21,10 @@ Reveal or hide **all** tools and resources guarded by a middleware name:
 
 ```ts
 // In a login handler:
-ctx.session.authorize("auth");  // reveals all auth()-guarded tools and resources
+ctx.session.authorize("guard");  // reveals all guard()-guarded tools and resources
 
 // In a logout handler:
-ctx.session.revoke("auth");     // hides them again
+ctx.session.revoke("guard");     // hides them again
 ```
 
 ### enableTools / disableTools
@@ -71,18 +71,18 @@ sequenceDiagram
     Server-->>Agent: [login, weather, notes]
 ```
 
-## auth() as a Sample
+## guard() Middleware
 
-lynq ships `auth()` as a sample middleware demonstrating the visibility pattern:
+lynq ships `guard()` as a built-in middleware for the visibility pattern:
 
 ```ts
-import { auth } from "@lynq/lynq/auth";
+import { guard } from "@lynq/lynq/guard";
 
-// Hidden until ctx.session.authorize("auth") is called
-server.tool("secret", auth(), { description: "Protected" }, handler);
+// Hidden until ctx.session.authorize("guard") is called
+server.tool("secret", guard(), { description: "Protected" }, handler);
 ```
 
-`auth()` is intentionally simple -- `onRegister` returns `false`, `onCall` checks a session key. For production, write your own middleware tailored to your auth system. See [Custom Middleware](/guides/custom-middleware).
+`guard()` is intentionally simple -- `onRegister` returns `false`, `onCall` checks a session key. For production, write your own middleware tailored to your auth system. See [Custom Middleware](/guides/custom-middleware).
 
 :::tip Under the hood
 Every `authorize()`, `revoke()`, `enableTools()`, `disableTools()`, `enableResources()`, and `disableResources()` call triggers a `notifications/tools/list_changed` or `notifications/resources/list_changed` notification via the MCP SDK's `server.sendToolListChanged()`. The client automatically re-fetches the list and sees the updated visibility. This bidirectional notification is what lynq automates -- you never call `sendToolListChanged` yourself.

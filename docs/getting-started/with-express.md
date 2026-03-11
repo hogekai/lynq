@@ -5,7 +5,7 @@ Deploy your MCP server over HTTP using Express.
 ## Install
 
 ```sh
-npm install @lynq/lynq @modelcontextprotocol/sdk zod express
+npm install @lynq/lynq zod express
 ```
 
 ## Usage

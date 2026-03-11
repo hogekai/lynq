@@ -1,6 +1,6 @@
 # Auth Flow
 
-A complete login/logout example using lynq's `auth()` sample middleware. `auth()` demonstrates the session-scoped visibility pattern -- for production, write your own middleware tailored to your auth system (see [Custom Middleware](/guides/custom-middleware)).
+A complete login/logout example using lynq's `guard()` middleware. `guard()` demonstrates the session-scoped visibility pattern -- for production, write your own middleware tailored to your auth system (see [Custom Middleware](/guides/custom-middleware)).
 
 ## Sequence
 
@@ -24,7 +24,7 @@ sequenceDiagram
 
 ```ts
 import { createMCPServer } from "@lynq/lynq";
-import { auth } from "@lynq/lynq/auth";
+import { guard } from "@lynq/lynq/guard";
 import { z } from "zod";
 
 const server = createMCPServer({ name: "my-app", version: "1.0.0" });
@@ -42,16 +42,16 @@ server.tool(
     }
 
     ctx.session.set("user", { name: args.user });
-    ctx.session.authorize("auth");
+    ctx.session.authorize("guard");
 
     return ctx.text("Logged in");
   },
 );
 
-// Hidden until auth() is authorized
+// Hidden until guard() is authorized
 server.tool(
   "weather",
-  auth(),
+  guard(),
   {
     description: "Get current weather",
     input: z.object({ city: z.string() }),
@@ -59,10 +59,10 @@ server.tool(
   async (args, ctx) => ctx.text(`Sunny in ${args.city}`),
 );
 
-// Also hidden until auth() is authorized
+// Also hidden until guard() is authorized
 server.tool(
   "notes",
-  auth(),
+  guard(),
   { description: "List saved notes" },
   async (_args, ctx) => {
     const user = ctx.session.get<{ name: string }>("user");
@@ -74,7 +74,7 @@ await server.stdio();
 ```
 
 :::tip Under the hood
-`auth()` returns a middleware with `onRegister() { return false }` -- tools start hidden from `tools/list` responses. `ctx.session.authorize("auth")` grants the `"auth"` middleware for this session. lynq automatically calls `sendToolListChanged` -- you never touch it. The agent re-fetches `tools/list` and sees the newly visible tools. `onCall` still guards execution: if `session.get("user")` is falsy, the call returns an error.
+`guard()` returns a middleware with `onRegister() { return false }` -- tools start hidden from `tools/list` responses. `ctx.session.authorize("guard")` grants the `"guard"` middleware for this session. lynq automatically calls `sendToolListChanged` -- you never touch it. The agent re-fetches `tools/list` and sees the newly visible tools. `onCall` still guards execution: if `session.get("user")` is falsy, the call returns an error.
 :::
 
 ## Logout
@@ -85,10 +85,10 @@ server.tool(
   { description: "Log out and hide protected tools" },
   async (_args, ctx) => {
     ctx.session.set("user", undefined);
-    ctx.session.revoke("auth");
+    ctx.session.revoke("guard");
     return ctx.text("Logged out");
   },
 );
 ```
 
-After `revoke("auth")`, lynq sends another `tools/list_changed` notification. The agent re-fetches and sees only `[login, logout]`. The protected tools disappear from the tool list.
+After `revoke("guard")`, lynq sends another `tools/list_changed` notification. The agent re-fetches and sees only `[login, logout]`. The protected tools disappear from the tool list.

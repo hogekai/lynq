@@ -77,7 +77,8 @@ Passed to `server.http(options?)`.
 | Import | Provides |
 |--------|----------|
 | `@lynq/lynq` | `createMCPServer`, `text`, `json`, `error`, `image`, all types |
-| `@lynq/lynq/auth` | `auth()` middleware |
+| `@lynq/lynq/guard` | `guard()` middleware |
+| `@lynq/lynq/auth` | `auth()` middleware (deprecated, use `@lynq/lynq/guard`) |
 | `@lynq/lynq/stdio` | `StdioServerTransport` re-export |
 | `@lynq/lynq/hono` | `mountLynq` for Hono |
 | `@lynq/lynq/express` | `mountLynq` for Express |

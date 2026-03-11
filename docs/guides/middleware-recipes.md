@@ -2,6 +2,10 @@
 
 Copy-paste middleware for common patterns.
 
+:::tip Built-in alternatives
+`logger()`, `rateLimit()`, and `truncate()` are now available as built-in middleware from `@lynq/lynq/logger`, `@lynq/lynq/rate-limit`, and `@lynq/lynq/truncate` respectively. The recipes below show how they work internally -- for production use, prefer the built-in versions.
+:::
+
 ## truncate
 
 Limit response text length.

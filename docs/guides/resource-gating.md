@@ -2,11 +2,11 @@
 
 Resources use the same middleware and visibility system as tools. Hidden resources are excluded from `resources/list` and reject `resources/read`.
 
-## auth() on a Resource
+## guard() on a Resource
 
 ```ts
 import { createMCPServer } from "@lynq/lynq";
-import { auth } from "@lynq/lynq/auth";
+import { guard } from "@lynq/lynq/guard";
 
 const server = createMCPServer({ name: "docs", version: "1.0.0" });
 
@@ -17,10 +17,10 @@ server.resource(
   async () => ({ text: '{"theme":"light"}' }),
 );
 
-// Protected resource -- hidden until auth() is authorized
+// Protected resource -- hidden until guard() is authorized
 server.resource(
   "config://secrets",
-  auth(),
+  guard(),
   { name: "Secret Config" },
   async () => ({ text: '{"apiKey":"sk-..."}' }),
 );
@@ -28,7 +28,7 @@ server.resource(
 
 ## authorize() Reveals Both Tools and Resources
 
-A single `ctx.session.authorize("auth")` call reveals every tool **and** every resource guarded by the `"auth"` middleware. Both `tools/list_changed` and `resources/list_changed` notifications fire automatically.
+A single `ctx.session.authorize("guard")` call reveals every tool **and** every resource guarded by the `"guard"` middleware. Both `tools/list_changed` and `resources/list_changed` notifications fire automatically.
 
 ```ts
 server.tool(
@@ -36,7 +36,7 @@ server.tool(
   { description: "Log in" },
   async (args, ctx) => {
     ctx.session.set("user", args.user);
-    ctx.session.authorize("auth");
+    ctx.session.authorize("guard");
     // Both "admin-panel" tool and "config://secrets" resource appear
     return ctx.text("Logged in");
   },
@@ -44,7 +44,7 @@ server.tool(
 
 server.tool(
   "admin-panel",
-  auth(),
+  guard(),
   { description: "Admin operations" },
   async (_args, ctx) => ctx.text("Admin panel data"),
 );
@@ -90,18 +90,18 @@ server.tool(
 Global middleware registered with `server.use()` applies to tools and tasks only. Resource middleware is always per-resource.
 
 ```ts
-server.use(auth()); // applies to all tools and tasks
+server.use(guard()); // applies to all tools and tasks
 
-// This resource is NOT affected by the global auth() above.
-// To gate it, pass auth() directly:
+// This resource is NOT affected by the global guard() above.
+// To gate it, pass guard() directly:
 server.resource(
   "config://settings",
-  auth(), // per-resource middleware
+  guard(), // per-resource middleware
   { name: "Settings" },
   async () => ({ text: "{}" }),
 );
 ```
 
 :::tip Under the hood
-Resources use the same internal visibility map as tools. `authorize("auth")` fires both `notifications/tools/list_changed` and `notifications/resources/list_changed`. `enableResources()` / `disableResources()` set per-session overrides for specific resource URIs. The reason `server.use()` doesn't apply to resources is by design -- resources have different access patterns and lifecycles than tools.
+Resources use the same internal visibility map as tools. `authorize("guard")` fires both `notifications/tools/list_changed` and `notifications/resources/list_changed`. `enableResources()` / `disableResources()` set per-session overrides for specific resource URIs. The reason `server.use()` doesn't apply to resources is by design -- resources have different access patterns and lifecycles than tools.
 :::

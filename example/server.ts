@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
-import { auth } from "../src/middleware/auth.js";
+import { guard } from "../src/middleware/guard.js";
 
 const server = createMCPServer({ name: "lynq-demo", version: "1.0.0" });
 
@@ -17,7 +17,7 @@ server.tool(
 	async (args, ctx) => {
 		if (args.username === "admin" && args.password === "1234") {
 			ctx.session.set("user", { name: args.username });
-			ctx.session.authorize("auth");
+			ctx.session.authorize("guard");
 			return ctx.text(
 				`Welcome, ${args.username}. You now have access to weather and notes tools.`,
 			);
@@ -29,7 +29,7 @@ server.tool(
 // Hidden until authenticated
 server.tool(
 	"get_weather",
-	auth(),
+	guard(),
 	{
 		description: "Get current weather for a city",
 		input: z.object({
@@ -49,7 +49,7 @@ server.tool(
 // Hidden until authenticated
 server.tool(
 	"save_note",
-	auth(),
+	guard(),
 	{
 		description: "Save a note to memory",
 		input: z.object({
@@ -70,7 +70,7 @@ server.tool(
 // Hidden until authenticated — exposes saved notes as a resource
 server.resource(
 	"notes://list",
-	auth(),
+	guard(),
 	{
 		name: "Saved Notes",
 		description: "All notes saved in this session",
@@ -86,7 +86,7 @@ server.resource(
 // Hidden until authenticated — elicitation example
 server.tool(
 	"configure",
-	auth(),
+	guard(),
 	{
 		description: "Configure your preferences (demonstrates elicitation)",
 		input: z.object({}),
@@ -112,7 +112,7 @@ server.tool(
 // Hidden until authenticated — async task example
 server.task(
 	"slow_analysis",
-	auth(),
+	guard(),
 	{
 		description: "Run a slow data analysis (demonstrates async tasks)",
 		input: z.object({ query: z.string() }),
@@ -130,7 +130,7 @@ server.task(
 // Hidden until authenticated — roots example
 server.tool(
 	"check_roots",
-	auth(),
+	guard(),
 	{
 		description: "List client-provided filesystem roots",
 		input: z.object({}),
@@ -150,7 +150,7 @@ server.tool(
 // Hidden until authenticated — sampling example
 server.tool(
 	"ask_model",
-	auth(),
+	guard(),
 	{
 		description: "Ask the client's LLM a question (demonstrates sampling)",
 		input: z.object({ question: z.string().describe("Question to ask") }),

@@ -1,29 +1,10 @@
-import { error } from "../response.js";
 import type { ToolMiddleware } from "../types.js";
+import { type GuardOptions, guard } from "./guard.js";
 
-export interface AuthOptions {
-	/** Session key to check for authentication. Default: "user" */
-	sessionKey?: string;
-	/** Error message when not authenticated. */
-	message?: string;
-}
+/** @deprecated Use `GuardOptions` from `@lynq/lynq/guard` instead. */
+export type AuthOptions = GuardOptions;
 
-export function auth(options?: AuthOptions): ToolMiddleware {
-	const sessionKey = options?.sessionKey ?? "user";
-	const message =
-		options?.message ?? "Authentication required. Please login first.";
-
-	return {
-		name: "auth",
-		onRegister() {
-			return false;
-		},
-		async onCall(ctx, next) {
-			const value = ctx.session.get(sessionKey);
-			if (!value) {
-				return error(message);
-			}
-			return next();
-		},
-	};
+/** @deprecated Use `guard()` from `@lynq/lynq/guard` instead. */
+export function auth(options?: GuardOptions): ToolMiddleware {
+	return guard({ name: "auth", ...options });
 }

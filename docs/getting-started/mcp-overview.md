@@ -134,8 +134,8 @@ server.tool("search", rateLimit(10), config, handler); // per-tool
 **Session-scoped visibility** -- Tools can appear and disappear per session. The MCP protocol supports this via `notifications/tools/list_changed`, but wiring it by hand is tedious. lynq handles it automatically.
 
 ```ts
-// Hidden until ctx.session.authorize("auth")
-server.tool("admin_panel", auth(), config, handler);
+// Hidden until ctx.session.authorize("guard")
+server.tool("admin_panel", guard(), config, handler);
 ```
 
 **Elicitation** -- Ask the user for input during tool execution:

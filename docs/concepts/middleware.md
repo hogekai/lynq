@@ -81,6 +81,28 @@ server.use(logger);
 When `onRegister` returns `false`, lynq stores the tool internally but excludes it from `tools/list` responses to the client. The middleware chain is built at registration time and frozen -- the order of `onCall` / `onResult` execution is determined by the order of `server.use()` and inline middleware arguments.
 :::
 
+## Built-in Middleware
+
+lynq ships several middleware out of the box, each available from its own entry point:
+
+| Middleware | Import | Description |
+|------------|--------|-------------|
+| `guard()` | `@lynq/lynq/guard` | Visibility gate. Hides tools until authorized. |
+| `logger()` | `@lynq/lynq/logger` | Logs tool calls with timing. |
+| `rateLimit()` | `@lynq/lynq/rate-limit` | Session-scoped rate limiting per tool. |
+| `truncate()` | `@lynq/lynq/truncate` | Truncates text content in responses. |
+| `some()` / `every()` / `except()` | `@lynq/lynq/combine` | Combine multiple middlewares. |
+| `credentials()` | `@lynq/lynq/credentials` | Form-based authentication via elicit. |
+
+```ts
+import { guard } from "@lynq/lynq/guard";
+import { logger } from "@lynq/lynq/logger";
+import { rateLimit } from "@lynq/lynq/rate-limit";
+
+server.use(logger());
+server.tool("search", guard(), rateLimit(10), config, handler);
+```
+
 ## What's Next
 
 - [Session & Visibility](/concepts/session-and-visibility) -- how middleware controls what the client sees

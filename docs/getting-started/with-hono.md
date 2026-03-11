@@ -5,7 +5,7 @@ Deploy your MCP server over HTTP using Hono.
 ## Install
 
 ```sh
-npm install @lynq/lynq @modelcontextprotocol/sdk zod hono
+npm install @lynq/lynq zod hono
 ```
 
 ## Usage

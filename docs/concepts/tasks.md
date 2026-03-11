@@ -78,11 +78,11 @@ server.task("long_job", config, async (args, ctx) => {
 Tasks use the same middleware system as tools. Global middleware (`server.use()`) applies to tasks. Per-task middleware works inline:
 
 ```ts
-import { auth } from "@lynq/lynq/auth";
+import { guard } from "@lynq/lynq/guard";
 
 server.use(logger);  // applies to all tools AND tasks
 
-server.task("admin_export", auth(), config, async (args, ctx) => {
+server.task("admin_export", guard(), config, async (args, ctx) => {
   // hidden until authorized, just like tools
   ctx.task.progress(0, "Exporting...");
   // ...

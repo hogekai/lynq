@@ -1,6 +1,6 @@
 # Why lynq
 
-MCP is bidirectional -- servers can push tool list changes to clients at any time. This makes session-aware tool visibility possible: show tools after login, hide them on logout, gate features per user. But wiring the `tools/list_changed` notification by hand is tedious. lynq absorbs that plumbing. You declare visibility rules as Hono-style middleware, and lynq handles the protocol-level notifications internally. `server.tool("weather", auth(), config, handler)` -- done.
+MCP is bidirectional -- servers can push tool list changes to clients at any time. This makes session-aware tool visibility possible: show tools after login, hide them on logout, gate features per user. But wiring the `tools/list_changed` notification by hand is tedious. lynq absorbs that plumbing. You declare visibility rules as Hono-style middleware, and lynq handles the protocol-level notifications internally. `server.tool("weather", guard(), config, handler)` -- done.
 
 ## Comparison
 

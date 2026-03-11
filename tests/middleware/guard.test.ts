@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
-import { auth } from "../../src/middleware/auth.js";
+import { guard } from "../../src/middleware/guard.js";
 import { text } from "../../src/response.js";
 import { createTestClient } from "../../src/test.js";
 
@@ -9,17 +9,12 @@ function createTestServer() {
 	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
 }
 
-describe("auth middleware (deprecated, backward compat)", () => {
-	it("defaults to name 'auth' for backward compatibility", () => {
-		const mw = auth();
-		expect(mw.name).toBe("auth");
-	});
-
-	it("hides tools on registration", () => {
+describe("guard middleware", () => {
+	it("hides tools on registration (onRegister returns false)", () => {
 		const server = createTestServer();
 		server.tool(
 			"secret",
-			auth(),
+			guard(),
 			{ input: z.object({ query: z.string() }) },
 			async () => text("ok"),
 		);
@@ -27,17 +22,17 @@ describe("auth middleware (deprecated, backward compat)", () => {
 		expect(server._isToolVisible("secret", "s1")).toBe(false);
 	});
 
-	it("shows tools after session.authorize('auth')", () => {
+	it("shows tools after session.authorize('guard')", () => {
 		const server = createTestServer();
 		server.tool(
 			"secret",
-			auth(),
+			guard(),
 			{ input: z.object({ query: z.string() }) },
 			async () => text("ok"),
 		);
 
 		const session = server._createSessionAPI("s1");
-		session.authorize("auth");
+		session.authorize("guard");
 
 		expect(server._isToolVisible("secret", "s1")).toBe(true);
 	});
@@ -46,13 +41,13 @@ describe("auth middleware (deprecated, backward compat)", () => {
 		const server = createTestServer();
 		server.tool(
 			"secret",
-			auth(),
+			guard(),
 			{ input: z.object({ query: z.string() }) },
 			async (args: any) => text(`Result: ${args.query}`),
 		);
 
 		const t = await createTestClient(server);
-		t.authorize("auth");
+		t.authorize("guard");
 
 		const result = await t.callTool("secret", { query: "test" });
 
@@ -69,13 +64,13 @@ describe("auth middleware (deprecated, backward compat)", () => {
 			{ input: z.object({ username: z.string() }) },
 			async (args: any, ctx: any) => {
 				ctx.session.set("user", { name: args.username });
-				ctx.session.authorize("auth");
+				ctx.session.authorize("guard");
 				return text("Logged in");
 			},
 		);
 		server.tool(
 			"secret",
-			auth(),
+			guard(),
 			{ input: z.object({ query: z.string() }) },
 			async (args: any) => text(`Secret: ${args.query}`),
 		);
@@ -93,12 +88,12 @@ describe("auth middleware (deprecated, backward compat)", () => {
 
 	it("uses custom sessionKey", () => {
 		const server = createTestServer();
-		const customAuth = auth({ sessionKey: "token" });
-		expect(customAuth.name).toBe("auth");
+		const g = guard({ sessionKey: "token" });
+		expect(g.name).toBe("guard");
 
 		server.tool(
 			"api",
-			customAuth,
+			g,
 			{ input: z.object({ query: z.string() }) },
 			async () => text("ok"),
 		);
@@ -106,9 +101,54 @@ describe("auth middleware (deprecated, backward compat)", () => {
 		expect(server._isToolVisible("api", "s1")).toBe(false);
 	});
 
-	it("auth as global middleware hides all subsequently registered tools", () => {
+	it("uses custom name for authorize/revoke", () => {
 		const server = createTestServer();
-		server.use(auth());
+		server.tool(
+			"admin_panel",
+			guard({ name: "admin", sessionKey: "admin" }),
+			{ input: z.object({}) },
+			async () => text("ok"),
+		);
+
+		expect(server._isToolVisible("admin_panel", "s1")).toBe(false);
+
+		const session = server._createSessionAPI("s1");
+		session.authorize("admin");
+
+		expect(server._isToolVisible("admin_panel", "s1")).toBe(true);
+	});
+
+	it("supports multiple independent guard scopes", () => {
+		const server = createTestServer();
+		server.tool("weather", guard(), { input: z.object({}) }, async () =>
+			text("ok"),
+		);
+		server.tool(
+			"admin_panel",
+			guard({ name: "admin", sessionKey: "admin" }),
+			{ input: z.object({}) },
+			async () => text("ok"),
+		);
+
+		const session = server._createSessionAPI("s1");
+
+		// Neither visible initially
+		expect(server._isToolVisible("weather", "s1")).toBe(false);
+		expect(server._isToolVisible("admin_panel", "s1")).toBe(false);
+
+		// Authorize guard scope only
+		session.authorize("guard");
+		expect(server._isToolVisible("weather", "s1")).toBe(true);
+		expect(server._isToolVisible("admin_panel", "s1")).toBe(false);
+
+		// Authorize admin scope
+		session.authorize("admin");
+		expect(server._isToolVisible("admin_panel", "s1")).toBe(true);
+	});
+
+	it("guard as global middleware hides all subsequently registered tools", () => {
+		const server = createTestServer();
+		server.use(guard());
 
 		server.tool(
 			"tool-a",
@@ -125,7 +165,7 @@ describe("auth middleware (deprecated, backward compat)", () => {
 		expect(server._isToolVisible("tool-b", "s1")).toBe(false);
 
 		const session = server._createSessionAPI("s1");
-		session.authorize("auth");
+		session.authorize("guard");
 
 		expect(server._isToolVisible("tool-a", "s1")).toBe(true);
 		expect(server._isToolVisible("tool-b", "s1")).toBe(true);

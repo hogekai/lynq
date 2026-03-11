@@ -45,12 +45,12 @@ afterEach(async () => {
 ## Visibility Testing
 
 ```ts
-import { auth } from "@lynq/lynq/auth";
+import { guard } from "@lynq/lynq/guard";
 
-it("auth-guarded tools are hidden then revealed", async () => {
+it("guard-protected tools are hidden then revealed", async () => {
   const server = createMCPServer({ name: "test", version: "1.0.0" });
   server.tool("public", {}, async (_args, ctx) => ctx.text("ok"));
-  server.tool("secret", auth(), {}, async (_args, ctx) => ctx.text("classified"));
+  server.tool("secret", guard(), {}, async (_args, ctx) => ctx.text("classified"));
 
   t = await createTestClient(server);
 
@@ -58,11 +58,11 @@ it("auth-guarded tools are hidden then revealed", async () => {
   expect(tools).toContain("public");
   expect(tools).not.toContain("secret");
 
-  t.authorize("auth");
+  t.authorize("guard");
   tools = await t.listTools();
   expect(tools).toContain("secret");
 
-  t.revoke("auth");
+  t.revoke("guard");
   tools = await t.listTools();
   expect(tools).not.toContain("secret");
 });
