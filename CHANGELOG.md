@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-03-11
+
+### Added
+
+- Docs: Elicitation concept page — form mode (Zod schemas, result handling) and URL mode (waitForCompletion, callback flow, sequence diagram)
+- Docs: Sampling concept page — simple API, raw API, availability matrix
+- Docs: Tasks concept page — progress reporting, cancellation, middleware integration
+- Docs: Expanded MCP Overview with URL elicitation, sampling raw API, and tasks sections
+- Docs: Cross-links from existing concept pages to new Elicitation, Sampling, Tasks pages
+
 ## [0.5.0] - 2026-03-11
 
 ### Added
