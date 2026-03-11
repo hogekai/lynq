@@ -28,6 +28,10 @@ export default defineConfig({
 						link: "/getting-started/quick-start",
 					},
 					{
+						text: "Create a Project",
+						link: "/getting-started/create-lynq",
+					},
+					{
 						text: "Claude Code",
 						link: "/getting-started/claude-code",
 					},
