@@ -1,4 +1,4 @@
-import type { MCPServer, ToolMiddleware } from "../types.js";
+import type { MCPServer, ToolContext, ToolMiddleware } from "../types.js";
 import { oauth } from "./oauth.js";
 
 export interface GoogleOptions {
@@ -18,6 +18,10 @@ export interface GoogleOptions {
 	message?: string;
 	/** Timeout in ms. Default: 300000 */
 	timeout?: number;
+	/** Custom skip condition. Takes priority over sessionKey check. */
+	skipIf?: (c: ToolContext) => boolean | Promise<boolean>;
+	/** Called after authentication completes successfully, before next(). */
+	onComplete?: (c: ToolContext) => void | Promise<void>;
 }
 
 /** @deprecated Use `GoogleOptions` instead. */
@@ -43,6 +47,8 @@ export function google(options: GoogleOptions): ToolMiddleware {
 		},
 	};
 	if (options.timeout !== undefined) opts.timeout = options.timeout;
+	if (options.skipIf) opts.skipIf = options.skipIf;
+	if (options.onComplete) opts.onComplete = options.onComplete;
 	return oauth(opts);
 }
 

@@ -1,4 +1,4 @@
-import type { MCPServer, ToolMiddleware } from "../types.js";
+import type { MCPServer, ToolContext, ToolMiddleware } from "../types.js";
 import { payment } from "./payment.js";
 
 export interface CryptoPaymentOptions {
@@ -30,6 +30,10 @@ export interface CryptoPaymentOptions {
 	message?: string;
 	/** Timeout in ms. Default: 300000 */
 	timeout?: number;
+	/** Custom skip condition. Takes priority over sessionKey check. */
+	skipIf?: (c: ToolContext) => boolean | Promise<boolean>;
+	/** Called after payment completes successfully, before next(). */
+	onComplete?: (c: ToolContext) => void | Promise<void>;
 }
 
 /** @deprecated Use `CryptoPaymentOptions` instead. */
@@ -66,6 +70,8 @@ export function crypto(options: CryptoPaymentOptions): ToolMiddleware {
 		},
 	};
 	if (options.timeout !== undefined) opts.timeout = options.timeout;
+	if (options.skipIf) opts.skipIf = options.skipIf;
+	if (options.onComplete) opts.onComplete = options.onComplete;
 	const base = payment(opts);
 
 	if (once) return base;

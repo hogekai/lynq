@@ -312,4 +312,172 @@ describe("urlAction middleware", () => {
 		expect((result as any).isError).toBe(true);
 		expect((result as any).content[0].text).toBe("Action was not completed.");
 	});
+
+	it("skipIf: skips elicitation when skipIf returns true", async () => {
+		const server = createTestServer();
+		const mw = urlAction({
+			message: "Auth",
+			buildUrl: () => "https://example.com",
+			skipIf: () => true,
+		});
+		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
+
+		const session = server._createSessionAPI("default");
+		session.authorize("url-action");
+
+		const client = await createConnectedPair(server, async () => ({
+			action: "accept",
+		}));
+
+		const result = await client.callTool({ name: "secret", arguments: {} });
+		expect((result as any).content[0].text).toBe("ok");
+	});
+
+	it("skipIf: does not skip when skipIf returns false", async () => {
+		const server = createTestServer();
+		const mw = urlAction({
+			message: "Auth",
+			buildUrl: () => "https://example.com",
+			skipIf: () => false,
+		});
+		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
+
+		const session = server._createSessionAPI("default");
+		session.authorize("url-action");
+
+		const client = await createConnectedPair(server, async () => ({
+			action: "decline",
+		}));
+
+		const result = await client.callTool({ name: "secret", arguments: {} });
+		expect((result as any).isError).toBe(true);
+	});
+
+	it("skipIf: supports async function", async () => {
+		const server = createTestServer();
+		const mw = urlAction({
+			message: "Auth",
+			buildUrl: () => "https://example.com",
+			skipIf: async () => true,
+		});
+		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
+
+		const session = server._createSessionAPI("default");
+		session.authorize("url-action");
+
+		const client = await createConnectedPair(server, async () => ({
+			action: "accept",
+		}));
+
+		const result = await client.callTool({ name: "secret", arguments: {} });
+		expect((result as any).content[0].text).toBe("ok");
+	});
+
+	it("skipIf: takes priority over sessionKey check", async () => {
+		const server = createTestServer();
+		const mw = urlAction({
+			message: "Auth",
+			buildUrl: () => "https://example.com",
+			skipIf: () => true,
+			// sessionKey "user" is NOT set, but skipIf returns true
+		});
+		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
+
+		const session = server._createSessionAPI("default");
+		// Do NOT set "user" in session
+		session.authorize("url-action");
+
+		const client = await createConnectedPair(server, async () => ({
+			action: "accept",
+		}));
+
+		const result = await client.callTool({ name: "secret", arguments: {} });
+		expect((result as any).content[0].text).toBe("ok");
+	});
+
+	it("onComplete: called after elicitation completes", async () => {
+		const server = createTestServer();
+		let completeCalled = false;
+
+		const mw = urlAction({
+			message: "Sign in",
+			buildUrl: () => "https://example.com/auth",
+			timeout: 5000,
+			onComplete: () => {
+				completeCalled = true;
+			},
+		});
+		server.tool("secret", mw, { input: z.object({}) }, async () =>
+			text("protected"),
+		);
+		server._createSessionAPI("default").authorize("url-action");
+
+		const client = await createConnectedPair(server, async (request: any) => {
+			setTimeout(() => {
+				server.session("default").set("user", { name: "alice" });
+				server.completeElicitation(request.params.elicitationId);
+			}, 50);
+			return { action: "accept" };
+		});
+
+		const result = await client.callTool({ name: "secret", arguments: {} });
+		expect((result as any).content[0].text).toBe("protected");
+		expect(completeCalled).toBe(true);
+	});
+
+	it("onComplete: supports async function", async () => {
+		const server = createTestServer();
+		let completeCalled = false;
+
+		const mw = urlAction({
+			message: "Sign in",
+			buildUrl: () => "https://example.com/auth",
+			timeout: 5000,
+			onComplete: async () => {
+				await new Promise((r) => setTimeout(r, 10));
+				completeCalled = true;
+			},
+		});
+		server.tool("secret", mw, { input: z.object({}) }, async () =>
+			text("protected"),
+		);
+		server._createSessionAPI("default").authorize("url-action");
+
+		const client = await createConnectedPair(server, async (request: any) => {
+			setTimeout(() => {
+				server.session("default").set("user", { name: "alice" });
+				server.completeElicitation(request.params.elicitationId);
+			}, 50);
+			return { action: "accept" };
+		});
+
+		const result = await client.callTool({ name: "secret", arguments: {} });
+		expect((result as any).content[0].text).toBe("protected");
+		expect(completeCalled).toBe(true);
+	});
+
+	it("onComplete: not called when skipIf returns true", async () => {
+		const server = createTestServer();
+		let completeCalled = false;
+
+		const mw = urlAction({
+			message: "Auth",
+			buildUrl: () => "https://example.com",
+			skipIf: () => true,
+			onComplete: () => {
+				completeCalled = true;
+			},
+		});
+		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
+
+		const session = server._createSessionAPI("default");
+		session.authorize("url-action");
+
+		const client = await createConnectedPair(server, async () => ({
+			action: "accept",
+		}));
+
+		await client.callTool({ name: "secret", arguments: {} });
+		expect(completeCalled).toBe(false);
+	});
 });

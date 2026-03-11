@@ -77,6 +77,53 @@ mountLynq(app, server);
 export default app;
 ```
 
+## Pages
+
+Auto-register OAuth callback and payment page routes. Specify only the providers you use:
+
+```ts
+mountLynq(app, server, {
+  pages: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    },
+    crypto: true,
+  },
+});
+// Registers:
+//   GET /lynq/auth/github/callback
+//   GET /lynq/payment/crypto
+//   POST /lynq/payment/crypto/callback
+//   GET /lynq/auth/success
+//   GET /lynq/payment/success
+```
+
+Unspecified providers are not registered. Success pages are shared across all providers.
+
+### Provider Config
+
+| Provider | Config | Routes |
+|---|---|---|
+| `github` | `{ clientId, clientSecret }` | `GET /lynq/auth/github/callback` |
+| `google` | `{ clientId, clientSecret }` | `GET /lynq/auth/google/callback` |
+| `stripe` | `{ secretKey }` | `GET /lynq/payment/stripe/callback` |
+| `crypto` | `true` or `{ rpcUrl? }` | `GET /lynq/payment/crypto` + `POST /lynq/payment/crypto/callback` |
+
+Each provider value can also be a `string` to redirect to a custom URL instead of using the default page.
+
+### `pagesPrefix`
+
+URL prefix for all pages routes. Defaults to `"/lynq"`.
+
+```ts
+mountLynq(app, server, {
+  pages: { github: { clientId: "...", clientSecret: "..." } },
+  pagesPrefix: "/my-app",
+  // → GET /my-app/auth/github/callback
+});
+```
+
 ## Next Steps
 
 - [HTTP](/adapters/http) -- raw `server.http()` API, runtime examples

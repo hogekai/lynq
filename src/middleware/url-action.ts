@@ -1,5 +1,5 @@
 import { error } from "../response.js";
-import type { ToolMiddleware } from "../types.js";
+import type { ToolContext, ToolMiddleware } from "../types.js";
 
 export interface UrlActionOptions {
 	/** Middleware name. Default: "url-action" */
@@ -19,6 +19,10 @@ export interface UrlActionOptions {
 	declineMessage?: string;
 	/** Use persistent store (userStore) instead of session for state. Default: false */
 	persistent?: boolean;
+	/** Custom skip condition. If returns true, skip the elicitation and call next(). Takes priority over sessionKey check. */
+	skipIf?: (c: ToolContext) => boolean | Promise<boolean>;
+	/** Called after elicitation completes successfully, before next(). */
+	onComplete?: (c: ToolContext) => void | Promise<void>;
 }
 
 export function urlAction(options: UrlActionOptions): ToolMiddleware {
@@ -33,7 +37,9 @@ export function urlAction(options: UrlActionOptions): ToolMiddleware {
 			return false;
 		},
 		async onCall(c, next) {
-			if (options.persistent) {
+			if (options.skipIf) {
+				if (await Promise.resolve(options.skipIf(c))) return next();
+			} else if (options.persistent) {
 				if (await c.userStore.get(sessionKey)) return next();
 			} else {
 				if (c.session.get(sessionKey)) return next();
@@ -61,6 +67,10 @@ export function urlAction(options: UrlActionOptions): ToolMiddleware {
 			} else {
 				if (!c.session.get(sessionKey))
 					return error("Action was not completed.");
+			}
+
+			if (options.onComplete) {
+				await Promise.resolve(options.onComplete(c));
 			}
 
 			c.session.authorize(name);

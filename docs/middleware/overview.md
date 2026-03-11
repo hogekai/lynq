@@ -37,6 +37,8 @@ lynq ships with 15 built-in middleware, each available from its own entry point.
 
 `urlAction()` is the foundation for `oauth()` and `payment()`. Use it directly only when building custom URL-based flows.
 
+All URL-based middleware (`oauth`, `payment`, `stripe`, `crypto`, `github`, `google`) support `skipIf` and `onComplete` callbacks for custom persistence logic. See [Store — Without Store](/concepts/store#without-store).
+
 ## Quick Example
 
 ```ts

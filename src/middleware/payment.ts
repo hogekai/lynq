@@ -1,4 +1,4 @@
-import type { ToolMiddleware } from "../types.js";
+import type { ToolContext, ToolMiddleware } from "../types.js";
 import { urlAction } from "./url-action.js";
 
 export interface PaymentOptions {
@@ -17,6 +17,10 @@ export interface PaymentOptions {
 	timeout?: number;
 	/** Use persistent store (userStore) instead of session for state. Default: false */
 	persistent?: boolean;
+	/** Custom skip condition. Takes priority over sessionKey check. */
+	skipIf?: (c: ToolContext) => boolean | Promise<boolean>;
+	/** Called after payment completes successfully, before next(). */
+	onComplete?: (c: ToolContext) => void | Promise<void>;
 }
 
 export function payment(options: PaymentOptions): ToolMiddleware {
@@ -29,5 +33,7 @@ export function payment(options: PaymentOptions): ToolMiddleware {
 	};
 	if (options.timeout !== undefined) opts.timeout = options.timeout;
 	if (options.persistent !== undefined) opts.persistent = options.persistent;
+	if (options.skipIf) opts.skipIf = options.skipIf;
+	if (options.onComplete) opts.onComplete = options.onComplete;
 	return urlAction(opts);
 }

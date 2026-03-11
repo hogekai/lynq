@@ -144,6 +144,42 @@ When `persistent: true`:
 
 See [payment()](/payment/overview) and [Auth Providers](/auth/overview) for details.
 
+## Without Store
+
+Store is a convenience layer, not a requirement. For complex queries, transactions, or relational data, use `skipIf` and `onComplete` to call your own database directly:
+
+```ts
+import { payment } from "@lynq/lynq/payment";
+
+server.tool("premium", payment({
+  message: "This costs $0.01",
+  buildUrl: ({ sessionId, elicitationId }) =>
+    `https://my-app.com/pay?state=${sessionId}:${elicitationId}`,
+
+  // Check your DB instead of Store
+  skipIf: async (c) => {
+    const user = c.session.get<{ id: string }>("user");
+    if (!user) return false;
+    return await db.hasPaid(user.id, c.toolName);
+  },
+
+  // Record to your DB instead of Store
+  onComplete: async (c) => {
+    const user = c.session.get<{ id: string }>("user");
+    if (user) {
+      await db.recordPayment(user.id, c.toolName, {
+        amount: 0.01,
+        paidAt: new Date(),
+      });
+    }
+  },
+}), config, handler);
+```
+
+This pattern works with any middleware that builds on `urlAction()`: `payment()`, `oauth()`, `stripe()`, `crypto()`, `github()`, `google()`.
+
+`skipIf` takes priority over the default `sessionKey` check. `onComplete` runs after the elicitation succeeds, before `next()`.
+
 ## What's Next
 
 - [Session & Visibility](/concepts/session-and-visibility) -- connection-scoped state

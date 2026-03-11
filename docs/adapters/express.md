@@ -60,6 +60,26 @@ The route path where the MCP endpoint is mounted. Defaults to `"/mcp"`.
 
 Array of hostnames accepted in the `Host` header. Defaults to `["localhost", "127.0.0.1", "::1"]`. Set to your production domain when deploying publicly.
 
+## Pages
+
+Auto-register OAuth callback and payment page routes. Same API as the [Hono adapter](/adapters/hono#pages):
+
+```ts
+mountLynq(app, server, {
+  pages: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    },
+    crypto: true,
+  },
+});
+```
+
+> **Note:** The crypto payment POST callback requires `express.json()` middleware, which must be registered before `mountLynq`.
+
+See [Hono — Pages](/adapters/hono#pages) for the full provider config table and `pagesPrefix` option.
+
 ## Next Steps
 
 - [HTTP](/adapters/http) -- raw `server.http()` API, runtime examples

@@ -34,7 +34,9 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **Response helpers are standalone pure functions.** `text(value)`, `json(value)`, `error(message)`, `image(data, mimeType)` — exported from `lynq`. Also available as `c.text()`, `c.json()`, etc. on the context object. Chainable: `c.text("done").json({ id: 1 })`.
 - **`c.elicit.form(message, zodSchema)` uses Zod for schemas.** Positional args, not property objects. Internally converts to JSON Schema via `inputToJsonSchema()`. `c.elicit.url(message, url)` — same positional pattern.
 - **`urlAction`, `oauth`, `payment` support `persistent` option.** When `persistent: true`, state is checked/stored via `c.userStore` (async, survives reconnection) instead of `c.session` (sync, connection-scoped). Default: `false`. Requires a user in session for `userStore` key resolution. `c.session.authorize()` is still called for current-session visibility.
+- **`skipIf` / `onComplete` for custom persistence.** All URL-based middleware (`urlAction`, `oauth`, `payment`, `github`, `google`, `stripe`, `crypto`) accept `skipIf?: (c: ToolContext) => boolean | Promise<boolean>` and `onComplete?: (c: ToolContext) => void | Promise<void>`. `skipIf` takes priority over `sessionKey` check. `onComplete` runs after elicitation succeeds, before `next()`. Use to call your own DB instead of Store.
 - **Framework adapters are optional entry points.** `lynq/hono` and `lynq/express` provide `mountLynq(app, server, options?)`. DNS rebinding protection included by default for localhost. No additional runtime dependencies — framework types are peer deps.
+- **Adapter `pages` option auto-registers OAuth/payment routes.** `mountLynq(app, server, { pages: { github: { clientId, clientSecret }, crypto: true } })`. Only specified providers are registered under `pagesPrefix` (default: `/lynq`). Routes: `/lynq/auth/{provider}/callback`, `/lynq/payment/{provider}[/callback]`, `/lynq/auth/success`, `/lynq/payment/success`. HTML templates in `src/adapters/pages.ts`. Provider value can be config object, `true` (needs secrets for github/google/stripe), or `string` (redirect).
 
 ## Out of scope
 
@@ -109,6 +111,7 @@ src/
 └── adapters/
     ├── stdio.ts      — stdio transport re-export
     ├── shared.ts     — validateHost utility for DNS rebinding protection
+    ├── pages.ts      — HTML templates + handlers for adapter pages
     ├── hono.ts       — mountLynq for Hono
     └── express.ts    — mountLynq for Express
 docs/
@@ -148,5 +151,7 @@ tests/
 │   └── tip.test.ts
 └── adapters/
     ├── hono.test.ts
-    └── express.test.ts
+    ├── hono-pages.test.ts
+    ├── express.test.ts
+    └── express-pages.test.ts
 ```
