@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2026-03-11
+
+### Fixed
+
+- Add `type: module` to root `package.json` for VitePress ESM compatibility
+
 ## [0.7.0] - 2026-03-11
 
 ### Added
