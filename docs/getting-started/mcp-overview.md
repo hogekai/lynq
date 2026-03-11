@@ -138,19 +138,42 @@ server.tool("search", rateLimit(10), config, handler); // per-tool
 server.tool("admin_panel", guard(), config, handler);
 ```
 
-**Elicitation** -- Ask the user for input during tool execution:
+**Elicitation** -- Pause tool execution and ask the user for input. Two modes: form for structured data, URL for external redirects (OAuth, payments).
 
 ```ts
+// Form mode -- structured data with Zod
 const result = await c.elicit.form("Set preferences", z.object({
   theme: z.enum(["light", "dark"]),
 }));
+
+// URL mode -- external redirect with callback
+await c.elicit.url("Complete payment", paymentUrl, {
+  waitForCompletion: true,
+});
 ```
 
-**Sampling** -- Request LLM inference from the client:
+See [Elicitation](/concepts/elicitation) for details.
+
+**Sampling** -- Request LLM inference from the client. Your tool provides the prompt; the client decides which model to use.
 
 ```ts
 const answer = await c.sample("Summarize this text", { maxTokens: 100 });
+
+// For full control: c.sample.raw({ messages: [...], maxTokens: 256 })
 ```
+
+See [Sampling](/concepts/sampling) for details.
+
+**Tasks** -- Long-running operations with progress reporting and cancellation:
+
+```ts
+server.task("analyze", config, async (args, c) => {
+  c.task.progress(50, "Halfway...");
+  return c.text("Done");
+});
+```
+
+See [Tasks](/concepts/tasks) for details.
 
 :::tip Under the hood
 MCP is a bidirectional protocol. The server can push notifications to the client at any time -- for example, `notifications/tools/list_changed` tells the client to re-fetch the tool list. lynq uses this to make tools appear and disappear based on session state. You declare the rules as middleware; lynq sends the notifications.

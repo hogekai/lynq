@@ -75,6 +75,8 @@ Passed to `server.http(options?)`.
 
 ## Elicitation
 
+> For concepts and usage patterns, see [Elicitation](/concepts/elicitation).
+
 Request structured input from the user during tool execution. Two modes: form (structured data) and URL (external redirect).
 
 ### Form Mode
@@ -137,6 +139,8 @@ The promise resolves when `server.completeElicitation(elicitationId)` is called 
 
 ## Sampling
 
+> For concepts and usage patterns, see [Sampling](/concepts/sampling).
+
 Request LLM inference from the client during tool execution. The client decides which model to use.
 
 ```ts
@@ -175,6 +179,8 @@ Sampling is available in **tool handlers** and **task handlers**. Not available 
 
 ## Tasks
 
+> For concepts and usage patterns, see [Tasks](/concepts/tasks).
+>
 > **@experimental** -- `server.task()` depends on the MCP SDK's experimental Tasks API.
 
 Tasks are long-running operations with progress reporting and cancellation. Same registration pattern as tools -- same middleware, same visibility system.

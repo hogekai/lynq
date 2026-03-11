@@ -41,6 +41,9 @@ export default defineConfig({
 						text: "Session & Visibility",
 						link: "/concepts/session-and-visibility",
 					},
+					{ text: "Elicitation", link: "/concepts/elicitation" },
+					{ text: "Sampling", link: "/concepts/sampling" },
+					{ text: "Tasks", link: "/concepts/tasks" },
 					{
 						text: "Store & Persistence",
 						link: "/concepts/store",

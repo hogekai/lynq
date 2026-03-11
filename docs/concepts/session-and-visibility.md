@@ -112,6 +112,8 @@ server.tool("premium", payment({
 
 ## What's Next
 
+- [Elicitation](/concepts/elicitation) -- user input during tool execution
+- [Tasks](/concepts/tasks) -- visibility control for tasks
 - [Store & Persistence](/concepts/store) -- persistent state across connections
 - [Auth Flow](/guides/auth-flow) -- full login/logout example
 - [Dynamic Tools](/guides/dynamic-tools) -- onboarding, multi-tenant, wizard patterns

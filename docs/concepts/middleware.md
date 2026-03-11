@@ -84,5 +84,7 @@ When `onRegister` returns `false`, lynq stores the tool internally but excludes 
 ## What's Next
 
 - [Session & Visibility](/concepts/session-and-visibility) -- how middleware controls what the client sees
-- [Middleware Overview](/middleware/overview) -- all 14 built-in middleware at a glance
+- [Elicitation](/concepts/elicitation) -- interactive user input in tool handlers
+- [Tasks](/concepts/tasks) -- long-running operations using the same middleware
+- [Middleware Overview](/middleware/overview) -- all 15 built-in middleware at a glance
 - [Custom Middleware](/middleware/custom) -- write your own middleware

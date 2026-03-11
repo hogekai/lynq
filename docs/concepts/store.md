@@ -183,5 +183,6 @@ This pattern works with any middleware that builds on `urlAction()`: `payment()`
 ## What's Next
 
 - [Session & Visibility](/concepts/session-and-visibility) -- connection-scoped state
+- [Elicitation](/concepts/elicitation) -- URL elicitation with persistent state
 - [payment()](/payment/overview) -- persistent payment flows
 - [Auth Flow](/guides/auth-flow) -- authentication patterns
