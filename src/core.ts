@@ -10,6 +10,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { createRootsAccessor, createToolContext } from "./context.js";
+import { createUserStore, memoryStore } from "./store.js";
 import {
 	buildMiddlewareChain,
 	buildTemplatePattern,
@@ -32,7 +33,9 @@ import type {
 	ResourceConfig,
 	ResourceContext,
 	ResourceHandler,
+	ServerOptions,
 	Session,
+	Store,
 	TaskConfig,
 	TaskContext,
 	TaskControl,
@@ -45,10 +48,8 @@ import type {
 
 // === createMCPServer ===
 
-export function createMCPServer(info: {
-	name: string;
-	version: string;
-}): MCPServer {
+export function createMCPServer(info: ServerOptions): MCPServer {
+	const store: Store = info.store ?? memoryStore();
 	const globalMiddlewares: ToolMiddleware[] = [];
 	const tools = new Map<string, InternalTool>();
 	const resources = new Map<string, InternalResource>();
@@ -297,6 +298,7 @@ export function createMCPServer(info: {
 						createSessionAPI(sessionId),
 						name,
 						extra.signal,
+						store,
 						(eid, srv) => registerElicitation(eid, sessionId, srv),
 						cancelElicitation,
 					);
@@ -341,6 +343,7 @@ export function createMCPServer(info: {
 							createSessionAPI(sessionId),
 							name,
 							extra.signal,
+							store,
 							(eid, srv) => registerElicitation(eid, sessionId, srv),
 							cancelElicitation,
 						),
@@ -443,6 +446,8 @@ export function createMCPServer(info: {
 					session,
 					sessionId,
 					roots: createRootsAccessor(sdkServer),
+					store,
+					userStore: createUserStore(session, store),
 				};
 
 				// Run middleware onCall chain using a ToolContext adapter
@@ -452,6 +457,7 @@ export function createMCPServer(info: {
 					session,
 					res.uri,
 					extra.signal,
+					store,
 					(eid, srv) => registerElicitation(eid, sessionId, srv),
 					cancelElicitation,
 				);
@@ -715,6 +721,7 @@ export function createMCPServer(info: {
 		http,
 		session: createSessionAPI,
 		completeElicitation,
+		store,
 		connect,
 		/** @internal Exposed for testing. */
 		_server: server,

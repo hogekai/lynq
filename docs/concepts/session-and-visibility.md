@@ -88,8 +88,31 @@ server.tool("secret", guard(), { description: "Protected" }, handler);
 Every `authorize()`, `revoke()`, `enableTools()`, `disableTools()`, `enableResources()`, and `disableResources()` call triggers a `notifications/tools/list_changed` or `notifications/resources/list_changed` notification via the MCP SDK's `server.sendToolListChanged()`. The client automatically re-fetches the list and sees the updated visibility. This bidirectional notification is what lynq automates -- you never call `sendToolListChanged` yourself.
 :::
 
+## Session vs Store
+
+Session state is connection-scoped -- when the connection drops, it's gone. For state that survives reconnections (user profiles, payment history), use the [Store](/concepts/store):
+
+```ts
+// Session: connection-scoped (sync)
+c.session.set("temp_token", token);
+
+// Store: persistent (async)
+await c.store.set("feature_flags", { newUI: true });
+await c.userStore.set("preferences", { theme: "dark" });
+```
+
+Auth and payment middleware support a `persistent` option to use `c.userStore` instead of `c.session`:
+
+```ts
+server.tool("premium", payment({
+  buildUrl: ...,
+  persistent: true, // survives reconnection
+}), config, handler);
+```
+
 ## What's Next
 
+- [Store & Persistence](/concepts/store) -- persistent state across connections
 - [Auth Flow](/guides/auth-flow) -- full login/logout example
 - [Dynamic Tools](/guides/dynamic-tools) -- onboarding, multi-tenant, wizard patterns
 - [Resource Gating](/guides/resource-gating) -- visibility control for resources

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
 import { urlAction } from "../../src/middleware/url-action.js";
 import { text } from "../../src/response.js";
+import { memoryStore } from "../../src/store.js";
 
 function createTestServer() {
 	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
@@ -204,5 +205,113 @@ describe("urlAction middleware", () => {
 		});
 		// Verify the middleware was created (name is default)
 		expect(mw.name).toBe("url-action");
+	});
+
+	it("persistent: skips elicitation when userStore has value", async () => {
+		const store = memoryStore();
+		// Pre-populate userStore with user-scoped data
+		await store.set("user:alice:payment", { paid: true });
+
+		const server = createMCPServer({
+			name: "test",
+			version: "1.0.0",
+			store,
+		}) as any;
+
+		const mw = urlAction({
+			message: "Pay",
+			sessionKey: "payment",
+			buildUrl: () => "https://example.com/pay",
+			persistent: true,
+		});
+		server.tool("premium", mw, { input: z.object({}) }, async () =>
+			text("premium content"),
+		);
+
+		// Set user in session + authorize so tool is visible
+		const session = server._createSessionAPI("default");
+		session.set("user", "alice");
+		session.authorize("url-action");
+
+		const client = await createConnectedPair(server, async () => ({
+			action: "accept",
+		}));
+
+		const result = await client.callTool({ name: "premium", arguments: {} });
+		expect((result as any).content[0].text).toBe("premium content");
+	});
+
+	it("persistent: completes full flow with userStore", async () => {
+		const store = memoryStore();
+		const server = createMCPServer({
+			name: "test",
+			version: "1.0.0",
+			store,
+		}) as any;
+
+		const mw = urlAction({
+			message: "Pay",
+			sessionKey: "payment",
+			buildUrl: () => "https://example.com/pay",
+			persistent: true,
+			timeout: 5000,
+		});
+		server.tool("premium", mw, { input: z.object({}) }, async () =>
+			text("premium content"),
+		);
+
+		// Set user in session + authorize so tool is visible
+		const session = server._createSessionAPI("default");
+		session.set("user", "alice");
+		session.authorize("url-action");
+
+		const client = await createConnectedPair(server, async (request: any) => {
+			setTimeout(async () => {
+				// External callback writes to both session and store
+				server.session("default").set("payment", { paid: true });
+				await store.set("user:alice:payment", { paid: true });
+				server.completeElicitation(request.params.elicitationId);
+			}, 50);
+			return { action: "accept" };
+		});
+
+		const result = await client.callTool({ name: "premium", arguments: {} });
+		expect((result as any).content[0].text).toBe("premium content");
+	});
+
+	it("persistent: returns error when userStore key not set after callback", async () => {
+		const store = memoryStore();
+		const server = createMCPServer({
+			name: "test",
+			version: "1.0.0",
+			store,
+		}) as any;
+
+		const mw = urlAction({
+			message: "Pay",
+			sessionKey: "payment",
+			buildUrl: () => "https://example.com/pay",
+			persistent: true,
+			timeout: 5000,
+		});
+		server.tool("premium", mw, { input: z.object({}) }, async () =>
+			text("ok"),
+		);
+
+		const session = server._createSessionAPI("default");
+		session.set("user", "alice");
+		session.authorize("url-action");
+
+		const client = await createConnectedPair(server, async (request: any) => {
+			// Complete without setting userStore
+			setTimeout(() => {
+				server.completeElicitation(request.params.elicitationId);
+			}, 50);
+			return { action: "accept" };
+		});
+
+		const result = await client.callTool({ name: "premium", arguments: {} });
+		expect((result as any).isError).toBe(true);
+		expect((result as any).content[0].text).toBe("Action was not completed.");
 	});
 });

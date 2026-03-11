@@ -23,17 +23,22 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **Tool, resource, and task visibility is session-scoped.** `tool()`, `resource()`, and `task()` share the same middleware pattern. `c.session.authorize()` / `c.session.revoke()` affect all. Bidirectional notification is internal — users never touch it.
 - **`@experimental` marks unstable APIs.** `server.task()` depends on the MCP SDK's experimental Tasks API. User-facing interface is stable; internal SDK wiring may change.
 - **`c` follows Hono's Context pattern.** `c.session.set()` / `c.session.get()`. Short name for minimal cognitive load.
+- **`c.store` is a persistent async KV store (global scope).** `c.store.get(key)` / `c.store.set(key, value, ttl?)` / `c.store.delete(key)`. Available in tool, resource, and task handlers. TTL in seconds. `Store` interface only — users provide Redis/SQLite implementations. `memoryStore()` is the default (in-process, lost on restart).
+- **`c.userStore` is a user-scoped persistent KV store.** Same API as `c.store` but keys are auto-prefixed with the user ID resolved from `c.session.get("user")`. Throws if no user in session. Supports string user, `{ id }`, or `{ sub }` objects.
+- **`server.store` exposes the store instance.** For external HTTP callback routes that need to write persistent state (e.g. after OAuth/payment completion).
+- **`createMCPServer` accepts `ServerOptions`.** Extends `ServerInfo` with optional `store?: Store`. Defaults to `memoryStore()` if omitted.
 - **`c.roots()` queries client-provided filesystem roots.** Returns `Promise<RootInfo[]>`. Empty array if client lacks roots capability. No caching — each call queries the client.
 - **`c.sample()` requests LLM inference from the client.** `c.sample(prompt, options?)` → `Promise<string>`. `c.sample.raw(sdkParams)` → `Promise<CreateMessageResult>`. Available in tool and task handlers. Not in resource handlers.
 - **`server.http(options?)` returns a Web Standard request handler.** `(req: Request) => Promise<Response>`. Mounts in Hono, Deno, Cloudflare Workers — any framework. Lazy-imports `WebStandardStreamableHTTPServerTransport` from the SDK. Stateful mode (default): per-session Server+Transport, session IDs via `Mcp-Session-Id` header. Sessionless mode: new Server+Transport per request. `enableJsonResponse` option returns JSON instead of SSE. `onRequest` hook runs on each request after session is resolved — use to inject HTTP headers (e.g. Bearer tokens) into MCP sessions.
 - **`onResult` hook for post-handler result transformation.** `ToolMiddleware.onResult?(result, c)` runs after the handler returns. Execution order: `onCall` chain → handler → `onResult` (reverse middleware order) → `onCall` post-next processing. If `onCall` short-circuits (doesn't call `next()`), `onResult` does not run.
 - **Response helpers are standalone pure functions.** `text(value)`, `json(value)`, `error(message)`, `image(data, mimeType)` — exported from `lynq`. Also available as `c.text()`, `c.json()`, etc. on the context object. Chainable: `c.text("done").json({ id: 1 })`.
 - **`c.elicit.form(message, zodSchema)` uses Zod for schemas.** Positional args, not property objects. Internally converts to JSON Schema via `inputToJsonSchema()`. `c.elicit.url(message, url)` — same positional pattern.
+- **`urlAction`, `oauth`, `payment` support `persistent` option.** When `persistent: true`, state is checked/stored via `c.userStore` (async, survives reconnection) instead of `c.session` (sync, connection-scoped). Default: `false`. Requires a user in session for `userStore` key resolution. `c.session.authorize()` is still called for current-session visibility.
 - **Framework adapters are optional entry points.** `lynq/hono` and `lynq/express` provide `mountLynq(app, server, options?)`. DNS rebinding protection included by default for localhost. No additional runtime dependencies — framework types are peer deps.
 
 ## Out of scope
 
-Auth implementation, database, session persistence.
+Auth implementation, database. Store implementations beyond `memoryStore()` (Redis, SQLite, etc.) are user-provided.
 
 ## When adding features
 
@@ -48,7 +53,7 @@ TypeScript strict · ESM · tsup · vitest · Biome · pnpm · VitePress · Type
 ## Structure
 
 Single package, multiple entry points via `exports` field:
-- `lynq` — core (`createMCPServer` + types + response helpers: `text()`, `json()`, `error()`, `image()`)
+- `lynq` — core (`createMCPServer` + `memoryStore` + types + response helpers: `text()`, `json()`, `error()`, `image()`)
 - `lynq/guard` — visibility gate middleware (`guard()`)
 - `lynq/auth` — deprecated re-export of `guard()` as `auth()`
 - `lynq/logger` — logging middleware (`logger()`)
@@ -66,6 +71,7 @@ Single package, multiple entry points via `exports` field:
 - `lynq/stripe` — Stripe Checkout payment provider (`stripePayment()`, `handleStripeCallback()`) — requires `stripe` peer dep
 - `lynq/usdc` — USDC payment provider (`usdcPayment()`, `handleUsdcCallback()`)
 - `lynq/tip` — post-result tip link appender (`tip()`)
+- `lynq/store` — store utilities (`memoryStore()`, `resolveUserId()`, `createUserStore()`)
 - `lynq/stdio` — re-export of `StdioServerTransport`
 - `lynq/hono` — Hono adapter (`mountLynq`)
 - `lynq/express` — Express adapter (`mountLynq`)
@@ -77,6 +83,7 @@ src/
 ├── types.ts          — all type definitions
 ├── core.ts           — createMCPServer + state management + request handlers
 ├── response.ts       — response helpers (text, json, error, image)
+├── store.ts          — memoryStore, resolveUserId, createUserStore
 ├── test.ts           — test helpers (createTestClient, matchers)
 ├── helpers.ts        — pure functions (isVisible, buildMiddlewareChain, parseMiddlewareArgs, etc.)
 ├── context.ts        — context factories (createElicit, createRootsAccessor, createSample, createToolContext)
@@ -114,6 +121,7 @@ docs/
 ├── api-reference/        — auto-generated by TypeDoc (gitignored)
 └── .vitepress/config.ts  — VitePress configuration
 tests/
+├── store.test.ts
 ├── core.test.ts
 ├── http.test.ts
 ├── resource.test.ts

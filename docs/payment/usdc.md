@@ -32,6 +32,7 @@ server.tool("premium", usdcPayment({
 | `once` | `boolean` | `false` | If true, charge only once per session |
 | `message` | `string` | `"Payment required (X USDC)."` | Elicitation message |
 | `timeout` | `number` | `300000` | Timeout in ms |
+| `persistent` | `boolean` | `false` | Use `userStore` for state that survives reconnection |
 
 ## Example
 

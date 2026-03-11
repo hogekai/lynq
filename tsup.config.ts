@@ -23,6 +23,7 @@ export default defineConfig({
 		"adapters/stdio": "src/adapters/stdio.ts",
 		"adapters/hono": "src/adapters/hono.ts",
 		"adapters/express": "src/adapters/express.ts",
+		store: "src/store.ts",
 		test: "src/test.ts",
 	},
 	external: ["@modelcontextprotocol/sdk", "zod", "hono", "express", "jose", "stripe"],

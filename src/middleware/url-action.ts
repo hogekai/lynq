@@ -17,6 +17,8 @@ export interface UrlActionOptions {
 	timeout?: number;
 	/** Error message when user declines. Default: "Action cancelled." */
 	declineMessage?: string;
+	/** Use persistent store (userStore) instead of session for state. Default: false */
+	persistent?: boolean;
 }
 
 export function urlAction(options: UrlActionOptions): ToolMiddleware {
@@ -31,8 +33,10 @@ export function urlAction(options: UrlActionOptions): ToolMiddleware {
 			return false;
 		},
 		async onCall(c, next) {
-			if (c.session.get(sessionKey)) {
-				return next();
+			if (options.persistent) {
+				if (await c.userStore.get(sessionKey)) return next();
+			} else {
+				if (c.session.get(sessionKey)) return next();
 			}
 
 			const elicitationId = crypto.randomUUID();
@@ -51,8 +55,12 @@ export function urlAction(options: UrlActionOptions): ToolMiddleware {
 				return error(declineMessage);
 			}
 
-			if (!c.session.get(sessionKey)) {
-				return error("Action was not completed.");
+			if (options.persistent) {
+				if (!(await c.userStore.get(sessionKey)))
+					return error("Action was not completed.");
+			} else {
+				if (!c.session.get(sessionKey))
+					return error("Action was not completed.");
 			}
 
 			c.session.authorize(name);

@@ -1,6 +1,6 @@
 # Middleware
 
-lynq ships with 14 built-in middleware, each available from its own entry point.
+lynq ships with 15 built-in middleware, each available from its own entry point.
 
 ## Built-in
 

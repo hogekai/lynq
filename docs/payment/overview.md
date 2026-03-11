@@ -26,6 +26,7 @@ server.tool("premium", payment({
 | `message` | `string` | `"Please complete payment to continue."` | Elicitation message |
 | `buildUrl` | `(params: { sessionId: string; elicitationId: string }) => string \| Promise<string>` | — | **Required.** URL builder for payment page |
 | `timeout` | `number` | `300000` | Timeout in ms |
+| `persistent` | `boolean` | `false` | Use `userStore` for state that survives reconnection |
 
 ## Example
 
@@ -72,4 +73,6 @@ export default { port: 3000, fetch: app.fetch };
 
 :::tip Under the hood
 `payment()` wraps `urlAction()`. On tool call, it opens the payment URL via URL elicitation with `waitForCompletion: true`. The promise resolves when `server.completeElicitation(elicitationId)` is called from your payment callback, or when the timeout expires. The `sessionKey` defaults to `"payment"` (not `"user"`) to keep payment state separate from auth state.
+
+When `persistent: true`, the middleware checks `c.userStore` instead of `c.session`. Your callback handler must also write to `server.store` so the state persists across connections. See [Store & Persistence](/concepts/store) for details.
 :::

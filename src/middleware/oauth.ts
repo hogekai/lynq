@@ -15,6 +15,8 @@ export interface OAuthOptions {
 	}) => string | Promise<string>;
 	/** Timeout in ms. Default: 300000 */
 	timeout?: number;
+	/** Use persistent store (userStore) instead of session for state. Default: false */
+	persistent?: boolean;
 }
 
 export function oauth(options: OAuthOptions): ToolMiddleware {
@@ -26,5 +28,6 @@ export function oauth(options: OAuthOptions): ToolMiddleware {
 		declineMessage: "Authentication cancelled.",
 	};
 	if (options.timeout !== undefined) opts.timeout = options.timeout;
+	if (options.persistent !== undefined) opts.persistent = options.persistent;
 	return urlAction(opts);
 }

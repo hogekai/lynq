@@ -41,6 +41,10 @@ export default defineConfig({
 						text: "Session & Visibility",
 						link: "/concepts/session-and-visibility",
 					},
+					{
+						text: "Store & Persistence",
+						link: "/concepts/store",
+					},
 					{ text: "Transports", link: "/concepts/transports" },
 				],
 			},

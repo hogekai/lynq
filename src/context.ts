@@ -5,6 +5,7 @@ import type {
 } from "@modelcontextprotocol/sdk/types.js";
 import { inputToJsonSchema } from "./helpers.js";
 import { error, image, json, text } from "./response.js";
+import { createUserStore } from "./store.js";
 import type {
 	Elicit,
 	ElicitUrlOptions,
@@ -12,6 +13,7 @@ import type {
 	Sample,
 	SampleOptions,
 	Session,
+	Store,
 	ToolContext,
 } from "./types.js";
 
@@ -121,6 +123,7 @@ export function createToolContext(
 	session: Session,
 	name: string,
 	signal: AbortSignal,
+	store: Store,
 	registerElicitation?: (eid: string, srv: Server) => Promise<void>,
 	cancelElicitation?: (eid: string) => void,
 ): ToolContext {
@@ -136,5 +139,7 @@ export function createToolContext(
 		json,
 		error,
 		image,
+		store,
+		userStore: createUserStore(session, store),
 	};
 }

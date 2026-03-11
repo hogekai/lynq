@@ -91,6 +91,10 @@
 		"./tip": {
 			"types": "./dist/middleware/tip.d.ts",
 			"import": "./dist/middleware/tip.mjs"
+		},
+		"./store": {
+			"types": "./dist/store.d.ts",
+			"import": "./dist/store.mjs"
 		}
 	},
 	"files": [

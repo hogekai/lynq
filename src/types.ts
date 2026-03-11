@@ -13,6 +13,20 @@ export interface ServerInfo {
 	version: string;
 }
 
+// === Store ===
+
+export interface Store {
+	get<T = unknown>(key: string): Promise<T | undefined>;
+	set(key: string, value: unknown, ttl?: number): Promise<void>;
+	delete(key: string): Promise<void>;
+}
+
+export type UserStore = Store;
+
+export interface ServerOptions extends ServerInfo {
+	store?: Store;
+}
+
 // === Session ===
 
 export interface Session {
@@ -123,6 +137,10 @@ export interface ToolContext {
 	error(message: string): ToolResponse;
 	/** Create an image response. Chainable. */
 	image(data: string, mimeType: string): ToolResponse;
+	/** Persistent key-value store (global scope). */
+	store: Store;
+	/** Persistent key-value store (user scope, keyed by session user ID). */
+	userStore: UserStore;
 }
 
 // === Middleware ===
@@ -213,6 +231,10 @@ export interface ResourceContext {
 	sessionId: string;
 	/** Query client-provided filesystem roots. */
 	roots: () => Promise<RootInfo[]>;
+	/** Persistent key-value store (global scope). */
+	store: Store;
+	/** Persistent key-value store (user scope, keyed by session user ID). */
+	userStore: UserStore;
 }
 
 export type ResourceHandler = (
@@ -289,4 +311,7 @@ export interface MCPServer {
 
 	/** Complete a pending URL elicitation (called from external HTTP callback). */
 	completeElicitation(elicitationId: string): void;
+
+	/** The persistent store instance. */
+	store: Store;
 }

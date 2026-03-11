@@ -26,6 +26,9 @@ Choose the right auth middleware for your use case:
 | User interaction | Manual login tool | Elicitation form | None (header) | None (header) | Browser redirect | Browser redirect |
 | Session key | Configurable | Configurable | `"user"` | `"user"` | `"user"` | `"user"` |
 | Hides tools | Yes | Yes | Yes | Yes | Yes | Yes |
+| `persistent` | No | No | No | No | Yes | Yes |
+
+`oauth()`, `githubOAuth()`, and `googleOAuth()` support `persistent: true` to store auth state in `c.userStore` so users don't need to re-authenticate on reconnection. See [Store & Persistence](/concepts/store).
 
 ## What's Next
 
