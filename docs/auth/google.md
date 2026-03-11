@@ -5,13 +5,13 @@ Full OAuth flow with URL elicitation. The agent is directed to Google's authoriz
 ## Import
 
 ```ts
-import { googleOAuth, handleGoogleCallback } from "@lynq/lynq/google-oauth";
+import { google, handleCallback } from "@lynq/lynq/google";
 ```
 
 ## Usage
 
 ```ts
-server.tool("files", googleOAuth({
+server.tool("files", google({
   clientId: CLIENT_ID,
   clientSecret: CLIENT_SECRET,
   redirectUri: CALLBACK_URL,
@@ -22,7 +22,7 @@ server.tool("files", googleOAuth({
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `name` | `string` | `"google-oauth"` | Middleware name |
+| `name` | `string` | `"google"` | Middleware name |
 | `clientId` | `string` | **(required)** | Google OAuth client ID |
 | `clientSecret` | `string` | **(required)** | Google OAuth client secret |
 | `redirectUri` | `string` | **(required)** | Your callback URL |
@@ -39,7 +39,7 @@ A full Hono example with MCP server, Google OAuth middleware, and callback route
 
 ```ts
 import { createMCPServer } from "@lynq/lynq";
-import { googleOAuth, handleGoogleCallback } from "@lynq/lynq/google-oauth";
+import { google, handleCallback } from "@lynq/lynq/google";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -51,7 +51,7 @@ const mcp = createMCPServer({ name: "demo", version: "1.0.0" });
 
 mcp.tool(
   "drive_files",
-  googleOAuth({
+  google({
     clientId: CLIENT_ID,
     clientSecret: CLIENT_SECRET,
     redirectUri: CALLBACK_URL,
@@ -65,7 +65,7 @@ const handler = mcp.http();
 app.all("/mcp", (c) => handler(c.req.raw));
 
 app.get("/auth/google/callback", async (c) => {
-  const result = await handleGoogleCallback(
+  const result = await handleCallback(
     mcp,
     { code: c.req.query("code")!, state: c.req.query("state")! },
     {
@@ -82,10 +82,10 @@ export default { port: 3000, fetch: app.fetch };
 ```
 
 ::: tip Under the hood
-`googleOAuth()` wraps `oauth()` which wraps `urlAction()`. Same flow as GitHub
+`google()` wraps `oauth()` which wraps `urlAction()`. Same flow as GitHub
 OAuth: URL elicitation directs the agent to Google's authorization page. The
 `state` parameter encodes `sessionId:elicitationId`. When the user authorizes,
-Google redirects to your callback. `handleGoogleCallback()` exchanges the
+Google redirects to your callback. `handleCallback()` exchanges the
 authorization code for tokens, fetches user info from Google's userinfo endpoint,
 stores it in the session under `sessionKey`, and calls
 `server.completeElicitation()` to resolve the pending elicitation.

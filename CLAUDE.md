@@ -66,10 +66,10 @@ Single package, multiple entry points via `exports` field:
 - `lynq/payment` — payment flow middleware (`payment()`)
 - `lynq/bearer` — Bearer token verification middleware (`bearer()`)
 - `lynq/jwt` — JWT verification middleware (`jwt()`) — requires `jose` peer dep
-- `lynq/github-oauth` — GitHub OAuth provider (`githubOAuth()`, `handleGitHubCallback()`)
-- `lynq/google-oauth` — Google OAuth provider (`googleOAuth()`, `handleGoogleCallback()`)
-- `lynq/stripe` — Stripe Checkout payment provider (`stripePayment()`, `handleStripeCallback()`) — requires `stripe` peer dep
-- `lynq/usdc` — USDC payment provider (`usdcPayment()`, `handleUsdcCallback()`)
+- `lynq/github` — GitHub OAuth provider (`github()`, `handleCallback()`) — deprecated alias: `lynq/github-oauth`
+- `lynq/google` — Google OAuth provider (`google()`, `handleCallback()`) — deprecated alias: `lynq/google-oauth`
+- `lynq/stripe` — Stripe Checkout payment provider (`stripe()`, `handleCallback()`) — requires `stripe` peer dep
+- `lynq/crypto` — crypto payment provider (`crypto()`, `handleCallback()`) — deprecated alias: `lynq/usdc`
 - `lynq/tip` — post-result tip link appender (`tip()`)
 - `lynq/store` — store utilities (`memoryStore()`, `resolveUserId()`, `createUserStore()`)
 - `lynq/stdio` — re-export of `StdioServerTransport`
@@ -101,10 +101,10 @@ src/
 │   ├── payment.ts      — payment() flow middleware
 │   ├── bearer.ts       — bearer() token verification
 │   ├── jwt.ts          — jwt() JWT verification
-│   ├── github-oauth.ts — githubOAuth() + handleGitHubCallback()
-│   ├── google-oauth.ts — googleOAuth() + handleGoogleCallback()
-│   ├── stripe.ts       — stripePayment() + handleStripeCallback()
-│   ├── usdc.ts         — usdcPayment() + handleUsdcCallback()
+│   ├── github.ts       — github() + handleCallback()
+│   ├── google.ts       — google() + handleCallback()
+│   ├── stripe.ts       — stripe() + handleCallback()
+│   ├── crypto.ts       — crypto() + handleCallback()
 │   └── tip.ts          — tip() onResult middleware
 └── adapters/
     ├── stdio.ts      — stdio transport re-export
@@ -141,10 +141,10 @@ tests/
 │   ├── payment.test.ts
 │   ├── bearer.test.ts
 │   ├── jwt.test.ts
-│   ├── github-oauth.test.ts
-│   ├── google-oauth.test.ts
+│   ├── github.test.ts
+│   ├── google.test.ts
 │   ├── stripe.test.ts
-│   ├── usdc.test.ts
+│   ├── crypto.test.ts
 │   └── tip.test.ts
 └── adapters/
     ├── hono.test.ts

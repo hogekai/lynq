@@ -21,7 +21,7 @@ features:
   - title: Hono-Style Middleware
     details: Global via server.use(), per-tool inline. Three hooks — onRegister, onCall, onResult. Pure objects, no classes.
   - title: Built-in Middleware
-    details: guard() · bearer() · jwt() · githubOAuth() · googleOAuth() · rateLimit() · logger() · truncate() · credentials() — compose freely.
+    details: guard() · bearer() · jwt() · github() · google() · rateLimit() · logger() · truncate() · credentials() — compose freely.
   - title: Framework Agnostic
     details: server.http() returns a standard (Request) => Response handler. Mount in Hono, Express, Deno, Cloudflare Workers.
   - title: Test Helpers

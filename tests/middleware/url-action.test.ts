@@ -294,9 +294,7 @@ describe("urlAction middleware", () => {
 			persistent: true,
 			timeout: 5000,
 		});
-		server.tool("premium", mw, { input: z.object({}) }, async () =>
-			text("ok"),
-		);
+		server.tool("premium", mw, { input: z.object({}) }, async () => text("ok"));
 
 		const session = server._createSessionAPI("default");
 		session.set("user", "alice");

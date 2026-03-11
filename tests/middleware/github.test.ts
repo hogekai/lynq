@@ -1,10 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
-import {
-	githubOAuth,
-	handleGitHubCallback,
-} from "../../src/middleware/github-oauth.js";
+import { github, handleCallback } from "../../src/middleware/github.js";
 import { text } from "../../src/response.js";
 
 function createTestServer() {
@@ -17,12 +14,12 @@ const BASE_OPTIONS = {
 	redirectUri: "http://localhost:3000/auth/github/callback",
 };
 
-describe("githubOAuth middleware", () => {
+describe("github middleware", () => {
 	it("hides tools on registration", () => {
 		const server = createTestServer();
 		server.tool(
 			"repos",
-			githubOAuth(BASE_OPTIONS),
+			github(BASE_OPTIONS),
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
@@ -31,12 +28,12 @@ describe("githubOAuth middleware", () => {
 	});
 
 	it("has correct default name", () => {
-		const mw = githubOAuth(BASE_OPTIONS);
-		expect(mw.name).toBe("github-oauth");
+		const mw = github(BASE_OPTIONS);
+		expect(mw.name).toBe("github");
 	});
 
 	it("uses custom name", () => {
-		const mw = githubOAuth({ ...BASE_OPTIONS, name: "gh" });
+		const mw = github({ ...BASE_OPTIONS, name: "gh" });
 		expect(mw.name).toBe("gh");
 	});
 
@@ -44,19 +41,19 @@ describe("githubOAuth middleware", () => {
 		const server = createTestServer();
 		server.tool(
 			"repos",
-			githubOAuth(BASE_OPTIONS),
+			github(BASE_OPTIONS),
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
 
 		const session = server._createSessionAPI("s1");
-		session.authorize("github-oauth");
+		session.authorize("github");
 
 		expect(server._isToolVisible("repos", "s1")).toBe(true);
 	});
 });
 
-describe("handleGitHubCallback", () => {
+describe("handleCallback (github)", () => {
 	const originalFetch = globalThis.fetch;
 
 	beforeEach(() => {
@@ -88,7 +85,7 @@ describe("handleGitHubCallback", () => {
 				}),
 			});
 
-		const result = await handleGitHubCallback(
+		const result = await handleCallback(
 			server,
 			{ code: "auth-code", state: "session-1:elicit-1" },
 			BASE_OPTIONS,
@@ -114,7 +111,7 @@ describe("handleGitHubCallback", () => {
 	it("returns error on invalid state", async () => {
 		const server = createTestServer();
 
-		const result = await handleGitHubCallback(
+		const result = await handleCallback(
 			server,
 			{ code: "auth-code", state: "invalid" },
 			BASE_OPTIONS,
@@ -135,7 +132,7 @@ describe("handleGitHubCallback", () => {
 			}),
 		});
 
-		const result = await handleGitHubCallback(
+		const result = await handleCallback(
 			server,
 			{ code: "bad-code", state: "session-1:elicit-1" },
 			BASE_OPTIONS,
@@ -151,7 +148,7 @@ describe("handleGitHubCallback", () => {
 
 		(globalThis.fetch as any).mockRejectedValueOnce(new Error("Network error"));
 
-		const result = await handleGitHubCallback(
+		const result = await handleCallback(
 			server,
 			{ code: "code", state: "session-1:elicit-1" },
 			BASE_OPTIONS,

@@ -10,7 +10,6 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { createRootsAccessor, createToolContext } from "./context.js";
-import { createUserStore, memoryStore } from "./store.js";
 import {
 	buildMiddlewareChain,
 	buildTemplatePattern,
@@ -27,6 +26,7 @@ import type {
 	SessionState,
 } from "./internal-types.js";
 import { error as errorResponse } from "./response.js";
+import { createUserStore, memoryStore } from "./store.js";
 import type {
 	HttpAdapterOptions,
 	MCPServer,

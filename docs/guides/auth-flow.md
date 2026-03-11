@@ -8,8 +8,8 @@ lynq provides multiple authentication strategies, from simple visibility gates t
 | Form-based | `credentials()` | Elicitation-capable clients |
 | Bearer token | `bearer()` | HTTP APIs with `Authorization` header |
 | JWT | `jwt()` | HTTP APIs with JWT tokens |
-| GitHub OAuth | `githubOAuth()` | GitHub sign-in |
-| Google OAuth | `googleOAuth()` | Google sign-in |
+| GitHub OAuth | `github()` | GitHub sign-in |
+| Google OAuth | `google()` | Google sign-in |
 
 ## Guard (Manual Login)
 

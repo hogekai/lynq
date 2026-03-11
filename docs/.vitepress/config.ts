@@ -82,7 +82,7 @@ export default defineConfig({
 						text: "Stripe Checkout",
 						link: "/payment/stripe",
 					},
-					{ text: "USDC", link: "/payment/usdc" },
+					{ text: "Crypto", link: "/payment/crypto" },
 					{ text: "tip()", link: "/payment/tip" },
 				],
 			},

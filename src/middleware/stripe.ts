@@ -1,7 +1,7 @@
 import type { MCPServer, ToolMiddleware } from "../types.js";
 import { payment } from "./payment.js";
 
-export interface StripePaymentOptions {
+export interface StripeOptions {
 	/** Middleware name. Default: "stripe" */
 	name?: string;
 	/** Stripe secret key (server-side). */
@@ -26,7 +26,10 @@ export interface StripePaymentOptions {
 	timeout?: number;
 }
 
-export function stripePayment(options: StripePaymentOptions): ToolMiddleware {
+/** @deprecated Use `StripeOptions` instead. */
+export type StripePaymentOptions = StripeOptions;
+
+export function stripe(options: StripeOptions): ToolMiddleware {
 	const {
 		secretKey,
 		baseUrl,
@@ -48,10 +51,10 @@ export function stripePayment(options: StripePaymentOptions): ToolMiddleware {
 		message,
 		async buildUrl({ sessionId, elicitationId }) {
 			const Stripe = (await import("stripe")).default;
-			const stripe = new Stripe(secretKey);
+			const client = new Stripe(secretKey);
 
 			const state = `${sessionId}:${elicitationId}`;
-			const session = await stripe.checkout.sessions.create({
+			const session = await client.checkout.sessions.create({
 				payment_method_types: ["card"],
 				line_items: [
 					{
@@ -88,21 +91,27 @@ export function stripePayment(options: StripePaymentOptions): ToolMiddleware {
 	};
 }
 
-export interface HandleStripeCallbackOptions {
+/** @deprecated Use `stripe()` from `lynq/stripe` instead. */
+export const stripePayment = stripe;
+
+export interface HandleCallbackOptions {
 	/** Stripe secret key. */
 	secretKey: string;
 	/** Session key. Default: "payment" */
 	sessionKey?: string;
 }
 
+/** @deprecated Use `HandleCallbackOptions` instead. */
+export type HandleStripeCallbackOptions = HandleCallbackOptions;
+
 /**
  * Handle Stripe Checkout callback. Call from your HTTP callback route.
  * Retrieves the Checkout Session, verifies payment, stores in session, and completes elicitation.
  */
-export async function handleStripeCallback(
+export async function handleCallback(
 	server: MCPServer,
 	params: { checkoutSessionId: string; state: string },
-	options: HandleStripeCallbackOptions,
+	options: HandleCallbackOptions,
 ): Promise<{ success: boolean; error?: string }> {
 	const sessionKey = options.sessionKey ?? "payment";
 	const [sessionId, elicitationId] = params.state.split(":");
@@ -113,9 +122,9 @@ export async function handleStripeCallback(
 
 	try {
 		const Stripe = (await import("stripe")).default;
-		const stripe = new Stripe(options.secretKey);
+		const client = new Stripe(options.secretKey);
 
-		const checkout = await stripe.checkout.sessions.retrieve(
+		const checkout = await client.checkout.sessions.retrieve(
 			params.checkoutSessionId,
 		);
 
@@ -141,3 +150,6 @@ export async function handleStripeCallback(
 		};
 	}
 }
+
+/** @deprecated Use `handleCallback()` from `lynq/stripe` instead. */
+export const handleStripeCallback = handleCallback;

@@ -8,8 +8,8 @@ Choose the right auth middleware for your use case:
 | Form-based credentials | [`credentials()`](/middleware/credentials) | stdio + HTTP |
 | Pre-shared bearer token | [`bearer()`](/auth/bearer) | HTTP |
 | JWT (e.g., from Auth0) | [`jwt()`](/auth/jwt) | HTTP |
-| GitHub sign-in | [`githubOAuth()`](/auth/github) | HTTP |
-| Google sign-in | [`googleOAuth()`](/auth/google) | HTTP |
+| GitHub sign-in | [`github()`](/auth/github) | HTTP |
+| Google sign-in | [`google()`](/auth/google) | HTTP |
 | Custom OAuth provider | `oauth()` | HTTP |
 
 ## stdio vs HTTP
@@ -20,7 +20,7 @@ Choose the right auth middleware for your use case:
 
 ## Quick Comparison
 
-| | `guard()` | `credentials()` | `bearer()` | `jwt()` | `githubOAuth()` | `googleOAuth()` |
+| | `guard()` | `credentials()` | `bearer()` | `jwt()` | `github()` | `google()` |
 |---|---|---|---|---|---|---|
 | Peer deps | — | `zod` | — | `jose` | — | — |
 | User interaction | Manual login tool | Elicitation form | None (header) | None (header) | Browser redirect | Browser redirect |
@@ -28,7 +28,7 @@ Choose the right auth middleware for your use case:
 | Hides tools | Yes | Yes | Yes | Yes | Yes | Yes |
 | `persistent` | No | No | No | No | Yes | Yes |
 
-`oauth()`, `githubOAuth()`, and `googleOAuth()` support `persistent: true` to store auth state in `c.userStore` so users don't need to re-authenticate on reconnection. See [Store & Persistence](/concepts/store).
+`oauth()`, `github()`, and `google()` support `persistent: true` to store auth state in `c.userStore` so users don't need to re-authenticate on reconnection. See [Store & Persistence](/concepts/store).
 
 ## What's Next
 

@@ -1,10 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
-import {
-	googleOAuth,
-	handleGoogleCallback,
-} from "../../src/middleware/google-oauth.js";
+import { google, handleCallback } from "../../src/middleware/google.js";
 import { text } from "../../src/response.js";
 
 function createTestServer() {
@@ -17,12 +14,12 @@ const BASE_OPTIONS = {
 	redirectUri: "http://localhost:3000/auth/google/callback",
 };
 
-describe("googleOAuth middleware", () => {
+describe("google middleware", () => {
 	it("hides tools on registration", () => {
 		const server = createTestServer();
 		server.tool(
 			"drive",
-			googleOAuth(BASE_OPTIONS),
+			google(BASE_OPTIONS),
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
@@ -31,12 +28,12 @@ describe("googleOAuth middleware", () => {
 	});
 
 	it("has correct default name", () => {
-		const mw = googleOAuth(BASE_OPTIONS);
-		expect(mw.name).toBe("google-oauth");
+		const mw = google(BASE_OPTIONS);
+		expect(mw.name).toBe("google");
 	});
 
 	it("uses custom name", () => {
-		const mw = googleOAuth({ ...BASE_OPTIONS, name: "gcp" });
+		const mw = google({ ...BASE_OPTIONS, name: "gcp" });
 		expect(mw.name).toBe("gcp");
 	});
 
@@ -44,19 +41,19 @@ describe("googleOAuth middleware", () => {
 		const server = createTestServer();
 		server.tool(
 			"drive",
-			googleOAuth(BASE_OPTIONS),
+			google(BASE_OPTIONS),
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
 
 		const session = server._createSessionAPI("s1");
-		session.authorize("google-oauth");
+		session.authorize("google");
 
 		expect(server._isToolVisible("drive", "s1")).toBe(true);
 	});
 });
 
-describe("handleGoogleCallback", () => {
+describe("handleCallback (google)", () => {
 	const originalFetch = globalThis.fetch;
 
 	beforeEach(() => {
@@ -89,7 +86,7 @@ describe("handleGoogleCallback", () => {
 				}),
 			});
 
-		const result = await handleGoogleCallback(
+		const result = await handleCallback(
 			server,
 			{ code: "auth-code", state: "session-1:elicit-1" },
 			BASE_OPTIONS,
@@ -117,7 +114,7 @@ describe("handleGoogleCallback", () => {
 	it("returns error on invalid state", async () => {
 		const server = createTestServer();
 
-		const result = await handleGoogleCallback(
+		const result = await handleCallback(
 			server,
 			{ code: "auth-code", state: "invalid" },
 			BASE_OPTIONS,
@@ -138,7 +135,7 @@ describe("handleGoogleCallback", () => {
 			}),
 		});
 
-		const result = await handleGoogleCallback(
+		const result = await handleCallback(
 			server,
 			{ code: "bad-code", state: "session-1:elicit-1" },
 			BASE_OPTIONS,
@@ -165,7 +162,7 @@ describe("handleGoogleCallback", () => {
 				}),
 			});
 
-		await handleGoogleCallback(
+		await handleCallback(
 			server,
 			{ code: "auth-code", state: "session-1:elicit-1" },
 			BASE_OPTIONS,
@@ -180,7 +177,7 @@ describe("handleGoogleCallback", () => {
 
 		(globalThis.fetch as any).mockRejectedValueOnce(new Error("Network error"));
 
-		const result = await handleGoogleCallback(
+		const result = await handleCallback(
 			server,
 			{ code: "code", state: "session-1:elicit-1" },
 			BASE_OPTIONS,

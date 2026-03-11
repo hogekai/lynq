@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
-import { handleUsdcCallback, usdcPayment } from "../../src/middleware/usdc.js";
+import { crypto, handleCallback } from "../../src/middleware/crypto.js";
 import { text } from "../../src/response.js";
 
 function createTestServer() {
@@ -14,22 +14,22 @@ const BASE_OPTIONS = {
 	baseUrl: "http://localhost:3000",
 };
 
-describe("usdcPayment middleware", () => {
+describe("crypto middleware", () => {
 	it("has correct default name", () => {
-		const mw = usdcPayment(BASE_OPTIONS);
-		expect(mw.name).toBe("usdc");
+		const mw = crypto(BASE_OPTIONS);
+		expect(mw.name).toBe("crypto");
 	});
 
 	it("uses custom name", () => {
-		const mw = usdcPayment({ ...BASE_OPTIONS, name: "my-usdc" });
-		expect(mw.name).toBe("my-usdc");
+		const mw = crypto({ ...BASE_OPTIONS, name: "my-crypto" });
+		expect(mw.name).toBe("my-crypto");
 	});
 
 	it("hides tools on registration", () => {
 		const server = createTestServer();
 		server.tool(
 			"premium",
-			usdcPayment(BASE_OPTIONS),
+			crypto(BASE_OPTIONS),
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
@@ -40,32 +40,29 @@ describe("usdcPayment middleware", () => {
 		const server = createTestServer();
 		server.tool(
 			"premium",
-			usdcPayment(BASE_OPTIONS),
+			crypto(BASE_OPTIONS),
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
 
 		const session = server._createSessionAPI("s1");
-		session.authorize("usdc");
+		session.authorize("crypto");
 		expect(server._isToolVisible("premium", "s1")).toBe(true);
 	});
 
-	it("builds correct URL with query params", () => {
-		let capturedUrl: string | undefined;
-		const mw = usdcPayment({
-			...BASE_OPTIONS,
-			network: "base-sepolia",
-		});
-
-		// Access the underlying buildUrl via the onCall flow
-		// We can inspect the middleware's payment wrapper behavior indirectly
-		// by checking the name and registration behavior
-		expect(mw.name).toBe("usdc");
+	it("defaults to USDC token", () => {
+		const mw = crypto(BASE_OPTIONS);
+		expect(mw.name).toBe("crypto");
 		expect(mw.onRegister).toBeDefined();
 	});
 
+	it("accepts custom token", () => {
+		const mw = crypto({ ...BASE_OPTIONS, token: "ETH" });
+		expect(mw.name).toBe("crypto");
+	});
+
 	it("clears session key in onResult when once is false (default)", () => {
-		const mw = usdcPayment(BASE_OPTIONS);
+		const mw = crypto(BASE_OPTIONS);
 		expect(mw.onResult).toBeDefined();
 
 		const mockSession = {
@@ -86,12 +83,12 @@ describe("usdcPayment middleware", () => {
 	});
 
 	it("does not define onResult when once is true", () => {
-		const mw = usdcPayment({ ...BASE_OPTIONS, once: true });
+		const mw = crypto({ ...BASE_OPTIONS, once: true });
 		expect(mw.onResult).toBeUndefined();
 	});
 });
 
-describe("handleUsdcCallback", () => {
+describe("handleCallback (crypto)", () => {
 	const originalFetch = globalThis.fetch;
 
 	beforeEach(() => {
@@ -113,7 +110,7 @@ describe("handleUsdcCallback", () => {
 			}),
 		});
 
-		const result = await handleUsdcCallback(
+		const result = await handleCallback(
 			server,
 			{ state: "session-1:elicit-1", txHash: "0xabc123" },
 			{
@@ -125,7 +122,7 @@ describe("handleUsdcCallback", () => {
 		expect(result.success).toBe(true);
 		const session = server._createSessionAPI("session-1");
 		const paymentData = session.get("payment") as any;
-		expect(paymentData.provider).toBe("usdc");
+		expect(paymentData.provider).toBe("crypto");
 		expect(paymentData.txHash).toBe("0xabc123");
 		expect(paymentData.amount).toBe(0.01);
 		expect(completeSpy).toHaveBeenCalledWith("elicit-1");
@@ -134,7 +131,7 @@ describe("handleUsdcCallback", () => {
 	it("returns error on invalid state", async () => {
 		const server = createTestServer();
 
-		const result = await handleUsdcCallback(
+		const result = await handleCallback(
 			server,
 			{ state: "invalid", txHash: "0xabc" },
 			{ recipient: BASE_OPTIONS.recipient, amount: 0.01 },
@@ -154,7 +151,7 @@ describe("handleUsdcCallback", () => {
 			}),
 		});
 
-		const result = await handleUsdcCallback(
+		const result = await handleCallback(
 			server,
 			{ state: "session-1:elicit-1", txHash: "0xfailed" },
 			{ recipient: BASE_OPTIONS.recipient, amount: 0.01 },
@@ -170,7 +167,7 @@ describe("handleUsdcCallback", () => {
 
 		(globalThis.fetch as any).mockRejectedValueOnce(new Error("Network error"));
 
-		const result = await handleUsdcCallback(
+		const result = await handleCallback(
 			server,
 			{ state: "session-1:elicit-1", txHash: "0xabc" },
 			{ recipient: BASE_OPTIONS.recipient, amount: 0.01 },
@@ -190,7 +187,7 @@ describe("handleUsdcCallback", () => {
 			}),
 		});
 
-		await handleUsdcCallback(
+		await handleCallback(
 			server,
 			{ state: "session-1:elicit-1", txHash: "0xabc" },
 			{

@@ -225,8 +225,10 @@ Check `c.task.cancelled` periodically to respect client cancellation. Tasks use 
 | `@lynq/lynq/credentials` | `credentials()` form-based auth |
 | `@lynq/lynq/bearer` | `bearer()` Bearer token verification |
 | `@lynq/lynq/jwt` | `jwt()` JWT verification |
-| `@lynq/lynq/github-oauth` | `githubOAuth()`, `handleGitHubCallback()` |
-| `@lynq/lynq/google-oauth` | `googleOAuth()`, `handleGoogleCallback()` |
+| `@lynq/lynq/github` | `github()`, `handleCallback()` |
+| `@lynq/lynq/google` | `google()`, `handleCallback()` |
+| `@lynq/lynq/stripe` | `stripe()`, `handleCallback()` |
+| `@lynq/lynq/crypto` | `crypto()`, `handleCallback()` |
 | `@lynq/lynq/url-action` | `urlAction()` URL-based elicitation |
 | `@lynq/lynq/oauth` | `oauth()` generic OAuth flow |
 | `@lynq/lynq/payment` | `payment()` payment flow |

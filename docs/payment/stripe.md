@@ -5,13 +5,13 @@ Stripe Checkout payment middleware. Tools are hidden until payment is completed 
 ## Import
 
 ```ts
-import { stripePayment, handleStripeCallback } from "@lynq/lynq/stripe";
+import { stripe, handleCallback } from "@lynq/lynq/stripe";
 ```
 
 ## Usage
 
 ```ts
-server.tool("premium_search", stripePayment({
+server.tool("premium_search", stripe({
   secretKey: STRIPE_SECRET_KEY,
   baseUrl: "http://localhost:3000",
   amount: 100, // $1.00
@@ -39,7 +39,7 @@ server.tool("premium_search", stripePayment({
 
 ```ts
 import { createMCPServer } from "@lynq/lynq";
-import { stripePayment, handleStripeCallback } from "@lynq/lynq/stripe";
+import { stripe, handleCallback } from "@lynq/lynq/stripe";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -49,7 +49,7 @@ const mcp = createMCPServer({ name: "paid-api", version: "1.0.0" });
 
 mcp.tool(
   "premium_search",
-  stripePayment({
+  stripe({
     secretKey: STRIPE_KEY,
     baseUrl: "http://localhost:3000",
     amount: 100,
@@ -68,7 +68,7 @@ app.get("/payment/stripe/callback", async (c) => {
   if (c.req.query("cancelled")) {
     return c.html("<p>Payment cancelled.</p>");
   }
-  const result = await handleStripeCallback(
+  const result = await handleCallback(
     mcp,
     {
       checkoutSessionId: c.req.query("session_id")!,
@@ -92,11 +92,11 @@ pnpm add stripe
 ```
 
 ::: tip Under the hood
-`stripePayment()` wraps `payment()` which wraps `urlAction()`. When a protected
+`stripe()` wraps `payment()` which wraps `urlAction()`. When a protected
 tool is called, it creates a Stripe Checkout Session via the Stripe API (lazy-imported)
 and opens the checkout URL via URL elicitation. The `state` parameter in the success URL
 encodes `sessionId:elicitationId`. When the user completes payment, Stripe redirects to
-your callback URL. `handleStripeCallback()` retrieves the Checkout Session, verifies
+your callback URL. `handleCallback()` retrieves the Checkout Session, verifies
 `payment_status === "paid"`, stores payment data in the session, and calls
 `server.completeElicitation()` to unblock the waiting middleware.
 :::

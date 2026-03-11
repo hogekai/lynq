@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
-import {
-	handleStripeCallback,
-	stripePayment,
-} from "../../src/middleware/stripe.js";
+import { handleCallback, stripe } from "../../src/middleware/stripe.js";
 import { text } from "../../src/response.js";
 
 function createTestServer() {
@@ -17,14 +14,14 @@ const BASE_OPTIONS = {
 	amount: 100,
 };
 
-describe("stripePayment middleware", () => {
+describe("stripe middleware", () => {
 	it("has correct default name", () => {
-		const mw = stripePayment(BASE_OPTIONS);
+		const mw = stripe(BASE_OPTIONS);
 		expect(mw.name).toBe("stripe");
 	});
 
 	it("uses custom name", () => {
-		const mw = stripePayment({ ...BASE_OPTIONS, name: "my-stripe" });
+		const mw = stripe({ ...BASE_OPTIONS, name: "my-stripe" });
 		expect(mw.name).toBe("my-stripe");
 	});
 
@@ -32,7 +29,7 @@ describe("stripePayment middleware", () => {
 		const server = createTestServer();
 		server.tool(
 			"premium",
-			stripePayment(BASE_OPTIONS),
+			stripe(BASE_OPTIONS),
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
@@ -43,7 +40,7 @@ describe("stripePayment middleware", () => {
 		const server = createTestServer();
 		server.tool(
 			"premium",
-			stripePayment(BASE_OPTIONS),
+			stripe(BASE_OPTIONS),
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
@@ -54,13 +51,13 @@ describe("stripePayment middleware", () => {
 	});
 
 	it("formats default message with amount", () => {
-		const mw = stripePayment({ ...BASE_OPTIONS, amount: 250 });
+		const mw = stripe({ ...BASE_OPTIONS, amount: 250 });
 		// The message is internal to the payment wrapper, we verify by name
 		expect(mw.name).toBe("stripe");
 	});
 
 	it("clears session key in onResult when once is false (default)", () => {
-		const mw = stripePayment(BASE_OPTIONS);
+		const mw = stripe(BASE_OPTIONS);
 		expect(mw.onResult).toBeDefined();
 
 		const mockSession = {
@@ -80,16 +77,16 @@ describe("stripePayment middleware", () => {
 	});
 
 	it("does not define onResult when once is true", () => {
-		const mw = stripePayment({ ...BASE_OPTIONS, once: true });
+		const mw = stripe({ ...BASE_OPTIONS, once: true });
 		expect(mw.onResult).toBeUndefined();
 	});
 });
 
-describe("handleStripeCallback", () => {
+describe("handleCallback (stripe)", () => {
 	it("returns error on invalid state", async () => {
 		const server = createTestServer();
 
-		const result = await handleStripeCallback(
+		const result = await handleCallback(
 			server,
 			{ checkoutSessionId: "cs_123", state: "invalid" },
 			{ secretKey: "sk_test_123" },
@@ -123,7 +120,7 @@ describe("handleStripeCallback", () => {
 		}));
 
 		// Re-import to pick up the mock
-		const { handleStripeCallback: handler } = await import(
+		const { handleCallback: handler } = await import(
 			"../../src/middleware/stripe.js"
 		);
 
@@ -163,7 +160,7 @@ describe("handleStripeCallback", () => {
 			},
 		}));
 
-		const { handleStripeCallback: handler } = await import(
+		const { handleCallback: handler } = await import(
 			"../../src/middleware/stripe.js"
 		);
 

@@ -2,11 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { text } from "../src/response.js";
-import {
-	createUserStore,
-	memoryStore,
-	resolveUserId,
-} from "../src/store.js";
+import { createUserStore, memoryStore, resolveUserId } from "../src/store.js";
 import type { Session } from "../src/types.js";
 
 function mockSession(data: Record<string, unknown> = {}): Session {
@@ -104,7 +100,9 @@ describe("resolveUserId", () => {
 	});
 
 	it("returns undefined for unrecognized user shape", () => {
-		expect(resolveUserId(mockSession({ user: { name: "alice" } }))).toBeUndefined();
+		expect(
+			resolveUserId(mockSession({ user: { name: "alice" } })),
+		).toBeUndefined();
 	});
 });
 

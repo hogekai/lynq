@@ -1,18 +1,26 @@
 import type { MCPServer, ToolMiddleware } from "../types.js";
 import { payment } from "./payment.js";
 
-export interface UsdcPaymentOptions {
-	/** Middleware name. Default: "usdc" */
+export interface CryptoPaymentOptions {
+	/** Middleware name. Default: "crypto" */
 	name?: string;
+	/** Token symbol. Default: "USDC" */
+	token?: "USDC" | "USDT" | "DAI" | "ETH" | string;
 	/** Recipient wallet address. */
 	recipient: string;
-	/** Amount in USDC (e.g., 0.01 = $0.01). */
+	/** Amount in token units. */
 	amount: number;
 	/** Network. Default: "base" */
-	network?: "base" | "base-sepolia" | "ethereum" | "polygon" | "solana";
+	network?:
+		| "base"
+		| "base-sepolia"
+		| "ethereum"
+		| "polygon"
+		| "solana"
+		| string;
 	/** Base URL of your server. */
 	baseUrl: string;
-	/** Callback path. Default: "/payment/usdc/callback" */
+	/** Callback path. Default: "/payment/crypto/callback" */
 	callbackPath?: string;
 	/** Session key for payment data. Default: "payment" */
 	sessionKey?: string;
@@ -24,19 +32,23 @@ export interface UsdcPaymentOptions {
 	timeout?: number;
 }
 
-export function usdcPayment(options: UsdcPaymentOptions): ToolMiddleware {
+/** @deprecated Use `CryptoPaymentOptions` instead. */
+export type UsdcPaymentOptions = CryptoPaymentOptions;
+
+export function crypto(options: CryptoPaymentOptions): ToolMiddleware {
 	const {
 		recipient,
 		amount,
+		token = "USDC",
 		network = "base",
 		baseUrl,
-		callbackPath = "/payment/usdc/callback",
+		callbackPath = "/payment/crypto/callback",
 		once = false,
 	} = options;
 
-	const name = options.name ?? "usdc";
+	const name = options.name ?? "crypto";
 	const sessionKey = options.sessionKey ?? "payment";
-	const message = options.message ?? `Payment required (${amount} USDC).`;
+	const message = options.message ?? `Payment required (${amount} ${token}).`;
 
 	const opts: Parameters<typeof payment>[0] = {
 		name,
@@ -46,6 +58,7 @@ export function usdcPayment(options: UsdcPaymentOptions): ToolMiddleware {
 			const params = new URLSearchParams({
 				recipient,
 				amount: String(amount),
+				token,
 				network,
 				state: `${sessionId}:${elicitationId}`,
 			});
@@ -66,7 +79,10 @@ export function usdcPayment(options: UsdcPaymentOptions): ToolMiddleware {
 	};
 }
 
-export interface HandleUsdcCallbackOptions {
+/** @deprecated Use `crypto()` from `lynq/crypto` instead. */
+export const usdcPayment = crypto;
+
+export interface HandleCallbackOptions {
 	/** RPC URL for the network. */
 	rpcUrl?: string;
 	/** Expected recipient address. */
@@ -77,10 +93,17 @@ export interface HandleUsdcCallbackOptions {
 	sessionKey?: string;
 }
 
-export async function handleUsdcCallback(
+/** @deprecated Use `HandleCallbackOptions` instead. */
+export type HandleUsdcCallbackOptions = HandleCallbackOptions;
+
+/**
+ * Handle crypto payment callback. Call from your HTTP callback route.
+ * Verifies the on-chain transaction, stores in session, and completes elicitation.
+ */
+export async function handleCallback(
 	server: MCPServer,
 	params: { state: string; txHash: string },
-	options: HandleUsdcCallbackOptions,
+	options: HandleCallbackOptions,
 ): Promise<{ success: boolean; error?: string }> {
 	const sessionKey = options.sessionKey ?? "payment";
 	const [sessionId, elicitationId] = params.state.split(":");
@@ -98,7 +121,7 @@ export async function handleUsdcCallback(
 
 		const session = server.session(sessionId);
 		session.set(sessionKey, {
-			provider: "usdc",
+			provider: "crypto",
 			txHash: params.txHash,
 			amount: options.amount,
 			recipient: options.recipient,
@@ -115,9 +138,12 @@ export async function handleUsdcCallback(
 	}
 }
 
+/** @deprecated Use `handleCallback()` from `lynq/crypto` instead. */
+export const handleUsdcCallback = handleCallback;
+
 async function verifyTransaction(
 	txHash: string,
-	options: HandleUsdcCallbackOptions,
+	options: HandleCallbackOptions,
 ): Promise<boolean> {
 	const rpcUrl = options.rpcUrl ?? "https://mainnet.base.org";
 
