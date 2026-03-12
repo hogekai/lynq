@@ -67,6 +67,19 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 
 	setupHandlers(server, state, server, elicitation, cancelledTaskIds);
 
+	server.onclose = () => {
+		// For non-HTTP transports (stdio, InMemory), clean up the default session
+		const sessionId = "default";
+		state.sessions.delete(sessionId);
+		if (state.onSessionDestroy) {
+			try {
+				Promise.resolve(state.onSessionDestroy(sessionId)).catch(() => {});
+			} catch {
+				// fire-and-forget — sync throws are silently caught
+			}
+		}
+	};
+
 	// --- Public API ---
 
 	function use(middleware: ToolMiddleware): void {

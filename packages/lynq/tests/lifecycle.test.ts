@@ -82,6 +82,47 @@ describe("lifecycle hooks", () => {
 		});
 	});
 
+	describe("onSessionDestroy", () => {
+		it("fires when transport closes", async () => {
+			const onSessionDestroy = vi.fn();
+			const server = createMCPServer({
+				name: "test",
+				version: "1.0.0",
+				onSessionDestroy,
+			}) as any;
+
+			server.tool("ping", { input: z.object({}) }, async () => text("pong"));
+
+			const t = await createTestClient(server);
+			await t.callTool("ping", {}); // triggers session creation
+
+			// Close the transport — should fire onSessionDestroy
+			await t.close();
+			await new Promise((r) => setTimeout(r, 10));
+
+			expect(onSessionDestroy).toHaveBeenCalledTimes(1);
+			expect(onSessionDestroy).toHaveBeenCalledWith(expect.any(String));
+		});
+
+		it("does not crash if hook throws", async () => {
+			const server = createMCPServer({
+				name: "test",
+				version: "1.0.0",
+				onSessionDestroy: () => {
+					throw new Error("destroy error");
+				},
+			}) as any;
+
+			server.tool("ping", { input: z.object({}) }, async () => text("pong"));
+
+			const t = await createTestClient(server);
+			await t.callTool("ping", {});
+			await t.close();
+			await new Promise((r) => setTimeout(r, 10));
+			// Should not throw
+		});
+	});
+
 	describe("onServerStart", () => {
 		it("fires in stdio after connect", async () => {
 			const onServerStart = vi.fn();
