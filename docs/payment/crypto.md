@@ -2,6 +2,28 @@
 
 On-chain crypto payment middleware. Tools are hidden until payment is verified.
 
+## Install
+
+::: code-group
+
+```sh [pnpm]
+pnpm add @lynq/crypto
+```
+
+```sh [npm]
+npm install @lynq/crypto
+```
+
+```sh [yarn]
+yarn add @lynq/crypto
+```
+
+```sh [bun]
+bun add @lynq/crypto
+```
+
+:::
+
 ## Import
 
 ```ts

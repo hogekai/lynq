@@ -2,6 +2,28 @@
 
 Full OAuth flow with URL elicitation. The agent is directed to GitHub's authorization page, and a callback route completes the flow.
 
+## Install
+
+::: code-group
+
+```sh [pnpm]
+pnpm add @lynq/github
+```
+
+```sh [npm]
+npm install @lynq/github
+```
+
+```sh [yarn]
+yarn add @lynq/github
+```
+
+```sh [bun]
+bun add @lynq/github
+```
+
+:::
+
 ## Import
 
 ```ts

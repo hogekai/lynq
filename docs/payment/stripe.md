@@ -2,6 +2,28 @@
 
 Stripe Checkout payment middleware. Tools are hidden until payment is completed via Stripe.
 
+## Install
+
+::: code-group
+
+```sh [pnpm]
+pnpm add @lynq/stripe stripe
+```
+
+```sh [npm]
+npm install @lynq/stripe stripe
+```
+
+```sh [yarn]
+yarn add @lynq/stripe stripe
+```
+
+```sh [bun]
+bun add @lynq/stripe stripe
+```
+
+:::
+
 ## Import
 
 ```ts
@@ -82,30 +104,6 @@ app.get("/payment/stripe/callback", async (c) => {
 
 export default { port: 3000, fetch: app.fetch };
 ```
-
-## Peer Dependency
-
-Requires `stripe` as a peer dependency:
-
-::: code-group
-
-```sh [pnpm]
-pnpm add stripe
-```
-
-```sh [npm]
-npm install stripe
-```
-
-```sh [yarn]
-yarn add stripe
-```
-
-```sh [bun]
-bun add stripe
-```
-
-:::
 
 ::: tip Under the hood
 `stripe()` wraps `payment()` which wraps `urlAction()`. When a protected

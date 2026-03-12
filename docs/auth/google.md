@@ -2,6 +2,28 @@
 
 Full OAuth flow with URL elicitation. The agent is directed to Google's authorization page, and a callback route completes the flow.
 
+## Install
+
+::: code-group
+
+```sh [pnpm]
+pnpm add @lynq/google
+```
+
+```sh [npm]
+npm install @lynq/google
+```
+
+```sh [yarn]
+yarn add @lynq/google
+```
+
+```sh [bun]
+bun add @lynq/google
+```
+
+:::
+
 ## Import
 
 ```ts
