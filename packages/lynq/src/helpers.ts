@@ -120,12 +120,7 @@ export function verifyState(
 		.update(`${sessionId}:${elicitationId}`)
 		.digest("hex");
 	try {
-		if (
-			!timingSafeEqual(
-				Buffer.from(sig, "hex"),
-				Buffer.from(expected, "hex"),
-			)
-		)
+		if (!timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(expected, "hex")))
 			return null;
 	} catch {
 		return null;
@@ -147,10 +142,7 @@ export function buildMiddlewareChain<TResult = CallToolResult>(
 			let result = await finalHandler();
 			for (const mw of resultMiddlewares) {
 				// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onResult
-				result = (await mw.onResult!(
-					result as CallToolResult,
-					c,
-				)) as TResult;
+				result = (await mw.onResult!(result as CallToolResult, c)) as TResult;
 			}
 			return result;
 		}

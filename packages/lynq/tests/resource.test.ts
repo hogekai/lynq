@@ -121,7 +121,7 @@ describe("resource visibility", () => {
 		expect(server._isResourceVisible("data://a", "s1")).toBe(true);
 	});
 
-	it("global middleware (server.use) does NOT affect resources", () => {
+	it("global middleware (server.use) affects resources", () => {
 		const server = createTestServer();
 		const mw: ToolMiddleware = { name: "global", onRegister: () => false };
 
@@ -129,9 +129,14 @@ describe("resource visibility", () => {
 		server.tool("tool-a", { description: "t" }, async () => text("ok"));
 		server.resource("data://r", { name: "R" }, async () => ({ text: "ok" }));
 
-		// Tool is hidden by global middleware
+		// Both tool and resource are hidden by global middleware
 		expect(server._isToolVisible("tool-a", "default")).toBe(false);
-		// Resource is NOT affected
+		expect(server._isResourceVisible("data://r", "default")).toBe(false);
+
+		// After granting, both become visible
+		const session = server._createSessionAPI("default");
+		session.authorize("global");
+		expect(server._isToolVisible("tool-a", "default")).toBe(true);
 		expect(server._isResourceVisible("data://r", "default")).toBe(true);
 	});
 });

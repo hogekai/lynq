@@ -6,7 +6,7 @@
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `use` | `(middleware: ToolMiddleware) => void` | Register global middleware for all subsequent tools and tasks |
+| `use` | `(middleware: ToolMiddleware) => void` | Register global middleware for all subsequent tools, resources, and tasks |
 | `tool` | `(name, ...middlewares?, config, handler) => void` | Register a tool |
 | `resource` | `(uri, ...middlewares?, config, handler) => void` | Register a resource |
 | `task` | `(name, ...middlewares?, config, handler) => void` | Register a task (experimental) |

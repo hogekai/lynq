@@ -85,23 +85,22 @@ server.tool(
 );
 ```
 
-## Important: server.use() Does NOT Apply to Resources
+## Global Middleware Applies to Resources
 
-Global middleware registered with `server.use()` applies to tools and tasks only. Resource middleware is always per-resource.
+Global middleware registered with `server.use()` applies to tools, resources, and tasks. A single `guard()` gates everything:
 
 ```ts
-server.use(guard()); // applies to all tools and tasks
+server.use(guard()); // applies to all tools, resources, and tasks
 
-// This resource is NOT affected by the global guard() above.
-// To gate it, pass guard() directly:
+// This resource IS protected by the global guard() above.
+// No need to pass guard() again per-resource.
 server.resource(
   "config://settings",
-  guard(), // per-resource middleware
   { name: "Settings" },
   async () => ({ text: "{}" }),
 );
 ```
 
 :::tip Under the hood
-Resources use the same internal visibility map as tools. `authorize("guard")` fires both `notifications/tools/list_changed` and `notifications/resources/list_changed`. `enableResources()` / `disableResources()` set per-session overrides for specific resource URIs. The reason `server.use()` doesn't apply to resources is by design -- resources have different access patterns and lifecycles than tools.
+Resources use the same internal visibility map as tools. `authorize("guard")` fires both `notifications/tools/list_changed` and `notifications/resources/list_changed`. `enableResources()` / `disableResources()` set per-session overrides for specific resource URIs.
 :::

@@ -1,5 +1,7 @@
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import type {
 	ResourceHandler,
+	Store,
 	TaskHandler,
 	ToolHandler,
 	ToolMiddleware,
@@ -40,4 +42,24 @@ export interface SessionState {
 	grants: Set<string>;
 	toolOverrides: Map<string, "enabled" | "disabled">;
 	resourceOverrides: Map<string, "enabled" | "disabled">;
+}
+
+export interface ServerState {
+	store: Store;
+	globalMiddlewares: ToolMiddleware[];
+	tools: Map<string, InternalTool>;
+	resources: Map<string, InternalResource>;
+	tasks: Map<string, InternalTask>;
+	sessions: Map<string, SessionState>;
+	serverBySession: Map<string, Server>;
+}
+
+export interface ElicitationTracker {
+	register(
+		elicitationId: string,
+		sessionId: string,
+		sdkServer: Server,
+	): Promise<void>;
+	complete(elicitationId: string): void;
+	cancel(elicitationId: string): void;
 }

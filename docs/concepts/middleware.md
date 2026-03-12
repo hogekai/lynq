@@ -49,17 +49,17 @@ Response
 
 If any `onCall` short-circuits (does not call `next()`), the handler and all `onResult` hooks are skipped.
 
-## Global vs Per-Tool
+## Global vs Per-Registration
 
 ```ts
-// Global -- applies to all tools registered after this call
+// Global -- applies to all tools, resources, and tasks registered after this call
 server.use(logger);
 
 // Per-tool -- applies only to this tool, runs after global middleware
 server.tool("search", truncate(500), { description: "Search" }, handler);
 ```
 
-Global middleware is prepended to per-tool middleware. Adding `server.use()` after `server.tool()` has no effect on already-registered tools.
+Global middleware is prepended to per-registration middleware. Adding `server.use()` after `server.tool()` / `server.resource()` / `server.task()` has no effect on already-registered items.
 
 ## Minimal Example
 

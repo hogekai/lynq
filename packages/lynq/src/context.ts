@@ -53,11 +53,23 @@ export function createElicit(
 			});
 
 			if (r.action === "accept" && completionPromise) {
-				const timeout = options?.timeout ?? 300_000;
+				const timeoutMs = options?.timeout ?? 300_000;
+				// biome-ignore lint/style/noNonNullAssertion: timer is always assigned synchronously inside the Promise executor before the await
+				let timer: ReturnType<typeof setTimeout> = undefined!;
 				const timeoutPromise = new Promise<never>((_, reject) => {
-					setTimeout(() => reject(new Error("Elicitation timed out")), timeout);
+					timer = setTimeout(
+						() => reject(new Error("Elicitation timed out")),
+						timeoutMs,
+					);
 				});
-				await Promise.race([completionPromise, timeoutPromise]);
+				try {
+					await Promise.race([completionPromise, timeoutPromise]);
+				} catch (err) {
+					if (cancelElicitation) cancelElicitation(elicitationId);
+					throw err;
+				} finally {
+					clearTimeout(timer);
+				}
 			} else if (completionPromise && cancelElicitation) {
 				// Client declined/cancelled — clean up pending entry
 				cancelElicitation(elicitationId);

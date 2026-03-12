@@ -19,7 +19,7 @@ Think Deno, not webpack. Think Hono, not Express. Think vide (../vide), not vide
 - **Dependency direction: one way.** Middleware → core. Never reverse. Never circular.
 - **One runtime dependency.** `@modelcontextprotocol/sdk` as direct dependency. Nothing else in core.
 - **`createMCPServer(info)` is the entire API surface.** No config files, no directory scanning.
-- **Middleware is Hono-style.** Global via `server.use(middleware)`. Per-tool via `server.tool("name", middleware, config, handler)`. Per-resource via `server.resource("uri", middleware, config, handler)`. Per-task via `server.task("name", middleware, config, handler)`. `server.use()` applies to tools and tasks.
+- **Middleware is Hono-style.** Global via `server.use(middleware)`. Per-tool via `server.tool("name", middleware, config, handler)`. Per-resource via `server.resource("uri", middleware, config, handler)`. Per-task via `server.task("name", middleware, config, handler)`. `server.use()` applies to tools, resources, and tasks.
 - **Tool, resource, and task visibility is session-scoped.** `tool()`, `resource()`, and `task()` share the same middleware pattern. `c.session.authorize()` / `c.session.revoke()` affect all. Bidirectional notification is internal — users never touch it.
 - **`@experimental` marks unstable APIs.** `server.task()` depends on the MCP SDK's experimental Tasks API. User-facing interface is stable; internal SDK wiring may change.
 - **`c` follows Hono's Context pattern.** `c.session.set()` / `c.session.get()`. Short name for minimal cognitive load.
