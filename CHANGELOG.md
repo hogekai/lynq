@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.2] - 2026-03-12
+
+### Fixed
+
+- `memoryStore`: sweep expired keys on `set()` when entry count exceeds 1000 (prevents unbounded growth)
+- `http()`: add `srv.onclose` fallback cleanup for HTTP sessions when `onsessionclosed` doesn't fire
+
+### Changed
+
+- Document `onCall` contract: middleware must `return await next()` — calling `next()` without returning its result is undefined behavior
+- Document `@experimental` task limitation: running tasks are fire-and-forget with no graceful shutdown guarantee
+
 ## [0.8.1] - 2026-03-12
 
 ### Fixed

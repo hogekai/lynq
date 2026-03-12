@@ -93,5 +93,5 @@ server.tool(
 ```
 
 :::tip Under the hood
-`some()` tries each middleware's `onCall` sequentially, probing whether it calls `next()`. The first middleware that calls `next()` wins and its result is returned. `every()` chains all `onCall` hooks into a single sequence -- each must call `next()` for the chain to proceed. `except()` evaluates the predicate at call time and either runs or skips the wrapped middleware. All three compose `onRegister` and `onResult` hooks as well: `some()` and `every()` return `false` from `onRegister` if any inner middleware does, and `except()` delegates to the wrapped middleware's hooks.
+`some()` tries each middleware's `onCall` sequentially, probing whether it calls `next()`. The first middleware that calls `next()` wins and its result is returned. Middleware inside `some()` must `return await next()` to be recognized as passing — calling `next()` without returning its result is undefined behavior. `every()` chains all `onCall` hooks into a single sequence -- each must call `next()` for the chain to proceed. `except()` evaluates the predicate at call time and either runs or skips the wrapped middleware. All three compose `onRegister` and `onResult` hooks as well: `some()` and `every()` return `false` from `onRegister` if any inner middleware does, and `except()` delegates to the wrapped middleware's hooks.
 :::

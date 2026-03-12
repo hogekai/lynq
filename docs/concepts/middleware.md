@@ -49,6 +49,8 @@ Response
 
 If any `onCall` short-circuits (does not call `next()`), the handler and all `onResult` hooks are skipped.
 
+> **Contract:** Always `return await next()`. Combinators like `some()` detect passage by checking whether `next()` was called; the return value of `next()` must be propagated back for correct results. Calling `next()` without returning its result is undefined behavior.
+
 ## Global vs Per-Registration
 
 ```ts

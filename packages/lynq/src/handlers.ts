@@ -158,6 +158,9 @@ export function setupHandlers(
 			};
 
 			const finalHandler = async (): Promise<CallToolResult> => {
+				// LIMITATION: Task promise is not tracked. No graceful shutdown —
+				// running tasks are silently dropped on process exit.
+				// Acceptable for @experimental. Track + drain() when tasks graduate.
 				(async () => {
 					try {
 						const result = await task.handler(taskArgs, c);

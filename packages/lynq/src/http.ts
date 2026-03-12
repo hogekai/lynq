@@ -129,6 +129,19 @@ export function createHttpAdapter(
 				},
 			});
 			await srv.connect(transport);
+			srv.onclose = () => {
+				for (const [sid, entry] of httpSessions) {
+					if (entry.server === srv) {
+						httpSessions.delete(sid);
+						state.serverBySession.delete(sid);
+						state.sessions.delete(sid);
+						if (state.onSessionDestroy) {
+							Promise.resolve(state.onSessionDestroy(sid)).catch(() => {});
+						}
+						break;
+					}
+				}
+			};
 			return transport.handleRequest(req);
 		};
 	};

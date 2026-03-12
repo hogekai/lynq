@@ -17,6 +17,12 @@ export function memoryStore(): Store {
 			return entry.value as T;
 		},
 		async set(key: string, value: unknown, ttl?: number): Promise<void> {
+			if (data.size >= 1000) {
+				const now = Date.now();
+				for (const [k, v] of data) {
+					if (v.expiresAt !== undefined && now > v.expiresAt) data.delete(k);
+				}
+			}
 			data.set(key, {
 				value,
 				expiresAt: ttl !== undefined ? Date.now() + ttl * 1000 : undefined,

@@ -167,7 +167,8 @@ export interface ToolMiddleware {
 	name: string;
 	/** Called when a tool is registered. Return false to hide the tool initially. */
 	onRegister?(tool: ToolInfo): boolean | undefined;
-	/** Called when a tool is invoked. Must call next() to continue the chain. */
+	/** Called when a tool is invoked. Must call and return `await next()` to continue the chain.
+	 *  Calling next() without returning its result is undefined behavior. */
 	onCall?(
 		c: ToolContext,
 		next: () => Promise<CallToolResult>,
@@ -197,7 +198,7 @@ export type ToolHandler<TInput = unknown> = (
 
 // === Task (@experimental) ===
 
-/** @experimental */
+/** @experimental Running tasks are fire-and-forget — no graceful shutdown guarantee. */
 export interface TaskConfig<TInput = unknown> {
 	description?: string;
 	input?: TInput;

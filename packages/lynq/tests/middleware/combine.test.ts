@@ -101,6 +101,38 @@ describe("some()", () => {
 		});
 		expect(result).toBe(false);
 	});
+
+	it("middleware that calls next() without returning it produces wrong result (contract violation)", async () => {
+		// Documents the contract: middleware MUST `return await next()`.
+		// Calling next() without returning its result is undefined behavior —
+		// some() detects the call and treats it as passing, but returns the
+		// middleware's own return value instead of the handler's result.
+		const server = createTestServer();
+		const fireAndForget: ToolMiddleware = {
+			name: "fire-and-forget",
+			async onCall(_c, next) {
+				next(); // called but not returned — contract violation
+				return error("wrong result");
+			},
+		};
+
+		server.tool(
+			"api",
+			some(fireAndForget, pass("fallback")),
+			{ input: z.object({}) },
+			async () => text("ok"),
+		);
+
+		const t = await createTestClient(server);
+		const result = await t.callTool("api", {});
+		// The middleware "won" because it called next(), but the result is wrong
+		// because it didn't return next()'s result. This is by design — the
+		// contract requires `return await next()`.
+		expect(result.isError).toBe(true);
+		expect((result.content as any)[0].text).toBe("wrong result");
+
+		await t.close();
+	});
 });
 
 describe("every()", () => {

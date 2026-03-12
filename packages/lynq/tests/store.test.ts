@@ -74,6 +74,43 @@ describe("memoryStore", () => {
 		await store.set("key", "value");
 		expect(await store.get("key")).toBe("value");
 	});
+
+	it("sweeps expired keys on set when threshold exceeded", async () => {
+		vi.useFakeTimers();
+		try {
+			const store = memoryStore();
+			for (let i = 0; i < 1000; i++) {
+				await store.set(`key-${i}`, "val", 1);
+			}
+			vi.advanceTimersByTime(1001);
+			// This set triggers sweep
+			await store.set("trigger", "val");
+			// Expired keys should be gone
+			expect(await store.get("key-0")).toBeUndefined();
+			expect(await store.get("key-999")).toBeUndefined();
+			// But trigger should exist
+			expect(await store.get("trigger")).toBe("val");
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("does not sweep when below threshold", async () => {
+		vi.useFakeTimers();
+		try {
+			const store = memoryStore();
+			for (let i = 0; i < 10; i++) {
+				await store.set(`key-${i}`, "val", 1);
+			}
+			vi.advanceTimersByTime(1001);
+			// Below threshold — no sweep on set, but lazy cleanup on get still works
+			await store.set("trigger", "val");
+			// get() still does lazy cleanup
+			expect(await store.get("key-0")).toBeUndefined();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
 });
 
 describe("resolveUserId", () => {

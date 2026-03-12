@@ -130,6 +130,10 @@ server.task(
 When you register a task, lynq creates an internal task entry identical to a tool entry but backed by the SDK's experimental Tasks API. Progress calls map to SDK task status updates. The `cancelled` flag is set when the client sends a cancellation request. Because `TaskContext` extends `ToolContext`, all middleware hooks (`onCall`, `onResult`, `onRegister`) work identically.
 :::
 
+## Limitations
+
+> **No graceful shutdown.** Running tasks are fire-and-forget — if the server process exits, in-flight tasks are silently dropped. There is no `drain()` or `waitForTasks()` API. This is a known limitation of the `@experimental` Tasks API. If your task performs critical work, ensure idempotency so it can be safely re-run.
+
 ## What's Next
 
 - [Middleware](/concepts/middleware) — how middleware applies to tasks
