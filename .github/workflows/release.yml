@@ -22,8 +22,8 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
-      - run: pnpm typecheck
       - run: pnpm build
+      - run: pnpm typecheck
       - run: pnpm test
       - name: Publish @lynq/lynq
         if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/create-lynq-')
