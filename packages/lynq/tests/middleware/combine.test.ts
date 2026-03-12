@@ -193,6 +193,48 @@ describe("every()", () => {
 
 		await t.close();
 	});
+
+	it("awaits async onResult hooks", async () => {
+		const order: string[] = [];
+		const mwA: ToolMiddleware = {
+			name: "a",
+			async onCall(_c, next) {
+				return next();
+			},
+			async onResult(result) {
+				await new Promise((r) => setTimeout(r, 10));
+				order.push("a");
+				return {
+					...result,
+					content: [{ type: "text" as const, text: "transformed-a" }],
+				};
+			},
+		};
+		const mwB: ToolMiddleware = {
+			name: "b",
+			async onCall(_c, next) {
+				return next();
+			},
+			async onResult(result) {
+				await new Promise((r) => setTimeout(r, 10));
+				order.push("b");
+				return result;
+			},
+		};
+
+		const server = createTestServer();
+		server.tool("api", every(mwA, mwB), { input: z.object({}) }, async () =>
+			text("ok"),
+		);
+
+		const t = await createTestClient(server);
+		const result = await t.callTool("api", {});
+
+		expect(order).toEqual(["b", "a"]);
+		expect((result.content as any)[0].text).toBe("transformed-a");
+
+		await t.close();
+	});
 });
 
 describe("except()", () => {

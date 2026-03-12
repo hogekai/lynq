@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountLynq } from "../../src/adapters/hono.js";
 import { createMCPServer } from "../../src/core.js";
+import { signState } from "../../src/helpers.js";
 import { text } from "../../src/response.js";
 
 function createApp(options?: Parameters<typeof mountLynq>[2]) {
@@ -144,8 +145,9 @@ describe("hono pages", () => {
 					}),
 				});
 
+			const state = signState("session-1", "elicit-1", "gh-secret");
 			const res = await app.request(
-				"/lynq/auth/github/callback?code=auth-code&state=session-1:elicit-1",
+				`/lynq/auth/github/callback?code=auth-code&state=${state}`,
 				{ headers: { Host: "localhost" }, redirect: "manual" },
 			);
 			expect(res.status).toBe(302);
@@ -187,8 +189,9 @@ describe("hono pages", () => {
 				}),
 			});
 
+			const state = signState("session-1", "elicit-1", "gh-secret");
 			const res = await app.request(
-				"/lynq/auth/github/callback?code=bad&state=session-1:elicit-1",
+				`/lynq/auth/github/callback?code=bad&state=${state}`,
 				{ headers: { Host: "localhost" } },
 			);
 			expect(res.status).toBe(500);

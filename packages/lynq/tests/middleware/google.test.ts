@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
+import { signState } from "../../src/helpers.js";
 import { google, handleCallback } from "../../src/middleware/google.js";
 import { text } from "../../src/response.js";
 
@@ -86,9 +87,10 @@ describe("handleCallback (google)", () => {
 				}),
 			});
 
+		const state = signState("session-1", "elicit-1", BASE_OPTIONS.clientSecret);
 		const result = await handleCallback(
 			server,
-			{ code: "auth-code", state: "session-1:elicit-1" },
+			{ code: "auth-code", state },
 			BASE_OPTIONS,
 		);
 
@@ -124,6 +126,19 @@ describe("handleCallback (google)", () => {
 		expect(result.error).toBe("Invalid state parameter");
 	});
 
+	it("returns error on tampered state", async () => {
+		const server = createTestServer();
+
+		const result = await handleCallback(
+			server,
+			{ code: "auth-code", state: "session-1:elicit-1:badsig" },
+			BASE_OPTIONS,
+		);
+
+		expect(result.success).toBe(false);
+		expect(result.error).toBe("Invalid state parameter");
+	});
+
 	it("returns error when token exchange fails", async () => {
 		const server = createTestServer();
 		server._createSessionAPI("session-1");
@@ -135,9 +150,10 @@ describe("handleCallback (google)", () => {
 			}),
 		});
 
+		const state = signState("session-1", "elicit-1", BASE_OPTIONS.clientSecret);
 		const result = await handleCallback(
 			server,
-			{ code: "bad-code", state: "session-1:elicit-1" },
+			{ code: "bad-code", state },
 			BASE_OPTIONS,
 		);
 
@@ -162,9 +178,10 @@ describe("handleCallback (google)", () => {
 				}),
 			});
 
+		const state = signState("session-1", "elicit-1", BASE_OPTIONS.clientSecret);
 		await handleCallback(
 			server,
-			{ code: "auth-code", state: "session-1:elicit-1" },
+			{ code: "auth-code", state },
 			BASE_OPTIONS,
 		);
 
@@ -177,9 +194,10 @@ describe("handleCallback (google)", () => {
 
 		(globalThis.fetch as any).mockRejectedValueOnce(new Error("Network error"));
 
+		const state = signState("session-1", "elicit-1", BASE_OPTIONS.clientSecret);
 		const result = await handleCallback(
 			server,
-			{ code: "code", state: "session-1:elicit-1" },
+			{ code: "code", state },
 			BASE_OPTIONS,
 		);
 

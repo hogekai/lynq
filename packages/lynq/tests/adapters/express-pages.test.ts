@@ -2,6 +2,7 @@ import express from "express";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountLynq } from "../../src/adapters/express.js";
 import { createMCPServer } from "../../src/core.js";
+import { signState } from "../../src/helpers.js";
 import { text } from "../../src/response.js";
 
 const realFetch = globalThis.fetch;
@@ -159,9 +160,10 @@ describe("express pages", () => {
 					}),
 				});
 
+			const state = signState("session-1", "elicit-1", "gh-secret");
 			const res = await request(
 				app,
-				"/lynq/auth/github/callback?code=auth-code&state=session-1:elicit-1",
+				`/lynq/auth/github/callback?code=auth-code&state=${state}`,
 				{ redirect: "manual" },
 			);
 			expect(res.status).toBe(302);

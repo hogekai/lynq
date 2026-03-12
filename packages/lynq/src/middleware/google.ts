@@ -1,3 +1,4 @@
+import { signState, verifyState } from "../helpers.js";
 import type { MCPServer, ToolContext, ToolMiddleware } from "../types.js";
 import { oauth } from "./oauth.js";
 
@@ -40,7 +41,7 @@ export function google(options: GoogleOptions): ToolMiddleware {
 				redirect_uri: options.redirectUri,
 				response_type: "code",
 				scope: scopes.join(" "),
-				state: `${sessionId}:${elicitationId}`,
+				state: signState(sessionId, elicitationId, options.clientSecret),
 				access_type: "offline",
 			});
 			return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
@@ -76,11 +77,13 @@ export async function handleCallback(
 	options: HandleCallbackOptions,
 ): Promise<{ success: boolean; error?: string }> {
 	const sessionKey = options.sessionKey ?? "user";
-	const [sessionId, elicitationId] = params.state.split(":");
+	const verified = verifyState(params.state, options.clientSecret);
 
-	if (!sessionId || !elicitationId) {
+	if (!verified) {
 		return { success: false, error: "Invalid state parameter" };
 	}
+
+	const { sessionId, elicitationId } = verified;
 
 	try {
 		const tokenRes = await fetch("https://oauth2.googleapis.com/token", {

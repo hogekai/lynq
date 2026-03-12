@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import {
 	type ZodRawShapeCompat,
 	normalizeObjectSchema,
@@ -98,27 +99,67 @@ export function findResourceByUri(
 	return undefined;
 }
 
-export function buildMiddlewareChain(
+export function signState(
+	sessionId: string,
+	elicitationId: string,
+	secret: string,
+): string {
+	const data = `${sessionId}:${elicitationId}`;
+	const sig = createHmac("sha256", secret).update(data).digest("hex");
+	return `${data}:${sig}`;
+}
+
+export function verifyState(
+	state: string,
+	secret: string,
+): { sessionId: string; elicitationId: string } | null {
+	const parts = state.split(":");
+	if (parts.length !== 3) return null;
+	const [sessionId, elicitationId, sig] = parts;
+	const expected = createHmac("sha256", secret)
+		.update(`${sessionId}:${elicitationId}`)
+		.digest("hex");
+	try {
+		if (
+			!timingSafeEqual(
+				Buffer.from(sig, "hex"),
+				Buffer.from(expected, "hex"),
+			)
+		)
+			return null;
+	} catch {
+		return null;
+	}
+	return { sessionId, elicitationId };
+}
+
+export function buildMiddlewareChain<TResult = CallToolResult>(
 	middlewares: ToolMiddleware[],
 	c: ToolContext,
-	finalHandler: () => Promise<CallToolResult>,
-): () => Promise<CallToolResult> {
+	finalHandler: () => Promise<TResult>,
+): () => Promise<TResult> {
 	const callMiddlewares = middlewares.filter((mw) => mw.onCall);
 	const resultMiddlewares = middlewares.filter((mw) => mw.onResult).reverse();
 	let index = 0;
 
-	const next = async (): Promise<CallToolResult> => {
+	const next = async (): Promise<TResult> => {
 		if (index >= callMiddlewares.length) {
 			let result = await finalHandler();
 			for (const mw of resultMiddlewares) {
 				// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onResult
-				result = await mw.onResult!(result, c);
+				result = (await mw.onResult!(
+					result as CallToolResult,
+					c,
+				)) as TResult;
 			}
 			return result;
 		}
 		const mw = callMiddlewares[index++];
 		// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onCall
-		return mw.onCall!(c, next);
+		return mw.onCall!(
+			c,
+			next as () => Promise<CallToolResult>,
+		) as Promise<TResult>;
 	};
 
 	return next;

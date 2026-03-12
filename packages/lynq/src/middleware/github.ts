@@ -1,3 +1,4 @@
+import { signState, verifyState } from "../helpers.js";
 import type { MCPServer, ToolContext, ToolMiddleware } from "../types.js";
 import { oauth } from "./oauth.js";
 
@@ -38,7 +39,7 @@ export function github(options: GitHubOptions): ToolMiddleware {
 			const params = new URLSearchParams({
 				client_id: options.clientId,
 				redirect_uri: options.redirectUri,
-				state: `${sessionId}:${elicitationId}`,
+				state: signState(sessionId, elicitationId, options.clientSecret),
 			});
 			if (scopes.length > 0) params.set("scope", scopes.join(" "));
 			return `https://github.com/login/oauth/authorize?${params}`;
@@ -73,11 +74,13 @@ export async function handleCallback(
 	options: HandleCallbackOptions,
 ): Promise<{ success: boolean; error?: string }> {
 	const sessionKey = options.sessionKey ?? "user";
-	const [sessionId, elicitationId] = params.state.split(":");
+	const verified = verifyState(params.state, options.clientSecret);
 
-	if (!sessionId || !elicitationId) {
+	if (!verified) {
 		return { success: false, error: "Invalid state parameter" };
 	}
+
+	const { sessionId, elicitationId } = verified;
 
 	try {
 		const tokenRes = await fetch(

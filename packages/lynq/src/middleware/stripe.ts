@@ -1,3 +1,4 @@
+import { signState, verifyState } from "../helpers.js";
 import type { MCPServer, ToolContext, ToolMiddleware } from "../types.js";
 import { payment } from "./payment.js";
 
@@ -33,6 +34,18 @@ export interface StripeOptions {
 /** @deprecated Use `StripeOptions` instead. */
 export type StripePaymentOptions = StripeOptions;
 
+// biome-ignore lint/suspicious/noExplicitAny: lazy-loaded stripe module
+let stripePromise: Promise<any> | null = null;
+function loadStripe() {
+	if (!stripePromise) {
+		stripePromise = import("stripe").catch(() => {
+			stripePromise = null;
+			return null;
+		});
+	}
+	return stripePromise;
+}
+
 export function stripe(options: StripeOptions): ToolMiddleware {
 	const {
 		secretKey,
@@ -54,10 +67,16 @@ export function stripe(options: StripeOptions): ToolMiddleware {
 		sessionKey,
 		message,
 		async buildUrl({ sessionId, elicitationId }) {
-			const Stripe = (await import("stripe")).default;
+			const mod = await loadStripe();
+			if (!mod) {
+				throw new Error(
+					"stripe package is required. Install it: pnpm add stripe",
+				);
+			}
+			const Stripe = mod.default;
 			const client = new Stripe(secretKey);
 
-			const state = `${sessionId}:${elicitationId}`;
+			const state = signState(sessionId, elicitationId, secretKey);
 			const session = await client.checkout.sessions.create({
 				payment_method_types: ["card"],
 				line_items: [
@@ -120,14 +139,26 @@ export async function handleCallback(
 	options: HandleCallbackOptions,
 ): Promise<{ success: boolean; error?: string }> {
 	const sessionKey = options.sessionKey ?? "payment";
-	const [sessionId, elicitationId] = params.state.split(":");
+	const verified = verifyState(params.state, options.secretKey);
 
-	if (!sessionId || !elicitationId) {
+	if (!verified) {
 		return { success: false, error: "Invalid state parameter" };
 	}
 
+	const { sessionId, elicitationId } = verified;
+
 	try {
-		const Stripe = (await import("stripe")).default;
+		let stripeMod: { default: new (key: string) => any };
+		try {
+			stripeMod = await import("stripe");
+		} catch {
+			return {
+				success: false,
+				error:
+					"stripe package is required. Install it: pnpm add stripe",
+			};
+		}
+		const Stripe = stripeMod.default;
 		const client = new Stripe(options.secretKey);
 
 		const checkout = await client.checkout.sessions.retrieve(

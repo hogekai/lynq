@@ -91,13 +91,11 @@ export function every(...middlewares: ToolMiddleware[]): ToolMiddleware {
 			return chain();
 		},
 
-		onResult(result: CallToolResult, c: ToolContext) {
+		async onResult(result: CallToolResult, c: ToolContext) {
 			let current = result;
 			for (const mw of resultMiddlewares) {
 				// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onResult
-				const out = mw.onResult!(current, c);
-				if (out instanceof Promise) continue;
-				current = out;
+				current = await mw.onResult!(current, c);
 			}
 			return current;
 		},

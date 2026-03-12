@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
+import { signState } from "../../src/helpers.js";
 import { handleCallback, stripe } from "../../src/middleware/stripe.js";
 import { text } from "../../src/response.js";
 
@@ -96,6 +97,19 @@ describe("handleCallback (stripe)", () => {
 		expect(result.error).toBe("Invalid state parameter");
 	});
 
+	it("returns error on tampered state", async () => {
+		const server = createTestServer();
+
+		const result = await handleCallback(
+			server,
+			{ checkoutSessionId: "cs_123", state: "session-1:elicit-1:badsig" },
+			{ secretKey: "sk_test_123" },
+		);
+
+		expect(result.success).toBe(false);
+		expect(result.error).toBe("Invalid state parameter");
+	});
+
 	it("verifies payment and stores data", async () => {
 		const server = createTestServer();
 		server._createSessionAPI("session-1");
@@ -124,9 +138,10 @@ describe("handleCallback (stripe)", () => {
 			"../../src/middleware/stripe.js"
 		);
 
+		const state = signState("session-1", "elicit-1", "sk_test_123");
 		const result = await handler(
 			server,
-			{ checkoutSessionId: "cs_123", state: "session-1:elicit-1" },
+			{ checkoutSessionId: "cs_123", state },
 			{ secretKey: "sk_test_123" },
 		);
 
@@ -164,9 +179,10 @@ describe("handleCallback (stripe)", () => {
 			"../../src/middleware/stripe.js"
 		);
 
+		const state = signState("session-1", "elicit-1", "sk_test_123");
 		const result = await handler(
 			server,
-			{ checkoutSessionId: "cs_123", state: "session-1:elicit-1" },
+			{ checkoutSessionId: "cs_123", state },
 			{ secretKey: "sk_test_123" },
 		);
 
