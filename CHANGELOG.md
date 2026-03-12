@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2026-03-12
+
+### Fixed
+
+- Fire `onSessionDestroy` on transport close for stdio/non-HTTP sessions
+- CI: run build before typecheck/test for cross-package resolution
+- Docs: add install sections for `@lynq/github`, `@lynq/google`, `@lynq/stripe`, `@lynq/crypto`
+
 ## [0.8.0] - 2026-03-12
 
 ### Breaking Changes
