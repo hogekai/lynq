@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-03-12
+
+### Breaking Changes
+
+- **Monorepo split by peer dependency boundary.** Providers, adapters, and store implementations are now separate packages:
+  - `@lynq/github` — GitHub OAuth provider (was `@lynq/lynq/github`)
+  - `@lynq/google` — Google OAuth provider (was `@lynq/lynq/google`)
+  - `@lynq/stripe` — Stripe Checkout provider (was `@lynq/lynq/stripe`)
+  - `@lynq/crypto` — Crypto payment provider (was `@lynq/lynq/crypto`)
+  - `@lynq/hono` — Hono adapter (was `@lynq/lynq/hono`)
+  - `@lynq/express` — Express adapter (was `@lynq/lynq/express`)
+- Removed deprecated aliases: `lynq/github-oauth`, `lynq/google-oauth`, `lynq/usdc`
+- Removed subpath exports: `./github`, `./google`, `./stripe`, `./crypto`, `./hono`, `./express`
+
+### Added
+
+- `@lynq/store-redis` — Redis-backed Store implementation (peer dep: `ioredis`)
+- `@lynq/store-sqlite` — SQLite-backed Store implementation (peer dep: `better-sqlite3`)
+- `@lynq/lynq/helpers` subpath — `signState`, `verifyState`, `validateHost`, `LOCALHOST_HOSTS`
+- `@lynq/lynq/pages` subpath — HTML templates and types for adapter page routes
+- `cache()` middleware — response caching with TTL (`@lynq/lynq/cache`)
+- `retry()` middleware — automatic retry with configurable strategy (`@lynq/lynq/retry`)
+
+### Changed
+
+- Core `@lynq/lynq` no longer has `hono`, `express`, `stripe` as peer dependencies
+- Release workflow publishes all scoped packages on `v*` tags
+- Docs use VitePress code groups (tabs) for install commands
+
+### Migration
+
+```diff
+- import { github } from "@lynq/lynq/github"
++ import { github } from "@lynq/github"
+
+- import { mountLynq } from "@lynq/lynq/hono"
++ import { mountLynq } from "@lynq/hono"
+```
+
 ## [create-lynq 0.1.1] - 2026-03-11
 
 ### Fixed
