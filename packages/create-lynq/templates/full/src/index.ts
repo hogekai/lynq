@@ -4,9 +4,9 @@ import { createMCPServer, text, json } from "@lynq/lynq";
 import { guard } from "@lynq/lynq/guard";
 import { logger } from "@lynq/lynq/logger";
 import { rateLimit } from "@lynq/lynq/rate-limit";
-import { github } from "@lynq/lynq/github";
-import { stripe } from "@lynq/lynq/stripe";
-import { mountLynq } from "@lynq/lynq/hono";
+import { github } from "@lynq/github";
+import { stripe } from "@lynq/stripe";
+import { mountLynq } from "@lynq/hono";
 import { memoryStore } from "@lynq/lynq/store";
 import { z } from "zod";
 

@@ -2,7 +2,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { createMCPServer } from "@lynq/lynq";
 import { guard } from "@lynq/lynq/guard";
-import { mountLynq } from "@lynq/lynq/hono";
+import { mountLynq } from "@lynq/hono";
 import { z } from "zod";
 
 const mcp = createMCPServer({ name: "my-server", version: "1.0.0" });

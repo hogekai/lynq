@@ -5,7 +5,7 @@ On-chain crypto payment middleware. Tools are hidden until payment is verified.
 ## Import
 
 ```ts
-import { crypto, handleCallback } from "@lynq/lynq/crypto";
+import { crypto, handleCallback } from "@lynq/crypto";
 ```
 
 ## Usage
@@ -39,7 +39,7 @@ server.tool("premium", crypto({
 
 ```ts
 import { createMCPServer } from "@lynq/lynq";
-import { crypto, handleCallback } from "@lynq/lynq/crypto";
+import { crypto, handleCallback } from "@lynq/crypto";
 import { Hono } from "hono";
 import { z } from "zod";
 

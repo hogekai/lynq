@@ -4,18 +4,25 @@
 
 ## Usage
 
-```sh
+::: code-group
+
+```sh [pnpm]
 pnpm create lynq my-server
 ```
 
-Or with npm / yarn / bun:
-
-```sh
+```sh [npm]
 npm create lynq my-server
-npx create-lynq my-server
+```
+
+```sh [yarn]
 yarn create lynq my-server
+```
+
+```sh [bun]
 bunx create-lynq my-server
 ```
+
+:::
 
 The CLI will prompt you to choose a template.
 
@@ -112,11 +119,25 @@ The test file demonstrates [createTestClient](/guides/testing) for verifying too
 
 Skip the interactive prompt with `--template`:
 
-```sh
+::: code-group
+
+```sh [pnpm]
 pnpm create lynq my-server --template=minimal
-pnpm create lynq my-server --template=hono
-pnpm create lynq my-server --template=full
 ```
+
+```sh [npm]
+npm create lynq my-server -- --template=minimal
+```
+
+```sh [yarn]
+yarn create lynq my-server --template=minimal
+```
+
+```sh [bun]
+bunx create-lynq my-server --template=minimal
+```
+
+:::
 
 ## Next Steps
 

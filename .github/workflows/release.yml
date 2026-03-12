@@ -30,6 +30,46 @@ jobs:
         run: pnpm --filter @lynq/lynq publish --provenance --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @lynq/github
+        if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/create-lynq-')
+        run: pnpm --filter @lynq/github publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @lynq/google
+        if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/create-lynq-')
+        run: pnpm --filter @lynq/google publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @lynq/stripe
+        if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/create-lynq-')
+        run: pnpm --filter @lynq/stripe publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @lynq/crypto
+        if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/create-lynq-')
+        run: pnpm --filter @lynq/crypto publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @lynq/hono
+        if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/create-lynq-')
+        run: pnpm --filter @lynq/hono publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @lynq/express
+        if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/create-lynq-')
+        run: pnpm --filter @lynq/express publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @lynq/store-redis
+        if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/create-lynq-')
+        run: pnpm --filter @lynq/store-redis publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish @lynq/store-sqlite
+        if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/create-lynq-')
+        run: pnpm --filter @lynq/store-sqlite publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish create-lynq
         if: startsWith(github.ref, 'refs/tags/create-lynq-v')
         run: pnpm --filter create-lynq publish --provenance --access public --no-git-checks

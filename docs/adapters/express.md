@@ -4,16 +4,32 @@ Deploy your MCP server over HTTP using Express.
 
 ## Install
 
-```sh
-npm install @lynq/lynq zod express
+::: code-group
+
+```sh [pnpm]
+pnpm add @lynq/lynq @lynq/express zod express
 ```
+
+```sh [npm]
+npm install @lynq/lynq @lynq/express zod express
+```
+
+```sh [yarn]
+yarn add @lynq/lynq @lynq/express zod express
+```
+
+```sh [bun]
+bun add @lynq/lynq @lynq/express zod express
+```
+
+:::
 
 ## Usage
 
 ```ts
 import express from "express";
 import { createMCPServer } from "@lynq/lynq";
-import { mountLynq } from "@lynq/lynq/express";
+import { mountLynq } from "@lynq/express";
 import { z } from "zod";
 
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });

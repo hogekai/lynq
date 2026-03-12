@@ -19,12 +19,7 @@ describe("cache middleware", () => {
 	it("caches successful results", async () => {
 		const handler = vi.fn(async () => text("hello"));
 		const server = createTestServer();
-		server.tool(
-			"greet",
-			cache({ ttl: 60 }),
-			{ input: z.object({}) },
-			handler,
-		);
+		server.tool("greet", cache({ ttl: 60 }), { input: z.object({}) }, handler);
 
 		const t = await createTestClient(server);
 		const r1 = await t.callToolText("greet", {});
@@ -47,7 +42,10 @@ describe("cache middleware", () => {
 			{ input: z.object({}) },
 			async () => {
 				callCount++;
-				return { isError: true, content: [{ type: "text" as const, text: "err" }] };
+				return {
+					isError: true,
+					content: [{ type: "text" as const, text: "err" }],
+				};
 			},
 		);
 
@@ -60,7 +58,9 @@ describe("cache middleware", () => {
 	});
 
 	it("uses different cache keys for different args", async () => {
-		const handler = vi.fn(async (args: { name: string }) => text(`hi ${args.name}`));
+		const handler = vi.fn(async (args: { name: string }) =>
+			text(`hi ${args.name}`),
+		);
 		const server = createTestServer();
 		server.tool(
 			"greet",
@@ -86,12 +86,7 @@ describe("cache middleware", () => {
 		try {
 			const handler = vi.fn(async () => text("ok"));
 			const server = createTestServer();
-			server.tool(
-				"api",
-				cache({ ttl: 5 }),
-				{ input: z.object({}) },
-				handler,
-			);
+			server.tool("api", cache({ ttl: 5 }), { input: z.object({}) }, handler);
 
 			const t = await createTestClient(server);
 			await t.callTool("api", {});

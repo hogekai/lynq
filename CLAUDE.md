@@ -67,6 +67,8 @@ The core framework. Multiple entry points via `exports` field:
 - `lynq/logger` — logging middleware (`logger()`)
 - `lynq/rate-limit` — rate limiting middleware (`rateLimit()`)
 - `lynq/truncate` — response truncation middleware (`truncate()`)
+- `lynq/cache` — response caching middleware (`cache()`)
+- `lynq/retry` — retry middleware (`retry()`)
 - `lynq/combine` — middleware combinators (`some()`, `every()`, `except()`)
 - `lynq/credentials` — form-based auth middleware (`credentials()`)
 - `lynq/url-action` — URL-based elicitation middleware (`urlAction()`)
@@ -74,16 +76,44 @@ The core framework. Multiple entry points via `exports` field:
 - `lynq/payment` — payment flow middleware (`payment()`)
 - `lynq/bearer` — Bearer token verification middleware (`bearer()`)
 - `lynq/jwt` — JWT verification middleware (`jwt()`) — requires `jose` peer dep
-- `lynq/github` — GitHub OAuth provider (`github()`, `handleCallback()`) — deprecated alias: `lynq/github-oauth`
-- `lynq/google` — Google OAuth provider (`google()`, `handleCallback()`) — deprecated alias: `lynq/google-oauth`
-- `lynq/stripe` — Stripe Checkout payment provider (`stripe()`, `handleCallback()`) — requires `stripe` peer dep
-- `lynq/crypto` — crypto payment provider (`crypto()`, `handleCallback()`) — deprecated alias: `lynq/usdc`
 - `lynq/tip` — post-result tip link appender (`tip()`)
 - `lynq/store` — store utilities (`memoryStore()`, `resolveUserId()`, `createUserStore()`)
+- `lynq/helpers` — public helpers (`signState`, `verifyState`, `validateHost`, `LOCALHOST_HOSTS`)
+- `lynq/pages` — HTML templates + types (`successPage`, `errorPage`, `cryptoPaymentPage`, `PagesConfig`)
 - `lynq/stdio` — re-export of `StdioServerTransport`
-- `lynq/hono` — Hono adapter (`mountLynq`)
-- `lynq/express` — Express adapter (`mountLynq`)
 - `lynq/test` — test helpers (`createTestClient`, `matchers`)
+
+### `packages/github/` — `@lynq/github`
+
+GitHub OAuth provider (`github()`, `handleCallback()`). Depends on `@lynq/lynq`.
+
+### `packages/google/` — `@lynq/google`
+
+Google OAuth provider (`google()`, `handleCallback()`). Depends on `@lynq/lynq`.
+
+### `packages/stripe/` — `@lynq/stripe`
+
+Stripe Checkout payment provider (`stripe()`, `handleCallback()`). Peer dep: `stripe`.
+
+### `packages/crypto/` — `@lynq/crypto`
+
+Crypto payment provider (`crypto()`, `handleCallback()`). Depends on `@lynq/lynq`.
+
+### `packages/hono/` — `@lynq/hono`
+
+Hono adapter (`mountLynq`). Peer dep: `hono`. Optional peer deps: `@lynq/github`, `@lynq/google`, `@lynq/stripe`, `@lynq/crypto` (for `pages` option).
+
+### `packages/express/` — `@lynq/express`
+
+Express adapter (`mountLynq`). Peer dep: `express`. Optional peer deps: `@lynq/github`, `@lynq/google`, `@lynq/stripe`, `@lynq/crypto` (for `pages` option).
+
+### `packages/store-redis/` — `@lynq/store-redis`
+
+Redis-backed Store implementation (`redisStore()`). Peer dep: `ioredis`.
+
+### `packages/store-sqlite/` — `@lynq/store-sqlite`
+
+SQLite-backed Store implementation (`sqliteStore()`). Peer dep: `better-sqlite3`.
 
 ### `packages/create-lynq/` — `create-lynq`
 
@@ -96,10 +126,13 @@ packages/
 │   │   ├── index.ts          — public exports
 │   │   ├── types.ts          — all type definitions
 │   │   ├── core.ts           — createMCPServer + state management + request handlers
+│   │   ├── handlers.ts       — request handlers (tools/list, tools/call, resources, tasks)
 │   │   ├── response.ts       — response helpers (text, json, error, image)
 │   │   ├── store.ts          — memoryStore, resolveUserId, createUserStore
 │   │   ├── test.ts           — test helpers (createTestClient, matchers)
-│   │   ├── helpers.ts        — pure functions (isVisible, buildMiddlewareChain, parseMiddlewareArgs, etc.)
+│   │   ├── helpers.ts        — pure functions (isVisible, buildMiddlewareChain, signState, verifyState, validateHost, etc.)
+│   │   ├── public-helpers.ts — thin re-export for lynq/helpers subpath
+│   │   ├── pages.ts          — HTML templates + types for adapter pages
 │   │   ├── context.ts        — context factories (createElicit, createRootsAccessor, createSample, createToolContext)
 │   │   ├── internal-types.ts — internal interfaces (InternalTool, InternalResource, etc.)
 │   │   ├── middleware/
@@ -108,6 +141,8 @@ packages/
 │   │   │   ├── logger.ts       — logger() middleware
 │   │   │   ├── rate-limit.ts   — rateLimit() middleware
 │   │   │   ├── truncate.ts     — truncate() middleware
+│   │   │   ├── cache.ts        — cache() middleware
+│   │   │   ├── retry.ts        — retry() middleware
 │   │   │   ├── combine.ts      — some() / every() / except()
 │   │   │   ├── credentials.ts  — credentials() form mode auth
 │   │   │   ├── url-action.ts   — urlAction() URL-based elicitation
@@ -115,49 +150,34 @@ packages/
 │   │   │   ├── payment.ts      — payment() flow middleware
 │   │   │   ├── bearer.ts       — bearer() token verification
 │   │   │   ├── jwt.ts          — jwt() JWT verification
-│   │   │   ├── github.ts       — github() + handleCallback()
-│   │   │   ├── google.ts       — google() + handleCallback()
-│   │   │   ├── stripe.ts       — stripe() + handleCallback()
-│   │   │   ├── crypto.ts       — crypto() + handleCallback()
 │   │   │   └── tip.ts          — tip() onResult middleware
 │   │   └── adapters/
-│   │       ├── stdio.ts      — stdio transport re-export
-│   │       ├── shared.ts     — validateHost utility for DNS rebinding protection
-│   │       ├── pages.ts      — HTML templates + handlers for adapter pages
-│   │       ├── hono.ts       — mountLynq for Hono
-│   │       └── express.ts    — mountLynq for Express
+│   │       └── stdio.ts      — stdio transport re-export
 │   ├── tests/
-│   │   ├── store.test.ts
-│   │   ├── core.test.ts
-│   │   ├── http.test.ts
-│   │   ├── resource.test.ts
-│   │   ├── sampling.test.ts
-│   │   ├── task.test.ts
-│   │   ├── test-helpers.test.ts
-│   │   ├── middleware/
-│   │   │   ├── auth.test.ts
-│   │   │   ├── guard.test.ts
-│   │   │   ├── logger.test.ts
-│   │   │   ├── rate-limit.test.ts
-│   │   │   ├── truncate.test.ts
-│   │   │   ├── combine.test.ts
-│   │   │   ├── credentials.test.ts
-│   │   │   ├── url-action.test.ts
-│   │   │   ├── oauth.test.ts
-│   │   │   ├── payment.test.ts
-│   │   │   ├── bearer.test.ts
-│   │   │   ├── jwt.test.ts
-│   │   │   ├── github.test.ts
-│   │   │   ├── google.test.ts
-│   │   │   ├── stripe.test.ts
-│   │   │   ├── crypto.test.ts
-│   │   │   └── tip.test.ts
-│   │   └── adapters/
-│   │       ├── hono.test.ts
-│   │       ├── hono-pages.test.ts
-│   │       ├── express.test.ts
-│   │       └── express-pages.test.ts
 │   └── example/
+│
+├── github/               — @lynq/github
+│   ├── src/index.ts      — github() + handleCallback()
+│   └── tests/
+├── google/               — @lynq/google
+│   ├── src/index.ts      — google() + handleCallback()
+│   └── tests/
+├── stripe/               — @lynq/stripe
+│   ├── src/index.ts      — stripe() + handleCallback()
+│   └── tests/
+├── crypto/               — @lynq/crypto
+│   ├── src/index.ts      — crypto() + handleCallback()
+│   └── tests/
+├── hono/                 — @lynq/hono
+│   ├── src/index.ts      — mountLynq + page handlers
+│   └── tests/
+├── express/              — @lynq/express
+│   ├── src/index.ts      — mountLynq + page handlers
+│   └── tests/
+├── store-redis/          — @lynq/store-redis
+│   └── src/index.ts      — redisStore()
+├── store-sqlite/         — @lynq/store-sqlite
+│   └── src/index.ts      — sqliteStore()
 │
 ├── create-lynq/
 │   ├── src/

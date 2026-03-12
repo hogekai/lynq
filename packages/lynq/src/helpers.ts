@@ -128,6 +128,21 @@ export function verifyState(
 	return { sessionId, elicitationId };
 }
 
+// ── DNS rebinding protection (moved from adapters/shared.ts) ──────────
+
+export function validateHost(
+	hostHeader: string | null,
+	allowedHosts: string[],
+): boolean {
+	if (!hostHeader) return false;
+	const hostname = hostHeader.replace(/:\d+$/, "");
+	return allowedHosts.includes(hostname);
+}
+
+export const LOCALHOST_HOSTS = ["localhost", "127.0.0.1", "::1"];
+
+// ── Middleware chain ──────────────────────────────────────────────────
+
 export function buildMiddlewareChain<TResult = CallToolResult>(
 	middlewares: ToolMiddleware[],
 	c: ToolContext,
@@ -142,7 +157,10 @@ export function buildMiddlewareChain<TResult = CallToolResult>(
 			let result = await finalHandler();
 			for (const mw of resultMiddlewares) {
 				// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onResult
-				result = (await mw.onResult!(result as CallToolResult, c)) as TResult;
+				result = (await mw.onResult!(
+					result as CallToolResult,
+					c,
+				)) as Awaited<TResult>;
 			}
 			return result;
 		}

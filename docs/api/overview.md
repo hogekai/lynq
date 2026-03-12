@@ -231,10 +231,10 @@ Check `c.task.cancelled` periodically to respect client cancellation. Tasks use 
 | `@lynq/lynq/credentials` | `credentials()` form-based auth |
 | `@lynq/lynq/bearer` | `bearer()` Bearer token verification |
 | `@lynq/lynq/jwt` | `jwt()` JWT verification |
-| `@lynq/lynq/github` | `github()`, `handleCallback()` |
-| `@lynq/lynq/google` | `google()`, `handleCallback()` |
-| `@lynq/lynq/stripe` | `stripe()`, `handleCallback()` |
-| `@lynq/lynq/crypto` | `crypto()`, `handleCallback()` |
+| `@lynq/github` | `github()`, `handleCallback()` |
+| `@lynq/google` | `google()`, `handleCallback()` |
+| `@lynq/stripe` | `stripe()`, `handleCallback()` |
+| `@lynq/crypto` | `crypto()`, `handleCallback()` |
 | `@lynq/lynq/url-action` | `urlAction()` URL-based elicitation |
 | `@lynq/lynq/oauth` | `oauth()` generic OAuth flow |
 | `@lynq/lynq/payment` | `payment()` payment flow |
@@ -244,6 +244,6 @@ Check `c.task.cancelled` periodically to respect client cancellation. Tasks use 
 | `@lynq/lynq/combine` | `some()`, `every()`, `except()` combinators |
 | `@lynq/lynq/auth` | `auth()` (deprecated, use `guard()`) |
 | `@lynq/lynq/stdio` | `StdioServerTransport` re-export |
-| `@lynq/lynq/hono` | `mountLynq` for Hono |
-| `@lynq/lynq/express` | `mountLynq` for Express |
+| `@lynq/hono` | `mountLynq` for Hono |
+| `@lynq/express` | `mountLynq` for Express |
 | `@lynq/lynq/test` | `createTestClient`, matchers |

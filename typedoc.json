@@ -3,9 +3,17 @@
 	"entryPoints": [
 		"packages/lynq/src/index.ts",
 		"packages/lynq/src/middleware/auth.ts",
-		"packages/lynq/src/adapters/hono.ts",
-		"packages/lynq/src/adapters/express.ts",
-		"packages/lynq/src/test.ts"
+		"packages/lynq/src/public-helpers.ts",
+		"packages/lynq/src/pages.ts",
+		"packages/lynq/src/test.ts",
+		"packages/github/src/index.ts",
+		"packages/google/src/index.ts",
+		"packages/stripe/src/index.ts",
+		"packages/crypto/src/index.ts",
+		"packages/hono/src/index.ts",
+		"packages/express/src/index.ts",
+		"packages/store-redis/src/index.ts",
+		"packages/store-sqlite/src/index.ts"
 	],
 	"tsconfig": "packages/lynq/tsconfig.json",
 	"out": "docs/api-reference",

@@ -177,7 +177,7 @@ export function setupHandlers(
 						}
 					}
 				})();
-				return { task: createdTask } as CallToolResult;
+				return { task: createdTask } as unknown as CallToolResult;
 			};
 
 			const chain = buildMiddlewareChain(task.middlewares, c, finalHandler);

@@ -1,6 +1,6 @@
 {
 	"name": "@lynq/lynq",
-	"version": "0.7.1",
+	"version": "0.8.0",
 	"description": "Lightweight MCP server framework. Tool visibility control through middleware.",
 	"type": "module",
 	"exports": {
@@ -15,14 +15,6 @@
 		"./stdio": {
 			"types": "./dist/adapters/stdio.d.ts",
 			"import": "./dist/adapters/stdio.mjs"
-		},
-		"./hono": {
-			"types": "./dist/adapters/hono.d.ts",
-			"import": "./dist/adapters/hono.mjs"
-		},
-		"./express": {
-			"types": "./dist/adapters/express.d.ts",
-			"import": "./dist/adapters/express.mjs"
 		},
 		"./test": {
 			"types": "./dist/test.d.ts",
@@ -72,34 +64,6 @@
 			"types": "./dist/middleware/jwt.d.ts",
 			"import": "./dist/middleware/jwt.mjs"
 		},
-		"./github": {
-			"types": "./dist/middleware/github.d.ts",
-			"import": "./dist/middleware/github.mjs"
-		},
-		"./github-oauth": {
-			"types": "./dist/middleware/github.d.ts",
-			"import": "./dist/middleware/github.mjs"
-		},
-		"./google": {
-			"types": "./dist/middleware/google.d.ts",
-			"import": "./dist/middleware/google.mjs"
-		},
-		"./google-oauth": {
-			"types": "./dist/middleware/google.d.ts",
-			"import": "./dist/middleware/google.mjs"
-		},
-		"./stripe": {
-			"types": "./dist/middleware/stripe.d.ts",
-			"import": "./dist/middleware/stripe.mjs"
-		},
-		"./crypto": {
-			"types": "./dist/middleware/crypto.d.ts",
-			"import": "./dist/middleware/crypto.mjs"
-		},
-		"./usdc": {
-			"types": "./dist/middleware/crypto.d.ts",
-			"import": "./dist/middleware/crypto.mjs"
-		},
 		"./tip": {
 			"types": "./dist/middleware/tip.d.ts",
 			"import": "./dist/middleware/tip.mjs"
@@ -115,6 +79,14 @@
 		"./store": {
 			"types": "./dist/store.d.ts",
 			"import": "./dist/store.mjs"
+		},
+		"./helpers": {
+			"types": "./dist/helpers.d.ts",
+			"import": "./dist/helpers.mjs"
+		},
+		"./pages": {
+			"types": "./dist/pages.d.ts",
+			"import": "./dist/pages.mjs"
 		}
 	},
 	"files": ["dist"],
@@ -133,37 +105,22 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.0",
-		"@types/express": "^5.0.6",
-		"express": "^5.2.1",
-		"hono": "^4.12.5",
+		"@types/node": "^22.19.15",
 		"jose": "^6.2.1",
-		"stripe": "^20.4.1",
 		"tsup": "^8.0.0",
 		"typescript": "^5.6.0",
 		"vitest": "^2.0.0",
 		"zod": "^3.24.0"
 	},
 	"peerDependencies": {
-		"express": "^5.0.0",
-		"hono": "^4.0.0",
 		"jose": "^6.0.0",
-		"stripe": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0",
 		"zod": "^3.0.0"
 	},
 	"peerDependenciesMeta": {
 		"zod": {
 			"optional": true
 		},
-		"hono": {
-			"optional": true
-		},
-		"express": {
-			"optional": true
-		},
 		"jose": {
-			"optional": true
-		},
-		"stripe": {
 			"optional": true
 		}
 	},

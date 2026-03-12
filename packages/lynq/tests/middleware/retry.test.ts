@@ -17,11 +17,8 @@ describe("retry middleware", () => {
 
 	it("returns success on first attempt", async () => {
 		const server = createTestServer();
-		server.tool(
-			"ok",
-			retry(),
-			{ input: z.object({}) },
-			async () => text("done"),
+		server.tool("ok", retry(), { input: z.object({}) }, async () =>
+			text("done"),
 		);
 
 		const t = await createTestClient(server);
@@ -132,8 +129,7 @@ describe("retry middleware", () => {
 				max: 3,
 				delayMs: 0,
 				shouldRetry: (r) =>
-					!r.isError &&
-					(r.content as any)?.[0]?.text === "retry-me",
+					!r.isError && (r.content as any)?.[0]?.text === "retry-me",
 			}),
 			{ input: z.object({}) },
 			async () => {

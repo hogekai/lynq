@@ -5,7 +5,7 @@ Full OAuth flow with URL elicitation. The agent is directed to Google's authoriz
 ## Import
 
 ```ts
-import { google, handleCallback } from "@lynq/lynq/google";
+import { google, handleCallback } from "@lynq/google";
 ```
 
 ## Usage
@@ -39,7 +39,7 @@ A full Hono example with MCP server, Google OAuth middleware, and callback route
 
 ```ts
 import { createMCPServer } from "@lynq/lynq";
-import { google, handleCallback } from "@lynq/lynq/google";
+import { google, handleCallback } from "@lynq/google";
 import { Hono } from "hono";
 import { z } from "zod";
 

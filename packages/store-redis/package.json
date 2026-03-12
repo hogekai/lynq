@@ -1,0 +1,41 @@
+{
+	"name": "@lynq/store-redis",
+	"version": "0.1.0",
+	"description": "Redis Store implementation for lynq MCP framework.",
+	"type": "module",
+	"sideEffects": false,
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.mjs"
+		}
+	},
+	"files": ["dist"],
+	"scripts": {
+		"build": "tsup",
+		"typecheck": "tsc --noEmit",
+		"prepublishOnly": "pnpm build"
+	},
+	"dependencies": {
+		"@lynq/lynq": "workspace:^"
+	},
+	"peerDependencies": {
+		"ioredis": "^5.0.0"
+	},
+	"devDependencies": {
+		"tsup": "^8.0.0",
+		"typescript": "^5.6.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/hogekai/lynq",
+		"directory": "packages/store-redis"
+	},
+	"license": "MIT",
+	"engines": {
+		"node": ">=18"
+	}
+}

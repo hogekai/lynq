@@ -4,16 +4,32 @@ Deploy your MCP server over HTTP using Hono.
 
 ## Install
 
-```sh
-npm install @lynq/lynq zod hono
+::: code-group
+
+```sh [pnpm]
+pnpm add @lynq/lynq @lynq/hono zod hono
 ```
+
+```sh [npm]
+npm install @lynq/lynq @lynq/hono zod hono
+```
+
+```sh [yarn]
+yarn add @lynq/lynq @lynq/hono zod hono
+```
+
+```sh [bun]
+bun add @lynq/lynq @lynq/hono zod hono
+```
+
+:::
 
 ## Usage
 
 ```ts
 import { Hono } from "hono";
 import { createMCPServer } from "@lynq/lynq";
-import { mountLynq } from "@lynq/lynq/hono";
+import { mountLynq } from "@lynq/hono";
 import { z } from "zod";
 
 const server = createMCPServer({ name: "my-server", version: "1.0.0" });

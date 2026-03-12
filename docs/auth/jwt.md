@@ -12,9 +12,25 @@ import { jwt } from "@lynq/lynq/jwt";
 
 `jose` is a peer dependency:
 
-```sh
+::: code-group
+
+```sh [pnpm]
 pnpm add jose
 ```
+
+```sh [npm]
+npm install jose
+```
+
+```sh [yarn]
+yarn add jose
+```
+
+```sh [bun]
+bun add jose
+```
+
+:::
 
 ## Usage
 

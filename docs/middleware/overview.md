@@ -21,8 +21,8 @@ lynq ships with 17 built-in middleware, each available from its own entry point.
 |---|---|---|
 | [`bearer()`](/auth/bearer) | Bearer token verification | `@lynq/lynq/bearer` |
 | [`jwt()`](/auth/jwt) | JWT verification (requires `jose`) | `@lynq/lynq/jwt` |
-| [`github()`](/auth/github) | GitHub OAuth flow | `@lynq/lynq/github` |
-| [`google()`](/auth/google) | Google OAuth flow | `@lynq/lynq/google` |
+| [`github()`](/auth/github) | GitHub OAuth flow | `@lynq/github` |
+| [`google()`](/auth/google) | Google OAuth flow | `@lynq/google` |
 | [`oauth()`](/auth/overview) | Generic URL-based OAuth | `@lynq/lynq/oauth` |
 
 ## Payment Providers

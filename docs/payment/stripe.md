@@ -5,7 +5,7 @@ Stripe Checkout payment middleware. Tools are hidden until payment is completed 
 ## Import
 
 ```ts
-import { stripe, handleCallback } from "@lynq/lynq/stripe";
+import { stripe, handleCallback } from "@lynq/stripe";
 ```
 
 ## Usage
@@ -39,7 +39,7 @@ server.tool("premium_search", stripe({
 
 ```ts
 import { createMCPServer } from "@lynq/lynq";
-import { stripe, handleCallback } from "@lynq/lynq/stripe";
+import { stripe, handleCallback } from "@lynq/stripe";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -85,11 +85,27 @@ export default { port: 3000, fetch: app.fetch };
 
 ## Peer Dependency
 
-Requires `stripe` as an optional peer dependency:
+Requires `stripe` as a peer dependency:
 
-```bash
+::: code-group
+
+```sh [pnpm]
 pnpm add stripe
 ```
+
+```sh [npm]
+npm install stripe
+```
+
+```sh [yarn]
+yarn add stripe
+```
+
+```sh [bun]
+bun add stripe
+```
+
+:::
 
 ::: tip Under the hood
 `stripe()` wraps `payment()` which wraps `urlAction()`. When a protected

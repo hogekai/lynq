@@ -4,9 +4,25 @@ lynq is a framework for building [MCP](/getting-started/mcp-overview) servers wi
 
 ## Install
 
-```sh
+::: code-group
+
+```sh [pnpm]
+pnpm add @lynq/lynq zod
+```
+
+```sh [npm]
 npm install @lynq/lynq zod
 ```
+
+```sh [yarn]
+yarn add @lynq/lynq zod
+```
+
+```sh [bun]
+bun add @lynq/lynq zod
+```
+
+:::
 
 ## Minimal Server
 

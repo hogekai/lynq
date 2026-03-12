@@ -40,9 +40,26 @@ server.tool(
 
 ::: info Peer dependency
 `credentials()` requires `zod` as a peer dependency. Install it alongside lynq:
-```bash
+
+::: code-group
+
+```sh [pnpm]
 pnpm add zod
 ```
+
+```sh [npm]
+npm install zod
+```
+
+```sh [yarn]
+yarn add zod
+```
+
+```sh [bun]
+bun add zod
+```
+
+:::
 :::
 
 ## Example

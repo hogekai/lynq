@@ -5,7 +5,7 @@ Full OAuth flow with URL elicitation. The agent is directed to GitHub's authoriz
 ## Import
 
 ```ts
-import { github, handleCallback } from "@lynq/lynq/github";
+import { github, handleCallback } from "@lynq/github";
 ```
 
 ## Usage
@@ -37,7 +37,7 @@ A full Hono example with MCP server, GitHub OAuth middleware, and callback route
 
 ```ts
 import { createMCPServer } from "@lynq/lynq";
-import { github, handleCallback } from "@lynq/lynq/github";
+import { github, handleCallback } from "@lynq/github";
 import { Hono } from "hono";
 import { z } from "zod";
 
