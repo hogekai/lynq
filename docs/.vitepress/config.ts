@@ -52,6 +52,10 @@ export default defineConfig({
 						text: "Store & Persistence",
 						link: "/concepts/store",
 					},
+					{
+						text: "Lifecycle Hooks",
+						link: "/concepts/lifecycle",
+					},
 					{ text: "Transports", link: "/concepts/transports" },
 				],
 			},
@@ -62,6 +66,8 @@ export default defineConfig({
 					{ text: "guard()", link: "/middleware/guard" },
 					{ text: "logger()", link: "/middleware/logger" },
 					{ text: "rateLimit()", link: "/middleware/rate-limit" },
+					{ text: "cache()", link: "/middleware/cache" },
+					{ text: "retry()", link: "/middleware/retry" },
 					{ text: "truncate()", link: "/middleware/truncate" },
 					{ text: "combine()", link: "/middleware/combine" },
 					{

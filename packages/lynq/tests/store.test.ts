@@ -143,6 +143,19 @@ describe("createUserStore", () => {
 		);
 	});
 
+	it("throws descriptive error when user shape is unresolvable", async () => {
+		const store = memoryStore();
+		const session = mockSession({ user: { email: "foo@bar.com" } });
+		const userStore = createUserStore(session, store);
+
+		await expect(userStore.get("key")).rejects.toThrow(
+			/could not resolve an ID/,
+		);
+		await expect(userStore.get("key")).rejects.toThrow(
+			/Expected: string \| \{ id: string \| number \} \| \{ sub: string \}/,
+		);
+	});
+
 	it("passes TTL through", async () => {
 		vi.useFakeTimers();
 		try {

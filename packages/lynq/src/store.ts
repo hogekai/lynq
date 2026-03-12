@@ -44,10 +44,19 @@ export function resolveUserId(session: Session): string | undefined {
 export function createUserStore(session: Session, store: Store): UserStore {
 	const getUserId = (): string => {
 		const id = resolveUserId(session);
-		if (!id)
+		if (!id) {
+			const user = session.get("user");
+			if (user) {
+				const repr =
+					typeof user === "object" ? JSON.stringify(user) : typeof user;
+				throw new Error(
+					`userStore: session has a "user" but could not resolve an ID. Expected: string | { id: string | number } | { sub: string }. Got: ${repr}`,
+				);
+			}
 			throw new Error(
 				"userStore requires a user in session. Call session.set('user', ...) first.",
 			);
+		}
 		return id;
 	};
 

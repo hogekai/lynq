@@ -1,4 +1,5 @@
 import { error } from "../response.js";
+import { resolveUserId } from "../store.js";
 import type { ToolMiddleware } from "../types.js";
 
 export interface RateLimitOptions {
@@ -8,20 +9,59 @@ export interface RateLimitOptions {
 	windowMs?: number;
 	/** Error message. */
 	message?: string;
+	/** Use persistent Store for distributed rate limiting. Default: false (session-scoped). */
+	store?: boolean;
+	/** Scope rate limiting per user (implies `store: true`). Default: false. */
+	perUser?: boolean;
 }
 
 export function rateLimit(options: RateLimitOptions): ToolMiddleware {
 	const { max, windowMs = 60_000 } = options;
+	const useStore = options.store === true || options.perUser === true;
+	const perUser = options.perUser === true;
 	const message =
 		options.message ??
 		`Rate limit exceeded. Max ${max} calls per ${windowMs / 1000}s.`;
+	const ttlSeconds = Math.ceil(windowMs / 1000);
 
 	return {
 		name: "rateLimit",
 		async onCall(c, next) {
+			const now = Date.now();
+
+			if (useStore) {
+				const prefix = perUser
+					? `rateLimit:${resolveUserId(c.session) ?? "anon"}:${c.toolName}`
+					: `rateLimit:${c.toolName}`;
+				const state = await c.store.get<{
+					count: number;
+					resetAt: number;
+				}>(prefix);
+
+				if (!state || now >= state.resetAt) {
+					await c.store.set(
+						prefix,
+						{ count: 1, resetAt: now + windowMs },
+						ttlSeconds,
+					);
+					return next();
+				}
+
+				if (state.count >= max) {
+					return error(message);
+				}
+
+				await c.store.set(
+					prefix,
+					{ ...state, count: state.count + 1 },
+					ttlSeconds,
+				);
+				return next();
+			}
+
+			// Session-scoped (original behavior)
 			const key = `rateLimit:${c.toolName}`;
 			const state = c.session.get<{ count: number; resetAt: number }>(key);
-			const now = Date.now();
 
 			if (!state || now >= state.resetAt) {
 				c.session.set(key, { count: 1, resetAt: now + windowMs });

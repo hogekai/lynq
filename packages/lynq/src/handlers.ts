@@ -97,18 +97,20 @@ export function setupHandlers(
 			if (!isToolVisible(state, tool, sessionId))
 				return errorResponse(`Tool not available: ${name}`);
 
+			const toolArgs = args ?? {};
 			const c = createToolContext(
 				sdkServer,
 				sessionId,
 				createSessionAPI(state, defaultServer, sessionId),
 				name,
+				toolArgs,
 				extra.signal,
 				state.store,
 				(eid, srv) => elicitation.register(eid, sessionId, srv),
 				elicitation.cancel,
 			);
 
-			const finalHandler = () => Promise.resolve(tool.handler(args ?? {}, c));
+			const finalHandler = () => Promise.resolve(tool.handler(toolArgs, c));
 			const chain = buildMiddlewareChain(tool.middlewares, c, finalHandler);
 			return chain();
 		}
@@ -139,12 +141,14 @@ export function setupHandlers(
 				},
 			};
 
+			const taskArgs = args ?? {};
 			const c: TaskContext = {
 				...createToolContext(
 					sdkServer,
 					sessionId,
 					createSessionAPI(state, defaultServer, sessionId),
 					name,
+					taskArgs,
 					extra.signal,
 					state.store,
 					(eid, srv) => elicitation.register(eid, sessionId, srv),
@@ -156,7 +160,7 @@ export function setupHandlers(
 			const finalHandler = async (): Promise<CallToolResult> => {
 				(async () => {
 					try {
-						const result = await task.handler(args ?? {}, c);
+						const result = await task.handler(taskArgs, c);
 						if (!cancelledTaskIds.has(taskId)) {
 							await requestTaskStore.storeTaskResult(
 								taskId,
@@ -255,6 +259,7 @@ export function setupHandlers(
 				sessionId,
 				session,
 				res.uri,
+				{},
 				extra.signal,
 				state.store,
 				(eid, srv) => elicitation.register(eid, sessionId, srv),

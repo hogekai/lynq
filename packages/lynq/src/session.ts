@@ -22,6 +22,13 @@ export function getSession(
 			resourceOverrides: new Map(),
 		};
 		state.sessions.set(sessionId, session);
+		if (state.onSessionCreate) {
+			try {
+				Promise.resolve(state.onSessionCreate(sessionId)).catch(() => {});
+			} catch {
+				// fire-and-forget — sync throws are silently caught
+			}
+		}
 	}
 	return session;
 }

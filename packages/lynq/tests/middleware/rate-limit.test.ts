@@ -3,10 +3,11 @@ import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
 import { rateLimit } from "../../src/middleware/rate-limit.js";
 import { text } from "../../src/response.js";
+import { memoryStore } from "../../src/store.js";
 import { createTestClient } from "../../src/test.js";
 
-function createTestServer() {
-	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
+function createTestServer(store = memoryStore()) {
+	return createMCPServer({ name: "test", version: "1.0.0", store }) as any;
 }
 
 describe("rateLimit middleware", () => {
@@ -104,6 +105,85 @@ describe("rateLimit middleware", () => {
 		expect(rb2.isError).toBe(true);
 
 		await t.close();
+	});
+
+	it("store: true shares rate limit across sessions (store-based)", async () => {
+		const store = memoryStore();
+		const server = createTestServer(store);
+		server.tool(
+			"api",
+			rateLimit({ max: 2, store: true }),
+			{ input: z.object({}) },
+			async () => text("ok"),
+		);
+
+		const t = await createTestClient(server);
+
+		// All calls share the same store-based counter regardless of session
+		await t.callTool("api", {});
+		await t.callTool("api", {});
+		const r = await t.callTool("api", {});
+		expect(r.isError).toBe(true);
+
+		await t.close();
+	});
+
+	it("perUser: true isolates limits by user", async () => {
+		const store = memoryStore();
+		const server = createTestServer(store);
+		server.tool(
+			"api",
+			rateLimit({ max: 1, perUser: true }),
+			{ input: z.object({}) },
+			async () => text("ok"),
+		);
+
+		// Test with user "alice"
+		const t = await createTestClient(server);
+		t.session.set("user", "alice");
+
+		const r1 = await t.callTool("api", {});
+		expect(r1.isError).toBeUndefined();
+
+		const r2 = await t.callTool("api", {});
+		expect(r2.isError).toBe(true);
+
+		// Switch to "bob" — independent limit
+		t.session.set("user", "bob");
+		const r3 = await t.callTool("api", {});
+		expect(r3.isError).toBeUndefined();
+
+		const r4 = await t.callTool("api", {});
+		expect(r4.isError).toBe(true);
+
+		await t.close();
+	});
+
+	it("store-based resets after window expires", async () => {
+		vi.useFakeTimers();
+		try {
+			const store = memoryStore();
+			const server = createTestServer(store);
+			server.tool(
+				"api",
+				rateLimit({ max: 1, windowMs: 1000, store: true }),
+				{ input: z.object({}) },
+				async () => text("ok"),
+			);
+
+			const t = await createTestClient(server);
+			await t.callTool("api", {});
+			const r = await t.callTool("api", {});
+			expect(r.isError).toBe(true);
+
+			vi.advanceTimersByTime(1001);
+			const r2 = await t.callTool("api", {});
+			expect(r2.isError).toBeUndefined();
+
+			await t.close();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("uses custom error message", async () => {

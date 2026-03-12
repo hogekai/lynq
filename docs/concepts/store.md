@@ -60,7 +60,14 @@ await c.userStore.set("preferences", { theme: "dark" });
 
 ### User ID Resolution
 
-The user ID is resolved from `c.session.get("user")`:
+The user ID is resolved from `c.session.get("user")` using the exported `User` type:
+
+```ts
+import type { User } from "@lynq/lynq";
+
+// Accepted shapes:
+type User = string | { id: string | number } | { sub: string };
+```
 
 | Session value | Resolved ID |
 |---|---|
@@ -69,7 +76,9 @@ The user ID is resolved from `c.session.get("user")`:
 | `{ id: 42 }` | `"42"` |
 | `{ sub: "auth0\|123" }` | `"auth0\|123"` |
 
-If no user is in the session, `userStore` methods throw an error. Set the user before using `userStore`:
+Resolution priority: `id` is checked before `sub`. If an object has both, `id` wins.
+
+If no user is in the session, `userStore` methods throw an error. If a user is set but doesn't match any accepted shape (e.g. `{ email: "..." }`), the error message describes the expected format. Set the user before using `userStore`:
 
 ```ts
 c.session.set("user", "alice");

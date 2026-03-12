@@ -61,6 +61,21 @@ server.tool("search", truncate(500), { description: "Search" }, handler);
 
 Global middleware is prepended to per-registration middleware. Adding `server.use()` after `server.tool()` / `server.resource()` / `server.task()` has no effect on already-registered items.
 
+## Context (`c`)
+
+The `ToolContext` object `c` is available in both `onCall` and `onResult`. Key properties for middleware:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `c.toolName` | `string` | Name of the tool being called |
+| `c.args` | `Record<string, unknown>` | Arguments passed to the tool |
+| `c.session` | `Session` | Session-scoped state |
+| `c.store` | `Store` | Global persistent store |
+| `c.signal` | `AbortSignal` | Client abort signal |
+| `c.sessionId` | `string` | Session identifier |
+
+`c.args` is useful for middleware like [`cache()`](/middleware/cache) that needs to generate keys based on tool arguments.
+
 ## Minimal Example
 
 ```ts
@@ -69,7 +84,7 @@ import type { ToolMiddleware } from "@lynq/lynq";
 const logger: ToolMiddleware = {
   name: "logger",
   onCall(c, next) {
-    console.log(`[${c.toolName}] called`);
+    console.log(`[${c.toolName}] called with`, c.args);
     return next();
   },
 };
@@ -86,5 +101,5 @@ When `onRegister` returns `false`, lynq stores the tool internally but excludes 
 - [Session & Visibility](/concepts/session-and-visibility) -- how middleware controls what the client sees
 - [Elicitation](/concepts/elicitation) -- interactive user input in tool handlers
 - [Tasks](/concepts/tasks) -- long-running operations using the same middleware
-- [Middleware Overview](/middleware/overview) -- all 15 built-in middleware at a glance
+- [Middleware Overview](/middleware/overview) -- all 17 built-in middleware at a glance
 - [Custom Middleware](/middleware/custom) -- write your own middleware

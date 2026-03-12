@@ -27,6 +27,7 @@ export type {
 	ServerInfo,
 	ServerOptions,
 	Store,
+	User,
 	UserStore,
 	TaskConfig,
 	TaskContext,

@@ -67,8 +67,13 @@ export function createHttpAdapter(
 		// Stateful: per-session routing
 		// biome-ignore lint/suspicious/noExplicitAny: transport type from lazy import
 		const httpSessions = new Map<string, { server: Server; transport: any }>();
+		let started = false;
 
 		return async (req: Request): Promise<Response> => {
+			if (!started && state.onServerStart) {
+				started = true;
+				Promise.resolve(state.onServerStart()).catch(() => {});
+			}
 			const T = await lazyImport();
 			const sessionId = req.headers.get("mcp-session-id");
 
@@ -117,6 +122,10 @@ export function createHttpAdapter(
 				onsessionclosed: (sid: string) => {
 					httpSessions.delete(sid);
 					state.serverBySession.delete(sid);
+					state.sessions.delete(sid);
+					if (state.onSessionDestroy) {
+						Promise.resolve(state.onSessionDestroy(sid)).catch(() => {});
+					}
 				},
 			});
 			await srv.connect(transport);

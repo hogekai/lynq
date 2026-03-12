@@ -48,6 +48,9 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		tasks: new Map<string, InternalTask>(),
 		sessions: new Map<string, SessionState>(),
 		serverBySession: new Map<string, Server>(),
+		onServerStart: info.onServerStart,
+		onSessionCreate: info.onSessionCreate,
+		onSessionDestroy: info.onSessionDestroy,
 	};
 
 	const elicitation = createElicitationTracker();
@@ -168,6 +171,9 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		);
 		const transport = new StdioServerTransport();
 		await server.connect(transport);
+		if (state.onServerStart) {
+			await Promise.resolve(state.onServerStart()).catch(() => {});
+		}
 	}
 
 	async function connect(transport: Transport): Promise<void> {

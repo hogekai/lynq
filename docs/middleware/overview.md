@@ -1,6 +1,6 @@
 # Middleware
 
-lynq ships with 15 built-in middleware, each available from its own entry point.
+lynq ships with 17 built-in middleware, each available from its own entry point.
 
 ## Built-in
 
@@ -9,7 +9,9 @@ lynq ships with 15 built-in middleware, each available from its own entry point.
 | [`guard()`](/middleware/guard) | onRegister + onCall | Session key visibility gate | `@lynq/lynq/guard` |
 | [`credentials()`](/middleware/credentials) | onRegister + onCall | Form-based auth via elicitation | `@lynq/lynq/credentials` |
 | [`logger()`](/middleware/logger) | onCall | Tool call logging with timing | `@lynq/lynq/logger` |
-| [`rateLimit()`](/middleware/rate-limit) | onCall | Session-scoped rate limiting | `@lynq/lynq/rate-limit` |
+| [`rateLimit()`](/middleware/rate-limit) | onCall | Rate limiting (session or Store-based) | `@lynq/lynq/rate-limit` |
+| [`cache()`](/middleware/cache) | onCall + onResult | Store-backed response caching | `@lynq/lynq/cache` |
+| [`retry()`](/middleware/retry) | onCall | Automatic retry with backoff | `@lynq/lynq/retry` |
 | [`truncate()`](/middleware/truncate) | onResult | Response text truncation | `@lynq/lynq/truncate` |
 | [`some()` / `every()` / `except()`](/middleware/combine) | all | Middleware combinators | `@lynq/lynq/combine` |
 
@@ -45,12 +47,14 @@ All URL-based middleware (`oauth`, `payment`, `stripe`, `crypto`, `github`, `goo
 import { guard } from "@lynq/lynq/guard";
 import { logger } from "@lynq/lynq/logger";
 import { rateLimit } from "@lynq/lynq/rate-limit";
+import { cache } from "@lynq/lynq/cache";
 
 server.use(logger());
-server.tool("search", guard(), rateLimit({ max: 10 }), config, handler);
+server.tool("search", guard(), rateLimit({ max: 10 }), cache({ ttl: 60 }), config, handler);
 ```
 
 ## What's Next
 
-- [Middleware Concepts](/concepts/middleware) — the three hooks and execution order
-- [Custom Middleware](/middleware/custom) — write your own
+- [Middleware Concepts](/concepts/middleware) -- the three hooks and execution order
+- [Custom Middleware](/middleware/custom) -- write your own
+- [Lifecycle Hooks](/concepts/lifecycle) -- server and session events

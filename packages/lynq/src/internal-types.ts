@@ -52,6 +52,9 @@ export interface ServerState {
 	tasks: Map<string, InternalTask>;
 	sessions: Map<string, SessionState>;
 	serverBySession: Map<string, Server>;
+	onServerStart: (() => void | Promise<void>) | undefined;
+	onSessionCreate: ((sessionId: string) => void | Promise<void>) | undefined;
+	onSessionDestroy: ((sessionId: string) => void | Promise<void>) | undefined;
 }
 
 export interface ElicitationTracker {

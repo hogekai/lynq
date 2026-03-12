@@ -20,6 +20,8 @@ export default defineConfig({
 		"middleware/stripe": "src/middleware/stripe.ts",
 		"middleware/crypto": "src/middleware/crypto.ts",
 		"middleware/tip": "src/middleware/tip.ts",
+		"middleware/cache": "src/middleware/cache.ts",
+		"middleware/retry": "src/middleware/retry.ts",
 		"adapters/stdio": "src/adapters/stdio.ts",
 		"adapters/hono": "src/adapters/hono.ts",
 		"adapters/express": "src/adapters/express.ts",

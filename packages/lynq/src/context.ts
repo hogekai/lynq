@@ -134,6 +134,7 @@ export function createToolContext(
 	sessionId: string,
 	session: Session,
 	name: string,
+	args: Record<string, unknown>,
 	signal: AbortSignal,
 	store: Store,
 	registerElicitation?: (eid: string, srv: Server) => Promise<void>,
@@ -141,6 +142,7 @@ export function createToolContext(
 ): ToolContext {
 	return {
 		toolName: name,
+		args,
 		session,
 		signal,
 		sessionId,

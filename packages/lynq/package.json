@@ -104,6 +104,14 @@
 			"types": "./dist/middleware/tip.d.ts",
 			"import": "./dist/middleware/tip.mjs"
 		},
+		"./cache": {
+			"types": "./dist/middleware/cache.d.ts",
+			"import": "./dist/middleware/cache.mjs"
+		},
+		"./retry": {
+			"types": "./dist/middleware/retry.d.ts",
+			"import": "./dist/middleware/retry.mjs"
+		},
 		"./store": {
 			"types": "./dist/store.d.ts",
 			"import": "./dist/store.mjs"

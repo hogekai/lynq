@@ -23,8 +23,17 @@ export interface Store {
 
 export type UserStore = Store;
 
+/** Accepted user shapes for `session.set("user", ...)`. Resolved by `resolveUserId`. */
+export type User = string | { id: string | number } | { sub: string };
+
 export interface ServerOptions extends ServerInfo {
 	store?: Store;
+	/** Called when the server starts (after stdio connect or on first HTTP request). */
+	onServerStart?: () => void | Promise<void>;
+	/** Called when a new session is created. */
+	onSessionCreate?: (sessionId: string) => void | Promise<void>;
+	/** Called when a session is destroyed (HTTP session close or transport disconnect). */
+	onSessionDestroy?: (sessionId: string) => void | Promise<void>;
 }
 
 // === Session ===
@@ -117,6 +126,8 @@ export interface RootInfo {
 export interface ToolContext {
 	/** The name of the tool being called. */
 	toolName: string;
+	/** The arguments passed to the tool. */
+	args: Record<string, unknown>;
 	/** Session-scoped state and visibility control. */
 	session: Session;
 	/** Abort signal from the client. */
