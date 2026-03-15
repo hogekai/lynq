@@ -1,9 +1,15 @@
 import type { Session, Store, UserStore } from "./types.js";
 
-export function memoryStore(): Store {
+export interface MemoryStoreOptions {
+	/** Maximum number of entries. When exceeded, expired entries are swept first, then least-recently-accessed entries are evicted. Default: 10000. */
+	maxEntries?: number;
+}
+
+export function memoryStore(options?: MemoryStoreOptions): Store {
+	const maxEntries = options?.maxEntries ?? 10_000;
 	const data = new Map<
 		string,
-		{ value: unknown; expiresAt: number | undefined }
+		{ value: unknown; expiresAt: number | undefined; accessedAt: number }
 	>();
 
 	return {
@@ -14,18 +20,33 @@ export function memoryStore(): Store {
 				data.delete(key);
 				return undefined;
 			}
+			entry.accessedAt = Date.now();
 			return entry.value as T;
 		},
 		async set(key: string, value: unknown, ttl?: number): Promise<void> {
-			if (data.size >= 1000) {
+			if (data.size >= maxEntries) {
 				const now = Date.now();
+				// Sweep expired entries first
 				for (const [k, v] of data) {
 					if (v.expiresAt !== undefined && now > v.expiresAt) data.delete(k);
+				}
+				// LRU eviction if still at capacity
+				if (data.size >= maxEntries) {
+					let oldestKey: string | undefined;
+					let oldestTime = Infinity;
+					for (const [k, v] of data) {
+						if (v.accessedAt < oldestTime) {
+							oldestTime = v.accessedAt;
+							oldestKey = k;
+						}
+					}
+					if (oldestKey !== undefined) data.delete(oldestKey);
 				}
 			}
 			data.set(key, {
 				value,
 				expiresAt: ttl !== undefined ? Date.now() + ttl * 1000 : undefined,
+				accessedAt: Date.now(),
 			});
 		},
 		async delete(key: string): Promise<void> {

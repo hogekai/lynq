@@ -256,14 +256,29 @@ export type ResourceHandler = (
 
 // === HTTP Adapter ===
 
+/**
+ * Options for the HTTP adapter returned by `server.http()`.
+ *
+ * **Security note:** Session routing relies on the `Mcp-Session-Id` header.
+ * Session IDs are UUIDs (hard to guess) but can leak via logs or proxies.
+ * Use `onRequest` to add additional validation (e.g., Bearer token check,
+ * IP binding) or `sessionIdGenerator` to produce HMAC-signed session tokens.
+ */
 export interface HttpAdapterOptions {
 	/** Disable session management. Default: false. */
 	sessionless?: boolean;
-	/** Custom session ID generator. Default: crypto.randomUUID(). */
+	/**
+	 * Custom session ID generator. Default: `crypto.randomUUID()`.
+	 * Can be used to produce HMAC-signed session tokens for additional security.
+	 */
 	sessionIdGenerator?: () => string;
 	/** Return JSON instead of SSE streams. Default: false. */
 	enableJsonResponse?: boolean;
-	/** Called on each HTTP request after session is resolved. Use to inject auth headers into sessions. */
+	/**
+	 * Called on each HTTP request after session is resolved.
+	 * Use to inject HTTP headers (e.g., Bearer tokens) into MCP sessions,
+	 * or to validate that the requester owns the session (e.g., IP binding, token check).
+	 */
 	onRequest?: (
 		req: Request,
 		sessionId: string,

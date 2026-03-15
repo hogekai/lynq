@@ -9,12 +9,32 @@ export interface RateLimitOptions {
 	windowMs?: number;
 	/** Error message. */
 	message?: string;
-	/** Use persistent Store for distributed rate limiting. Default: false (session-scoped). */
+	/**
+	 * Use persistent Store for distributed rate limiting.
+	 * Default: `false` (session-scoped — each session gets its own counter,
+	 * so a client can bypass the limit by reconnecting).
+	 * Set to `true` for production rate limiting across sessions.
+	 */
 	store?: boolean;
-	/** Scope rate limiting per user (implies `store: true`). Default: false. */
+	/**
+	 * Scope rate limiting per user (implies `store: true`).
+	 * Default: `false`.
+	 *
+	 * **Warning:** Users without `session.set("user", ...)` all share a single
+	 * `"anon"` bucket. Ensure the user is set in session before rate-limited calls
+	 * if per-user isolation is required.
+	 */
 	perUser?: boolean;
 }
 
+/**
+ * Rate limiting middleware.
+ *
+ * **Default behavior is session-scoped** — each MCP session gets its own counter.
+ * A client can bypass the limit by creating a new session (reconnecting).
+ * For production use, set `store: true` to share counters across sessions,
+ * or `perUser: true` to scope limits per authenticated user.
+ */
 export function rateLimit(options: RateLimitOptions): ToolMiddleware {
 	const { max, windowMs = 60_000 } = options;
 	const useStore = options.store === true || options.perUser === true;

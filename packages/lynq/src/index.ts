@@ -1,6 +1,6 @@
 export { createMCPServer } from "./core.js";
 export { text, json, error, image } from "./response.js";
-export { memoryStore } from "./store.js";
+export { memoryStore, type MemoryStoreOptions } from "./store.js";
 export type { ToolResponse } from "./response.js";
 export type {
 	HttpAdapterOptions,

@@ -78,7 +78,7 @@ describe("memoryStore", () => {
 	it("sweeps expired keys on set when threshold exceeded", async () => {
 		vi.useFakeTimers();
 		try {
-			const store = memoryStore();
+			const store = memoryStore({ maxEntries: 1000 });
 			for (let i = 0; i < 1000; i++) {
 				await store.set(`key-${i}`, "val", 1);
 			}
@@ -98,7 +98,7 @@ describe("memoryStore", () => {
 	it("does not sweep when below threshold", async () => {
 		vi.useFakeTimers();
 		try {
-			const store = memoryStore();
+			const store = memoryStore({ maxEntries: 1000 });
 			for (let i = 0; i < 10; i++) {
 				await store.set(`key-${i}`, "val", 1);
 			}
@@ -107,6 +107,48 @@ describe("memoryStore", () => {
 			await store.set("trigger", "val");
 			// get() still does lazy cleanup
 			expect(await store.get("key-0")).toBeUndefined();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("evicts least-recently-accessed entry when maxEntries reached", async () => {
+		vi.useFakeTimers();
+		try {
+			const store = memoryStore({ maxEntries: 3 });
+			await store.set("a", 1);
+			vi.advanceTimersByTime(10);
+			await store.set("b", 2);
+			vi.advanceTimersByTime(10);
+			await store.set("c", 3);
+			vi.advanceTimersByTime(10);
+			// Access "a" to make it the most recent
+			await store.get("a");
+			vi.advanceTimersByTime(10);
+			// Adding "d" should evict "b" (oldest accessed)
+			await store.set("d", 4);
+			expect(await store.get("a")).toBe(1);
+			expect(await store.get("b")).toBeUndefined();
+			expect(await store.get("c")).toBe(3);
+			expect(await store.get("d")).toBe(4);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("prefers evicting expired entries over LRU", async () => {
+		vi.useFakeTimers();
+		try {
+			const store = memoryStore({ maxEntries: 3 });
+			await store.set("a", 1, 1); // expires in 1s
+			await store.set("b", 2);
+			await store.set("c", 3);
+			vi.advanceTimersByTime(1001);
+			// Adding "d" should sweep expired "a" first, no LRU eviction needed
+			await store.set("d", 4);
+			expect(await store.get("b")).toBe(2);
+			expect(await store.get("c")).toBe(3);
+			expect(await store.get("d")).toBe(4);
 		} finally {
 			vi.useRealTimers();
 		}

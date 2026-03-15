@@ -113,9 +113,17 @@ export function verifyState(
 	state: string,
 	secret: string,
 ): { sessionId: string; elicitationId: string } | null {
-	const parts = state.split(":");
-	if (parts.length !== 3) return null;
-	const [sessionId, elicitationId, sig] = parts;
+	// HMAC-SHA256 hex digest is always 64 chars. Extract sig from the end
+	// to handle colons in sessionId or elicitationId safely.
+	if (state.length < 66) return null; // minimum: "a:b:" + 64 hex chars
+	const sig = state.slice(-64);
+	if (state[state.length - 65] !== ":") return null;
+	const prefix = state.slice(0, -65);
+	const colonIdx = prefix.indexOf(":");
+	if (colonIdx < 1) return null;
+	const sessionId = prefix.slice(0, colonIdx);
+	const elicitationId = prefix.slice(colonIdx + 1);
+	if (!elicitationId) return null;
 	const expected = createHmac("sha256", secret)
 		.update(`${sessionId}:${elicitationId}`)
 		.digest("hex");
