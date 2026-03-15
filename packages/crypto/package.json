@@ -1,6 +1,6 @@
 {
 	"name": "@lynq/crypto",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Crypto payment provider for lynq MCP framework.",
 	"type": "module",
 	"sideEffects": false,

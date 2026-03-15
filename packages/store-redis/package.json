@@ -1,6 +1,6 @@
 {
 	"name": "@lynq/store-redis",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Redis Store implementation for lynq MCP framework.",
 	"type": "module",
 	"sideEffects": false,

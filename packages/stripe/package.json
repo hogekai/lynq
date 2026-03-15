@@ -1,6 +1,6 @@
 {
 	"name": "@lynq/stripe",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Stripe Checkout payment provider for lynq MCP framework.",
 	"type": "module",
 	"sideEffects": false,
