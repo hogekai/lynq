@@ -2,7 +2,11 @@ Pre-commit release preparation for the lynq monorepo.
 
 ## Steps
 
-1. **Diff analysis**: Run `git diff --cached` and `git diff` to understand all staged and unstaged changes since the last commit. Read the current version from `packages/lynq/package.json` and the existing `CHANGELOG.md`.
+1. **Diff analysis**: Read the current version from `packages/lynq/package.json` and the existing `CHANGELOG.md`. Find the last version tag (`git tag --list 'v*' --sort=-v:refname | head -1`). Then gather all changes since that tag:
+   - `git log <last-tag>..HEAD --oneline` — commit history since last release
+   - `git diff <last-tag>..HEAD --stat` — file-level summary of all changes
+   - `git diff --cached` and `git diff` — any uncommitted changes on top
+   If there are uncommitted changes, include them in the analysis alongside the commits.
 
 2. **Semver judgment**: Based on the changes, determine the appropriate version bump:
    - **patch** (x.y.Z): bug fixes, documentation updates, internal refactors with no API surface change
@@ -35,5 +39,5 @@ Pre-commit release preparation for the lynq monorepo.
 
 ## Notes
 - Only bump `packages/lynq/package.json` (the core package). Other packages have independent versions.
-- If there are no meaningful changes (working tree clean, nothing staged), say so and stop.
+- If there are no changes since the last version tag (no new commits and working tree clean), say so and stop.
 - The user may pass an argument to override the version bump level, e.g. `/prep-release minor`.
