@@ -1,11 +1,12 @@
 import { createMCPServer, text } from "@lynq/lynq";
 import { signState } from "@lynq/lynq/helpers";
+import { getInternals } from "@lynq/lynq/test";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { handleCallback, stripe } from "../src/index.js";
 
 function createTestServer() {
-	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
+	return createMCPServer({ name: "test", version: "1.0.0" });
 }
 
 const BASE_OPTIONS = {
@@ -33,7 +34,7 @@ describe("stripe middleware", () => {
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
-		expect(server._isToolVisible("premium", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("premium", "s1")).toBe(false);
 	});
 
 	it("shows tools after authorization", () => {
@@ -45,9 +46,9 @@ describe("stripe middleware", () => {
 			async () => text("ok"),
 		);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("stripe");
-		expect(server._isToolVisible("premium", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("premium", "s1")).toBe(true);
 	});
 
 	it("formats default message with amount", () => {
@@ -111,7 +112,7 @@ describe("handleCallback (stripe)", () => {
 
 	it("verifies payment and stores data", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 		const completeSpy = vi.spyOn(server, "completeElicitation");
 
 		// Mock the stripe module
@@ -145,7 +146,7 @@ describe("handleCallback (stripe)", () => {
 		expect(result.success).toBe(true);
 		expect(mockRetrieve).toHaveBeenCalledWith("cs_123");
 
-		const session = server._createSessionAPI("session-1");
+		const session = getInternals(server).createSessionAPI("session-1");
 		const paymentData = session.get("payment") as any;
 		expect(paymentData.provider).toBe("stripe");
 		expect(paymentData.checkoutSessionId).toBe("cs_123");
@@ -157,7 +158,7 @@ describe("handleCallback (stripe)", () => {
 
 	it("returns error when payment not completed", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 
 		vi.doMock("stripe", () => ({
 			default: class {

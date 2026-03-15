@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
 import { error, text } from "../src/response.js";
+import type { ServerOptions } from "../src/types.js";
 
 const PROTOCOL_VERSION = "2025-03-26";
 
@@ -207,5 +208,132 @@ describe("server.http()", () => {
 
 		const { response } = await post(handler, initBody());
 		expect(response.headers.get("mcp-session-id")).toBe("custom-session-123");
+	});
+
+	it("concurrent tool calls on same session do not corrupt state", async () => {
+		let callCount = 0;
+		const server = createMCPServer({ name: "test", version: "1.0.0" });
+		server.tool(
+			"counter",
+			{ input: z.object({ n: z.number() }) },
+			async (args) => {
+				callCount++;
+				return text(`${args.n}`);
+			},
+		);
+
+		const handler = server.http({ enableJsonResponse: true });
+		const { response: initRes } = await post(handler, initBody());
+		const sessionId = initRes.headers.get("mcp-session-id")!;
+
+		const [r1, r2, r3] = await Promise.all([
+			post(handler, callToolBody("counter", { n: 1 }, 10), sessionId),
+			post(handler, callToolBody("counter", { n: 2 }, 11), sessionId),
+			post(handler, callToolBody("counter", { n: 3 }, 12), sessionId),
+		]);
+
+		expect(callCount).toBe(3);
+		expect(r1.response.status).toBe(200);
+		expect(r2.response.status).toBe(200);
+		expect(r3.response.status).toBe(200);
+	});
+
+	it("multiple initializations create separate sessions", async () => {
+		const server = createMCPServer({ name: "test", version: "1.0.0" });
+		const handler = server.http({ enableJsonResponse: true });
+
+		const { response: r1 } = await post(handler, initBody(1));
+		const { response: r2 } = await post(handler, initBody(2));
+
+		const sid1 = r1.headers.get("mcp-session-id");
+		const sid2 = r2.headers.get("mcp-session-id");
+
+		expect(sid1).toBeTruthy();
+		expect(sid2).toBeTruthy();
+		expect(sid1).not.toBe(sid2);
+	});
+
+	it("DELETE request terminates session", async () => {
+		const server = createMCPServer({ name: "test", version: "1.0.0" });
+		const handler = server.http({ enableJsonResponse: true });
+
+		const { response: initRes } = await post(handler, initBody());
+		const sessionId = initRes.headers.get("mcp-session-id")!;
+
+		// Verify session is active
+		const { response: listRes } = await post(
+			handler,
+			toolsListBody(2),
+			sessionId,
+		);
+		expect(listRes.status).toBe(200);
+
+		// Send DELETE to terminate
+		const deleteRes = await handler(
+			new Request("http://localhost/mcp", {
+				method: "DELETE",
+				headers: { "mcp-session-id": sessionId },
+			}),
+		);
+		expect(deleteRes.status).toBeLessThan(500);
+
+		// Session should now be gone
+		const { response: afterDelete } = await post(
+			handler,
+			toolsListBody(3),
+			sessionId,
+		);
+		expect(afterDelete.status).toBe(404);
+	});
+
+	it("onRequest hook can inject session data", async () => {
+		const server = createMCPServer({ name: "test", version: "1.0.0" });
+		server.tool("check", {}, async (_args, c) => {
+			const injected = c.session.get("injected");
+			return text(injected ? "yes" : "no");
+		});
+
+		const handler = server.http({
+			enableJsonResponse: true,
+			onRequest: (_req, _sid, session) => {
+				session.set("injected", true);
+			},
+		});
+
+		const { response: initRes } = await post(handler, initBody());
+		const sessionId = initRes.headers.get("mcp-session-id")!;
+
+		const { json } = await post(
+			handler,
+			callToolBody("check", {}, 2),
+			sessionId,
+		);
+		expect((json as any).result?.content[0]?.text).toBe("yes");
+	});
+
+	it("onSessionDestroy fires when session is closed", async () => {
+		const destroySpy = vi.fn();
+		const server = createMCPServer({
+			name: "test",
+			version: "1.0.0",
+			onSessionDestroy: destroySpy,
+		} as ServerOptions);
+
+		const handler = server.http({ enableJsonResponse: true });
+
+		const { response: initRes } = await post(handler, initBody());
+		const sessionId = initRes.headers.get("mcp-session-id")!;
+
+		// DELETE to close session
+		await handler(
+			new Request("http://localhost/mcp", {
+				method: "DELETE",
+				headers: { "mcp-session-id": sessionId },
+			}),
+		);
+
+		// Give async callbacks time to fire
+		await new Promise((r) => setTimeout(r, 50));
+		expect(destroySpy).toHaveBeenCalledWith(sessionId, expect.anything());
 	});
 });

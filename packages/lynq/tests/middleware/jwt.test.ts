@@ -2,6 +2,7 @@ import { SignJWT } from "jose";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
+import { getInternals } from "../../src/internals.js";
 import { jwt } from "../../src/middleware/jwt.js";
 import { text } from "../../src/response.js";
 import { createTestClient } from "../../src/test.js";
@@ -37,7 +38,7 @@ describe("jwt middleware", () => {
 			async () => text("ok"),
 		);
 
-		expect(server._isToolVisible("secret", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("secret", "s1")).toBe(false);
 	});
 
 	it("has correct default name", () => {

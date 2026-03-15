@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { getInternals } from "../src/internals.js";
 import { auth } from "../src/middleware/auth.js";
 import { error, text } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
-import type { MCPServer } from "../src/types.js";
 
 function createTestServer() {
-	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
+	return createMCPServer({ name: "test", version: "1.0.0" });
 }
 
 describe("task() registration", () => {
@@ -18,7 +18,7 @@ describe("task() registration", () => {
 			{ description: "Deploy", input: z.object({ branch: z.string() }) },
 			async () => text("done"),
 		);
-		expect(server._isTaskVisible("deploy", "default")).toBe(true);
+		expect(getInternals(server).isTaskVisible("deploy", "default")).toBe(true);
 	});
 
 	it("registers a task with middleware", () => {
@@ -26,7 +26,7 @@ describe("task() registration", () => {
 		server.task("deploy", auth(), { description: "Deploy" }, async () =>
 			text("done"),
 		);
-		expect(server._isTaskVisible("deploy", "default")).toBe(false);
+		expect(getInternals(server).isTaskVisible("deploy", "default")).toBe(false);
 	});
 });
 
@@ -37,12 +37,12 @@ describe("task visibility", () => {
 			text("done"),
 		);
 
-		expect(server._isTaskVisible("deploy", "s1")).toBe(false);
+		expect(getInternals(server).isTaskVisible("deploy", "s1")).toBe(false);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("auth");
 
-		expect(server._isTaskVisible("deploy", "s1")).toBe(true);
+		expect(getInternals(server).isTaskVisible("deploy", "s1")).toBe(true);
 	});
 
 	it("global middleware applies to tasks", () => {
@@ -50,26 +50,26 @@ describe("task visibility", () => {
 		server.use(auth());
 		server.task("deploy", { description: "Deploy" }, async () => text("done"));
 
-		expect(server._isTaskVisible("deploy", "s1")).toBe(false);
+		expect(getInternals(server).isTaskVisible("deploy", "s1")).toBe(false);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("auth");
 
-		expect(server._isTaskVisible("deploy", "s1")).toBe(true);
+		expect(getInternals(server).isTaskVisible("deploy", "s1")).toBe(true);
 	});
 
 	it("disableTools hides task, enableTools reveals it", () => {
 		const server = createTestServer();
 		server.task("deploy", { description: "Deploy" }, async () => text("done"));
 
-		const session = server._createSessionAPI("s1");
-		expect(server._isTaskVisible("deploy", "s1")).toBe(true);
+		const session = getInternals(server).createSessionAPI("s1");
+		expect(getInternals(server).isTaskVisible("deploy", "s1")).toBe(true);
 
 		session.disableTools("deploy");
-		expect(server._isTaskVisible("deploy", "s1")).toBe(false);
+		expect(getInternals(server).isTaskVisible("deploy", "s1")).toBe(false);
 
 		session.enableTools("deploy");
-		expect(server._isTaskVisible("deploy", "s1")).toBe(true);
+		expect(getInternals(server).isTaskVisible("deploy", "s1")).toBe(true);
 	});
 });
 
@@ -94,7 +94,7 @@ describe("task in tools/list", () => {
 			{ name: "test-client", version: "1.0.0" },
 			{ capabilities: { tasks: {} } },
 		);
-		await Promise.all([server._server.connect(st), client.connect(ct)]);
+		await Promise.all([getInternals(server).server.connect(st), client.connect(ct)]);
 
 		const result = await client.listTools();
 		const deployTool = result.tools.find((t: any) => t.name === "deploy");
@@ -161,7 +161,7 @@ describe("task argument validation", () => {
 describe("drain()", () => {
 	it("waits for running tasks to settle", async () => {
 		let resolved = false;
-		const server = createMCPServer({ name: "test", version: "1.0.0" }) as MCPServer & { _server: any };
+		const server = createMCPServer({ name: "test", version: "1.0.0" });
 		server.task(
 			"slow",
 			{ description: "Slow task" },

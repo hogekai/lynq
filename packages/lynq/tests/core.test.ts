@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { getInternals } from "../src/internals.js";
 import { error, text } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
 import type { ToolMiddleware } from "../src/types.js";
 
 function createTestServer() {
-	const server = createMCPServer({ name: "test", version: "1.0.0" }) as any;
-	return server;
+	return createMCPServer({ name: "test", version: "1.0.0" });
 }
 
 describe("createMCPServer", () => {
@@ -26,7 +26,7 @@ describe("createMCPServer", () => {
 			{ input: z.object({ name: z.string() }) },
 			async (args: any) => text(`Hello ${args.name}`),
 		);
-		expect(server._isToolVisible("greet", "default")).toBe(true);
+		expect(getInternals(server).isToolVisible("greet", "default")).toBe(true);
 	});
 
 	it("registers a tool with description in config", () => {
@@ -39,7 +39,7 @@ describe("createMCPServer", () => {
 			},
 			async (args: any) => text(`Hello ${args.name}`),
 		);
-		expect(server._isToolVisible("greet", "default")).toBe(true);
+		expect(getInternals(server).isToolVisible("greet", "default")).toBe(true);
 	});
 });
 
@@ -54,7 +54,7 @@ describe("middleware", () => {
 		server.tool("hidden", { input: z.object({ name: z.string() }) }, async () =>
 			text("ok"),
 		);
-		expect(server._isToolVisible("hidden", "default")).toBe(false);
+		expect(getInternals(server).isToolVisible("hidden", "default")).toBe(false);
 	});
 
 	it("applies per-tool middleware", () => {
@@ -72,8 +72,8 @@ describe("middleware", () => {
 		server.tool("open", { input: z.object({ name: z.string() }) }, async () =>
 			text("ok"),
 		);
-		expect(server._isToolVisible("guarded", "default")).toBe(false);
-		expect(server._isToolVisible("open", "default")).toBe(true);
+		expect(getInternals(server).isToolVisible("guarded", "default")).toBe(false);
+		expect(getInternals(server).isToolVisible("open", "default")).toBe(true);
 	});
 
 	it("executes middleware chain in order: global → per-tool → handler", async () => {
@@ -154,15 +154,15 @@ describe("middleware", () => {
 describe("session", () => {
 	it("stores and retrieves session data", () => {
 		const server = createTestServer();
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.set("key", "value");
 		expect(session.get("key")).toBe("value");
 	});
 
 	it("isolates sessions", () => {
 		const server = createTestServer();
-		const s1 = server._createSessionAPI("s1");
-		const s2 = server._createSessionAPI("s2");
+		const s1 = getInternals(server).createSessionAPI("s1");
+		const s2 = getInternals(server).createSessionAPI("s2");
 		s1.set("key", "a");
 		s2.set("key", "b");
 		expect(s1.get("key")).toBe("a");
@@ -182,12 +182,12 @@ describe("session", () => {
 			async () => text("ok"),
 		);
 
-		expect(server._isToolVisible("protected", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("protected", "s1")).toBe(false);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("auth");
 
-		expect(server._isToolVisible("protected", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("protected", "s1")).toBe(true);
 	});
 
 	it("revoke hides previously authorized tools", () => {
@@ -203,12 +203,12 @@ describe("session", () => {
 			async () => text("ok"),
 		);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("auth");
-		expect(server._isToolVisible("protected", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("protected", "s1")).toBe(true);
 
 		session.revoke("auth");
-		expect(server._isToolVisible("protected", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("protected", "s1")).toBe(false);
 	});
 
 	it("enableTools/disableTools control individual tool visibility", () => {
@@ -220,14 +220,14 @@ describe("session", () => {
 			text("ok"),
 		);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 
 		session.disableTools("tool-a");
-		expect(server._isToolVisible("tool-a", "s1")).toBe(false);
-		expect(server._isToolVisible("tool-b", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("tool-a", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("tool-b", "s1")).toBe(true);
 
 		session.enableTools("tool-a");
-		expect(server._isToolVisible("tool-a", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("tool-a", "s1")).toBe(true);
 	});
 });
 
@@ -431,11 +431,11 @@ describe("public session() and completeElicitation()", () => {
 	});
 
 	it("session() shares state with internal session", () => {
-		const server = createMCPServer({ name: "test", version: "1.0.0" }) as any;
+		const server = createMCPServer({ name: "test", version: "1.0.0" });
 		const publicSession = server.session("s1");
 		publicSession.set("token", "abc");
 
-		const internalSession = server._createSessionAPI("s1");
+		const internalSession = getInternals(server).createSessionAPI("s1");
 		expect(internalSession.get("token")).toBe("abc");
 	});
 

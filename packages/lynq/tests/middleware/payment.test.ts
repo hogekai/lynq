@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
+import { getInternals } from "../../src/internals.js";
 import { payment } from "../../src/middleware/payment.js";
 import { text } from "../../src/response.js";
 
@@ -30,7 +31,7 @@ describe("payment middleware", () => {
 			buildUrl: () => "https://example.com",
 		});
 		server.tool("premium", mw, { input: z.object({}) }, async () => text("ok"));
-		expect(server._isToolVisible("premium", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("premium", "s1")).toBe(false);
 	});
 
 	it("uses 'payment' as default sessionKey", async () => {
@@ -41,7 +42,7 @@ describe("payment middleware", () => {
 		server.tool("premium", mw, { input: z.object({}) }, async () => text("ok"));
 
 		// Setting the "payment" key + authorize should allow access
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.set("payment", { paid: true });
 		session.authorize("payment");
 
@@ -64,7 +65,7 @@ describe("payment middleware", () => {
 			action: "accept" as const,
 		}));
 		await Promise.all([
-			server._server.connect(serverTransport),
+			getInternals(server).server.connect(serverTransport),
 			client.connect(clientTransport),
 		]);
 

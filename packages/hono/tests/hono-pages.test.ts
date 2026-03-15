@@ -1,14 +1,15 @@
 import { createMCPServer, text } from "@lynq/lynq";
 import { signState } from "@lynq/lynq/helpers";
+import { getInternals } from "@lynq/lynq/test";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountLynq } from "../src/index.js";
 
 function createApp(options?: Parameters<typeof mountLynq>[2]) {
-	const server = createMCPServer({ name: "test", version: "1.0.0" }) as any;
+	const server = createMCPServer({ name: "test", version: "1.0.0" });
 	server.tool("ping", {}, async () => text("pong"));
 	// Create a session so handleCallback can find it
-	server._createSessionAPI("session-1");
+	getInternals(server).createSessionAPI("session-1");
 	const app = new Hono();
 	mountLynq(app, server, options);
 	return { app, server };

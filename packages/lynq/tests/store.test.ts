@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { getInternals } from "../src/internals.js";
 import { text } from "../src/response.js";
 import { createUserStore, memoryStore, resolveUserId } from "../src/store.js";
 import type { Session } from "../src/types.js";
@@ -275,7 +276,7 @@ describe("store in context (integration)", () => {
 			name: "test",
 			version: "1.0.0",
 			store,
-		}) as any;
+		});
 
 		let captured: unknown;
 		server.tool(
@@ -297,7 +298,7 @@ describe("store in context (integration)", () => {
 			InMemoryTransport.createLinkedPair();
 		const client = new Client({ name: "test-client", version: "1.0.0" });
 		await Promise.all([
-			server._server.connect(serverTransport),
+			getInternals(server).server.connect(serverTransport),
 			client.connect(clientTransport),
 		]);
 
@@ -311,7 +312,7 @@ describe("store in context (integration)", () => {
 			name: "test",
 			version: "1.0.0",
 			store,
-		}) as any;
+		});
 
 		let captured: unknown;
 		server.tool(
@@ -325,7 +326,7 @@ describe("store in context (integration)", () => {
 		);
 
 		// Set user in session before calling
-		server._createSessionAPI("default").set("user", "alice");
+		getInternals(server).createSessionAPI("default").set("user", "alice");
 
 		const { Client } = await import(
 			"@modelcontextprotocol/sdk/client/index.js"
@@ -337,7 +338,7 @@ describe("store in context (integration)", () => {
 			InMemoryTransport.createLinkedPair();
 		const client = new Client({ name: "test-client", version: "1.0.0" });
 		await Promise.all([
-			server._server.connect(serverTransport),
+			getInternals(server).server.connect(serverTransport),
 			client.connect(clientTransport),
 		]);
 

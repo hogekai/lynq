@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
+import { getInternals } from "../../src/internals.js";
 import { urlAction } from "../../src/middleware/url-action.js";
 import { text } from "../../src/response.js";
 import { memoryStore } from "../../src/store.js";
@@ -28,7 +29,7 @@ async function createConnectedPair(
 	);
 	client.setRequestHandler(ElicitRequestSchema, elicitHandler);
 	await Promise.all([
-		server._server.connect(serverTransport),
+		getInternals(server).server.connect(serverTransport),
 		client.connect(clientTransport),
 	]);
 	return client;
@@ -42,7 +43,7 @@ describe("urlAction middleware", () => {
 			buildUrl: () => "https://example.com",
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
-		expect(server._isToolVisible("secret", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("secret", "s1")).toBe(false);
 	});
 
 	it("has correct default name", () => {
@@ -71,7 +72,7 @@ describe("urlAction middleware", () => {
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
 
 		// Pre-set session data and authorize
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.set("user", { id: 1 });
 		session.authorize("url-action");
 
@@ -90,7 +91,7 @@ describe("urlAction middleware", () => {
 			buildUrl: () => "https://example.com",
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
-		server._createSessionAPI("default").authorize("url-action");
+		getInternals(server).createSessionAPI("default").authorize("url-action");
 
 		const client = await createConnectedPair(server, async () => ({
 			action: "decline",
@@ -109,7 +110,7 @@ describe("urlAction middleware", () => {
 			declineMessage: "Nope.",
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
-		server._createSessionAPI("default").authorize("url-action");
+		getInternals(server).createSessionAPI("default").authorize("url-action");
 
 		const client = await createConnectedPair(server, async () => ({
 			action: "decline",
@@ -132,7 +133,7 @@ describe("urlAction middleware", () => {
 			},
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
-		server._createSessionAPI("default").authorize("url-action");
+		getInternals(server).createSessionAPI("default").authorize("url-action");
 
 		const client = await createConnectedPair(server, async () => ({
 			action: "decline",
@@ -154,7 +155,7 @@ describe("urlAction middleware", () => {
 		server.tool("secret", mw, { input: z.object({}) }, async () =>
 			text("protected data"),
 		);
-		server._createSessionAPI("default").authorize("url-action");
+		getInternals(server).createSessionAPI("default").authorize("url-action");
 
 		let capturedElicitationId: string | undefined;
 		const client = await createConnectedPair(server, async (request: any) => {
@@ -182,7 +183,7 @@ describe("urlAction middleware", () => {
 			timeout: 5000,
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
-		server._createSessionAPI("default").authorize("url-action");
+		getInternals(server).createSessionAPI("default").authorize("url-action");
 
 		const client = await createConnectedPair(server, async (request: any) => {
 			// Complete without setting session key
@@ -229,7 +230,7 @@ describe("urlAction middleware", () => {
 		);
 
 		// Set user in session + authorize so tool is visible
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.set("user", "alice");
 		session.authorize("url-action");
 
@@ -261,7 +262,7 @@ describe("urlAction middleware", () => {
 		);
 
 		// Set user in session + authorize so tool is visible
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.set("user", "alice");
 		session.authorize("url-action");
 
@@ -296,7 +297,7 @@ describe("urlAction middleware", () => {
 		});
 		server.tool("premium", mw, { input: z.object({}) }, async () => text("ok"));
 
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.set("user", "alice");
 		session.authorize("url-action");
 
@@ -322,7 +323,7 @@ describe("urlAction middleware", () => {
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
 
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.authorize("url-action");
 
 		const client = await createConnectedPair(server, async () => ({
@@ -342,7 +343,7 @@ describe("urlAction middleware", () => {
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
 
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.authorize("url-action");
 
 		const client = await createConnectedPair(server, async () => ({
@@ -362,7 +363,7 @@ describe("urlAction middleware", () => {
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
 
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.authorize("url-action");
 
 		const client = await createConnectedPair(server, async () => ({
@@ -383,7 +384,7 @@ describe("urlAction middleware", () => {
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
 
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		// Do NOT set "user" in session
 		session.authorize("url-action");
 
@@ -410,7 +411,7 @@ describe("urlAction middleware", () => {
 		server.tool("secret", mw, { input: z.object({}) }, async () =>
 			text("protected"),
 		);
-		server._createSessionAPI("default").authorize("url-action");
+		getInternals(server).createSessionAPI("default").authorize("url-action");
 
 		const client = await createConnectedPair(server, async (request: any) => {
 			setTimeout(() => {
@@ -441,7 +442,7 @@ describe("urlAction middleware", () => {
 		server.tool("secret", mw, { input: z.object({}) }, async () =>
 			text("protected"),
 		);
-		server._createSessionAPI("default").authorize("url-action");
+		getInternals(server).createSessionAPI("default").authorize("url-action");
 
 		const client = await createConnectedPair(server, async (request: any) => {
 			setTimeout(() => {
@@ -470,7 +471,7 @@ describe("urlAction middleware", () => {
 		});
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
 
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.authorize("url-action");
 
 		const client = await createConnectedPair(server, async () => ({

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
+import { getInternals } from "../../src/internals.js";
 import { oauth } from "../../src/middleware/oauth.js";
 import { text } from "../../src/response.js";
 
@@ -30,7 +31,7 @@ describe("oauth middleware", () => {
 			buildUrl: () => "https://example.com",
 		});
 		server.tool("data", mw, { input: z.object({}) }, async () => text("ok"));
-		expect(server._isToolVisible("data", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("data", "s1")).toBe(false);
 	});
 
 	it("skips when user session key is present", async () => {
@@ -40,7 +41,7 @@ describe("oauth middleware", () => {
 		});
 		server.tool("data", mw, { input: z.object({}) }, async () => text("ok"));
 
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.set("user", { id: 1 });
 		session.authorize("oauth");
 
@@ -63,7 +64,7 @@ describe("oauth middleware", () => {
 			action: "accept" as const,
 		}));
 		await Promise.all([
-			server._server.connect(serverTransport),
+			getInternals(server).server.connect(serverTransport),
 			client.connect(clientTransport),
 		]);
 

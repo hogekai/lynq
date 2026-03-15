@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
+import { getInternals } from "../../src/internals.js";
 import { credentials } from "../../src/middleware/credentials.js";
 import { text } from "../../src/response.js";
 
@@ -22,7 +23,7 @@ describe("credentials middleware", () => {
 			async () => text("ok"),
 		);
 
-		expect(server._isToolVisible("secret", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("secret", "s1")).toBe(false);
 	});
 
 	it("has correct default name", () => {
@@ -57,7 +58,7 @@ describe("credentials middleware", () => {
 		server.tool("secret", mw, { input: z.object({}) }, async () => text("ok"));
 
 		// Manually set user in session and authorize
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.set("user", { id: 1, name: "alice" });
 		session.authorize("credentials");
 

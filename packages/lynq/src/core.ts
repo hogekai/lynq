@@ -1,5 +1,5 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+
 import { createElicitationTracker } from "./elicitation.js";
 import { createTaskStore, setupHandlers } from "./handlers.js";
 import {
@@ -15,6 +15,7 @@ import type {
 	ServerState,
 	SessionState,
 } from "./internal-types.js";
+import { registerInternals } from "./internals.js";
 import {
 	createSessionAPI,
 	getSession,
@@ -28,7 +29,6 @@ import type {
 	ResourceConfig,
 	ResourceHandler,
 	ServerOptions,
-	Session,
 	TaskConfig,
 	TaskHandler,
 	ToolConfig,
@@ -191,10 +191,6 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		}
 	}
 
-	async function connect(transport: Transport): Promise<void> {
-		await server.connect(transport);
-	}
-
 	const http = createHttpAdapter(
 		info,
 		state,
@@ -209,7 +205,7 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		await Promise.allSettled(state.runningTasks);
 	}
 
-	return {
+	const mcpServer: MCPServer = {
 		use,
 		tool: tool as MCPServer["tool"],
 		resource: resource as MCPServer["resource"],
@@ -220,34 +216,29 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		session: (sessionId: string) => createSessionAPI(state, server, sessionId),
 		completeElicitation: elicitation.complete,
 		store: state.store,
-		connect,
-		/** @internal Exposed for testing. */
-		_server: server,
-		_getSession: (sessionId: string) => getSession(state, sessionId),
-		_isToolVisible(toolName: string, sessionId: string): boolean {
+	};
+
+	registerInternals(mcpServer, {
+		server,
+		getSession: (sessionId: string) => getSession(state, sessionId),
+		isToolVisible(toolName: string, sessionId: string): boolean {
 			const t = state.tools.get(toolName);
 			if (!t) return false;
 			return isToolVisible(state, t, sessionId);
 		},
-		_isResourceVisible(uri: string, sessionId: string): boolean {
+		isResourceVisible(uri: string, sessionId: string): boolean {
 			const r = state.resources.get(uri);
 			if (!r) return false;
 			return isResourceVisible(state, r, sessionId);
 		},
-		_isTaskVisible(taskName: string, sessionId: string): boolean {
+		isTaskVisible(taskName: string, sessionId: string): boolean {
 			const t = state.tasks.get(taskName);
 			if (!t) return false;
 			return isTaskVisible(state, t, sessionId);
 		},
-		_createSessionAPI: (sessionId: string) =>
+		createSessionAPI: (sessionId: string) =>
 			createSessionAPI(state, server, sessionId),
-	} as MCPServer & {
-		connect(transport: Transport): Promise<void>;
-		_server: Server;
-		_getSession(sessionId: string): SessionState;
-		_isToolVisible(toolName: string, sessionId: string): boolean;
-		_isResourceVisible(uri: string, sessionId: string): boolean;
-		_isTaskVisible(taskName: string, sessionId: string): boolean;
-		_createSessionAPI(sessionId: string): Session;
-	};
+	});
+
+	return mcpServer;
 }

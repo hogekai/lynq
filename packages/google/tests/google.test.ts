@@ -1,11 +1,12 @@
 import { createMCPServer, text } from "@lynq/lynq";
 import { signState } from "@lynq/lynq/helpers";
+import { getInternals } from "@lynq/lynq/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { google, handleCallback } from "../src/index.js";
 
 function createTestServer() {
-	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
+	return createMCPServer({ name: "test", version: "1.0.0" });
 }
 
 const BASE_OPTIONS = {
@@ -24,7 +25,7 @@ describe("google middleware", () => {
 			async () => text("ok"),
 		);
 
-		expect(server._isToolVisible("drive", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("drive", "s1")).toBe(false);
 	});
 
 	it("has correct default name", () => {
@@ -46,10 +47,10 @@ describe("google middleware", () => {
 			async () => text("ok"),
 		);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("google");
 
-		expect(server._isToolVisible("drive", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("drive", "s1")).toBe(true);
 	});
 });
 
@@ -66,7 +67,7 @@ describe("handleCallback (google)", () => {
 
 	it("exchanges code for token and stores user", async () => {
 		const server = createTestServer();
-		const session = server._createSessionAPI("session-1");
+		const session = getInternals(server).createSessionAPI("session-1");
 
 		const completeSpy = vi.spyOn(server, "completeElicitation");
 
@@ -140,7 +141,7 @@ describe("handleCallback (google)", () => {
 
 	it("returns error when token exchange fails", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 
 		(globalThis.fetch as any).mockResolvedValueOnce({
 			json: async () => ({
@@ -162,7 +163,7 @@ describe("handleCallback (google)", () => {
 
 	it("does not store idToken when absent", async () => {
 		const server = createTestServer();
-		const session = server._createSessionAPI("session-1");
+		const session = getInternals(server).createSessionAPI("session-1");
 
 		(globalThis.fetch as any)
 			.mockResolvedValueOnce({
@@ -185,7 +186,7 @@ describe("handleCallback (google)", () => {
 
 	it("returns error on fetch failure", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 
 		(globalThis.fetch as any).mockRejectedValueOnce(new Error("Network error"));
 

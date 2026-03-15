@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
+import { getInternals } from "../../src/internals.js";
 import { auth } from "../../src/middleware/auth.js";
 import { text } from "../../src/response.js";
 import { createTestClient } from "../../src/test.js";
@@ -24,7 +25,7 @@ describe("auth middleware (deprecated, backward compat)", () => {
 			async () => text("ok"),
 		);
 
-		expect(server._isToolVisible("secret", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("secret", "s1")).toBe(false);
 	});
 
 	it("shows tools after session.authorize('auth')", () => {
@@ -36,10 +37,10 @@ describe("auth middleware (deprecated, backward compat)", () => {
 			async () => text("ok"),
 		);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("auth");
 
-		expect(server._isToolVisible("secret", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("secret", "s1")).toBe(true);
 	});
 
 	it("blocks call when session has no user", async () => {
@@ -103,7 +104,7 @@ describe("auth middleware (deprecated, backward compat)", () => {
 			async () => text("ok"),
 		);
 
-		expect(server._isToolVisible("api", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("api", "s1")).toBe(false);
 	});
 
 	it("auth as global middleware hides all subsequently registered tools", () => {
@@ -121,13 +122,13 @@ describe("auth middleware (deprecated, backward compat)", () => {
 			async () => text("ok"),
 		);
 
-		expect(server._isToolVisible("tool-a", "s1")).toBe(false);
-		expect(server._isToolVisible("tool-b", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("tool-a", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("tool-b", "s1")).toBe(false);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("auth");
 
-		expect(server._isToolVisible("tool-a", "s1")).toBe(true);
-		expect(server._isToolVisible("tool-b", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("tool-a", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("tool-b", "s1")).toBe(true);
 	});
 });

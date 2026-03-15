@@ -9,10 +9,11 @@ MCP server testing is painful -- transport wiring, SDK client setup, content ext
 ```ts
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { getInternals } from "@lynq/lynq/test";
 
 const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 const client = new Client({ name: "test", version: "1.0.0" });
-await Promise.all([server._server.connect(serverTransport), client.connect(clientTransport)]);
+await Promise.all([getInternals(server).server.connect(serverTransport), client.connect(clientTransport)]);
 const result = await client.callTool({ name: "ping", arguments: {} });
 const text = result.content[0].text;
 ```
@@ -161,7 +162,7 @@ afterEach(async () => {
 ```
 
 :::tip Under the hood
-`createTestClient()` uses the MCP SDK's `InMemoryTransport.createLinkedPair()` to create a bidirectional in-memory channel. It connects a real `Client` to your server's internal `_server`. The `authorize()`/`revoke()` methods on the test client directly manipulate session state, simulating what `c.session.authorize()` does in production -- without needing a real transport or network.
+`createTestClient()` uses the MCP SDK's `InMemoryTransport.createLinkedPair()` to create a bidirectional in-memory channel. It connects a real `Client` to the server's internal SDK instance via `getInternals()`. The `authorize()`/`revoke()` methods on the test client directly manipulate session state, simulating what `c.session.authorize()` does in production -- without needing a real transport or network.
 :::
 
 ## TestClient API Reference

@@ -19,7 +19,7 @@ server.tool("weather", cache({ ttl: 300 }), config, handler);
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `ttl` | `number` | (required) | Cache TTL in seconds |
-| `key` | `(toolName, args) => string` | `cache:${toolName}:${JSON.stringify(args)}` | Custom cache key builder |
+| `key` | `(toolName, args) => string` | `cache:${toolName}:${stableStringify(args)}` | Custom cache key builder. Default uses stable serialization (key-order independent) |
 
 ## How It Works
 

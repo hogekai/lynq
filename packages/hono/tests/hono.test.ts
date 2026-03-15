@@ -67,4 +67,36 @@ describe("@lynq/hono", () => {
 		});
 		expect(res.status).toBe(200);
 	});
+
+	it("accepts custom allowedHosts", async () => {
+		const app = createApp({
+			allowedHosts: ["my-server.example.com"],
+		});
+		const res = await app.request("/mcp", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "application/json, text/event-stream",
+				Host: "my-server.example.com",
+			},
+			body: JSON.stringify(initBody),
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("strips port from Host header for validation", async () => {
+		const app = createApp({
+			allowedHosts: ["my-server.example.com"],
+		});
+		const res = await app.request("/mcp", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "application/json, text/event-stream",
+				Host: "my-server.example.com:8080",
+			},
+			body: JSON.stringify(initBody),
+		});
+		expect(res.status).toBe(200);
+	});
 });

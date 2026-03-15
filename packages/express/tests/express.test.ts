@@ -88,4 +88,15 @@ describe("@lynq/express", () => {
 		});
 		expect(res.status).toBe(200);
 	});
+
+	it("accepts custom allowedHosts", async () => {
+		const app = createApp({
+			allowedHosts: ["my-server.example.com", "127.0.0.1"],
+		});
+		const res = await request(app, "/mcp", {
+			host: "my-server.example.com",
+			body: initBody,
+		});
+		expect(res.status).toBe(200);
+	});
 });

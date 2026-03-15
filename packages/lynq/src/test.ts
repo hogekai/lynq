@@ -1,10 +1,9 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { getInternals } from "./internals.js";
 import type { MCPServer, Session } from "./types.js";
 
-interface InternalMCPServer extends MCPServer {
-	_server: { connect(transport: unknown): Promise<void> };
-	_createSessionAPI(sessionId: string): Session;
-}
+export { getInternals } from "./internals.js";
+export type { InternalAccess } from "./internals.js";
 
 export interface TestClient {
 	/** List visible tool names. */
@@ -46,13 +45,13 @@ export async function createTestClient(server: MCPServer): Promise<TestClient> {
 		{ capabilities: { tasks: {} } },
 	);
 
-	const internal = server as unknown as InternalMCPServer;
+	const internal = getInternals(server);
 	await Promise.all([
-		internal._server.connect(serverTransport),
+		internal.server.connect(serverTransport),
 		client.connect(clientTransport),
 	]);
 
-	const session = internal._createSessionAPI("default");
+	const session = internal.createSessionAPI("default");
 
 	return {
 		async listTools() {

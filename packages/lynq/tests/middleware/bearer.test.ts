@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../../src/core.js";
+import { getInternals } from "../../src/internals.js";
 import { bearer } from "../../src/middleware/bearer.js";
 import { text } from "../../src/response.js";
 import { createTestClient } from "../../src/test.js";
@@ -19,7 +20,7 @@ describe("bearer middleware", () => {
 			async () => text("ok"),
 		);
 
-		expect(server._isToolVisible("secret", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("secret", "s1")).toBe(false);
 	});
 
 	it("has correct default name", () => {
@@ -43,7 +44,7 @@ describe("bearer middleware", () => {
 			async () => text("ok"),
 		);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.set("user", { id: 1 });
 		session.authorize("bearer");
 

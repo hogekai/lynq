@@ -1,5 +1,6 @@
 import { createMCPServer, text } from "@lynq/lynq";
 import { signState } from "@lynq/lynq/helpers";
+import { getInternals } from "@lynq/lynq/test";
 import express from "express";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountLynq } from "../src/index.js";
@@ -7,9 +8,9 @@ import { mountLynq } from "../src/index.js";
 const realFetch = globalThis.fetch;
 
 function createApp(options?: Parameters<typeof mountLynq>[2]) {
-	const server = createMCPServer({ name: "test", version: "1.0.0" }) as any;
+	const server = createMCPServer({ name: "test", version: "1.0.0" });
 	server.tool("ping", {}, async () => text("pong"));
-	server._createSessionAPI("session-1");
+	getInternals(server).createSessionAPI("session-1");
 	const app = express();
 	app.use(express.json());
 	mountLynq(app, server, options);

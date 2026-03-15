@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { getInternals } from "../src/internals.js";
 import { error, text } from "../src/response.js";
 import type { ToolMiddleware } from "../src/types.js";
 
 function createTestServer() {
-	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
+	return createMCPServer({ name: "test", version: "1.0.0" });
 }
 
 async function createConnectedPair(
@@ -27,7 +28,7 @@ async function createConnectedPair(
 	);
 	client.setRequestHandler(ElicitRequestSchema, elicitHandler);
 	await Promise.all([
-		server._server.connect(serverTransport),
+		getInternals(server).server.connect(serverTransport),
 		client.connect(clientTransport),
 	]);
 	return client;

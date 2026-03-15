@@ -1,11 +1,12 @@
 import { createMCPServer, text } from "@lynq/lynq";
 import { signState } from "@lynq/lynq/helpers";
+import { getInternals } from "@lynq/lynq/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { github, handleCallback } from "../src/index.js";
 
 function createTestServer() {
-	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
+	return createMCPServer({ name: "test", version: "1.0.0" });
 }
 
 const BASE_OPTIONS = {
@@ -24,7 +25,7 @@ describe("github middleware", () => {
 			async () => text("ok"),
 		);
 
-		expect(server._isToolVisible("repos", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("repos", "s1")).toBe(false);
 	});
 
 	it("has correct default name", () => {
@@ -46,10 +47,10 @@ describe("github middleware", () => {
 			async () => text("ok"),
 		);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("github");
 
-		expect(server._isToolVisible("repos", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("repos", "s1")).toBe(true);
 	});
 });
 
@@ -66,7 +67,7 @@ describe("handleCallback (github)", () => {
 
 	it("exchanges code for token and stores user", async () => {
 		const server = createTestServer();
-		const session = server._createSessionAPI("session-1");
+		const session = getInternals(server).createSessionAPI("session-1");
 
 		// Track completeElicitation call
 		const completeSpy = vi.spyOn(server, "completeElicitation");
@@ -137,7 +138,7 @@ describe("handleCallback (github)", () => {
 
 	it("returns error when token exchange fails", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 
 		(globalThis.fetch as any).mockResolvedValueOnce({
 			json: async () => ({
@@ -159,7 +160,7 @@ describe("handleCallback (github)", () => {
 
 	it("returns error on fetch failure", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 
 		(globalThis.fetch as any).mockRejectedValueOnce(new Error("Network error"));
 

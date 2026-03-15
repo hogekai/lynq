@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createMCPServer } from "../src/core.js";
+import { getInternals } from "../src/internals.js";
 import { auth } from "../src/middleware/auth.js";
 import { error, text } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
 import type { ToolMiddleware } from "../src/types.js";
 
 function createTestServer() {
-	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
+	return createMCPServer({ name: "test", version: "1.0.0" });
 }
 
 describe("resource registration", () => {
@@ -15,7 +16,7 @@ describe("resource registration", () => {
 		server.resource("config://settings", { name: "Settings" }, async () => ({
 			text: "{}",
 		}));
-		expect(server._isResourceVisible("config://settings", "default")).toBe(
+		expect(getInternals(server).isResourceVisible("config://settings", "default")).toBe(
 			true,
 		);
 	});
@@ -25,7 +26,7 @@ describe("resource registration", () => {
 		server.resource("file:///{path}", { name: "Files" }, async () => ({
 			text: "",
 		}));
-		expect(server._isResourceVisible("file:///{path}", "default")).toBe(true);
+		expect(getInternals(server).isResourceVisible("file:///{path}", "default")).toBe(true);
 	});
 
 	it("throws when last argument is not a function", () => {
@@ -55,7 +56,7 @@ describe("resource visibility", () => {
 		server.resource("data://public", { name: "Public" }, async () => ({
 			text: "hi",
 		}));
-		expect(server._isResourceVisible("data://public", "default")).toBe(true);
+		expect(getInternals(server).isResourceVisible("data://public", "default")).toBe(true);
 	});
 
 	it("auth() middleware hides resources initially", () => {
@@ -63,7 +64,7 @@ describe("resource visibility", () => {
 		server.resource("data://secret", auth(), { name: "Secret" }, async () => ({
 			text: "hidden",
 		}));
-		expect(server._isResourceVisible("data://secret", "default")).toBe(false);
+		expect(getInternals(server).isResourceVisible("data://secret", "default")).toBe(false);
 	});
 
 	it("authorize reveals resources and tools guarded by same middleware", () => {
@@ -77,14 +78,14 @@ describe("resource visibility", () => {
 			text: "ok",
 		}));
 
-		expect(server._isToolVisible("guarded-tool", "s1")).toBe(false);
-		expect(server._isResourceVisible("data://guarded", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("guarded-tool", "s1")).toBe(false);
+		expect(getInternals(server).isResourceVisible("data://guarded", "s1")).toBe(false);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("guard");
 
-		expect(server._isToolVisible("guarded-tool", "s1")).toBe(true);
-		expect(server._isResourceVisible("data://guarded", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("guarded-tool", "s1")).toBe(true);
+		expect(getInternals(server).isResourceVisible("data://guarded", "s1")).toBe(true);
 	});
 
 	it("revoke hides both tools and resources", () => {
@@ -96,14 +97,14 @@ describe("resource visibility", () => {
 			text: "ok",
 		}));
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("auth");
-		expect(server._isToolVisible("t", "s1")).toBe(true);
-		expect(server._isResourceVisible("data://r", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("t", "s1")).toBe(true);
+		expect(getInternals(server).isResourceVisible("data://r", "s1")).toBe(true);
 
 		session.revoke("auth");
-		expect(server._isToolVisible("t", "s1")).toBe(false);
-		expect(server._isResourceVisible("data://r", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("t", "s1")).toBe(false);
+		expect(getInternals(server).isResourceVisible("data://r", "s1")).toBe(false);
 	});
 
 	it("enableResources/disableResources control individual resource visibility", () => {
@@ -111,14 +112,14 @@ describe("resource visibility", () => {
 		server.resource("data://a", { name: "A" }, async () => ({ text: "a" }));
 		server.resource("data://b", { name: "B" }, async () => ({ text: "b" }));
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 
 		session.disableResources("data://a");
-		expect(server._isResourceVisible("data://a", "s1")).toBe(false);
-		expect(server._isResourceVisible("data://b", "s1")).toBe(true);
+		expect(getInternals(server).isResourceVisible("data://a", "s1")).toBe(false);
+		expect(getInternals(server).isResourceVisible("data://b", "s1")).toBe(true);
 
 		session.enableResources("data://a");
-		expect(server._isResourceVisible("data://a", "s1")).toBe(true);
+		expect(getInternals(server).isResourceVisible("data://a", "s1")).toBe(true);
 	});
 
 	it("global middleware (server.use) affects resources", () => {
@@ -130,14 +131,14 @@ describe("resource visibility", () => {
 		server.resource("data://r", { name: "R" }, async () => ({ text: "ok" }));
 
 		// Both tool and resource are hidden by global middleware
-		expect(server._isToolVisible("tool-a", "default")).toBe(false);
-		expect(server._isResourceVisible("data://r", "default")).toBe(false);
+		expect(getInternals(server).isToolVisible("tool-a", "default")).toBe(false);
+		expect(getInternals(server).isResourceVisible("data://r", "default")).toBe(false);
 
 		// After granting, both become visible
-		const session = server._createSessionAPI("default");
+		const session = getInternals(server).createSessionAPI("default");
 		session.authorize("global");
-		expect(server._isToolVisible("tool-a", "default")).toBe(true);
-		expect(server._isResourceVisible("data://r", "default")).toBe(true);
+		expect(getInternals(server).isToolVisible("tool-a", "default")).toBe(true);
+		expect(getInternals(server).isResourceVisible("data://r", "default")).toBe(true);
 	});
 });
 
@@ -257,7 +258,7 @@ describe("resources/read integration", () => {
 		);
 		const [ct, st] = InMemoryTransport.createLinkedPair();
 		const client = new Client({ name: "test-client", version: "1.0.0" });
-		await Promise.all([server._server.connect(st), client.connect(ct)]);
+		await Promise.all([getInternals(server).server.connect(st), client.connect(ct)]);
 
 		const result = await client.readResource({ uri: "data://binary" });
 		expect(result.contents[0].blob).toBe(base64Data);

@@ -1,10 +1,11 @@
 import { createMCPServer, text } from "@lynq/lynq";
+import { getInternals } from "@lynq/lynq/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { crypto, handleCallback } from "../src/index.js";
 
 function createTestServer() {
-	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
+	return createMCPServer({ name: "test", version: "1.0.0" });
 }
 
 const BASE_OPTIONS = {
@@ -32,7 +33,7 @@ describe("crypto middleware", () => {
 			{ input: z.object({}) },
 			async () => text("ok"),
 		);
-		expect(server._isToolVisible("premium", "s1")).toBe(false);
+		expect(getInternals(server).isToolVisible("premium", "s1")).toBe(false);
 	});
 
 	it("shows tools after authorization", () => {
@@ -44,9 +45,9 @@ describe("crypto middleware", () => {
 			async () => text("ok"),
 		);
 
-		const session = server._createSessionAPI("s1");
+		const session = getInternals(server).createSessionAPI("s1");
 		session.authorize("crypto");
-		expect(server._isToolVisible("premium", "s1")).toBe(true);
+		expect(getInternals(server).isToolVisible("premium", "s1")).toBe(true);
 	});
 
 	it("defaults to USDC token", () => {
@@ -100,7 +101,7 @@ describe("handleCallback (crypto)", () => {
 
 	it("verifies transaction and stores payment data", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 		const completeSpy = vi.spyOn(server, "completeElicitation");
 
 		(globalThis.fetch as any).mockResolvedValueOnce({
@@ -119,7 +120,7 @@ describe("handleCallback (crypto)", () => {
 		);
 
 		expect(result.success).toBe(true);
-		const session = server._createSessionAPI("session-1");
+		const session = getInternals(server).createSessionAPI("session-1");
 		const paymentData = session.get("payment") as any;
 		expect(paymentData.provider).toBe("crypto");
 		expect(paymentData.txHash).toBe("0xabc123");
@@ -142,7 +143,7 @@ describe("handleCallback (crypto)", () => {
 
 	it("returns error when transaction verification fails", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 
 		(globalThis.fetch as any).mockResolvedValueOnce({
 			json: async () => ({
@@ -162,7 +163,7 @@ describe("handleCallback (crypto)", () => {
 
 	it("returns error when RPC call fails", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 
 		(globalThis.fetch as any).mockRejectedValueOnce(new Error("Network error"));
 
@@ -178,7 +179,7 @@ describe("handleCallback (crypto)", () => {
 
 	it("uses custom RPC URL", async () => {
 		const server = createTestServer();
-		server._createSessionAPI("session-1");
+		getInternals(server).createSessionAPI("session-1");
 
 		(globalThis.fetch as any).mockResolvedValueOnce({
 			json: async () => ({

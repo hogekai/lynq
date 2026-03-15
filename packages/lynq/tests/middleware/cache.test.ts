@@ -106,6 +106,29 @@ describe("cache middleware", () => {
 		}
 	});
 
+	it("treats args with different key order as same cache entry", async () => {
+		const handler = vi.fn(async (args: { a: number; b: number }) =>
+			text(`${args.a + args.b}`),
+		);
+		const server = createTestServer();
+		server.tool(
+			"add",
+			cache({ ttl: 60 }),
+			{ input: z.object({ a: z.number(), b: z.number() }) },
+			handler,
+		);
+
+		const t = await createTestClient(server);
+		await t.callToolText("add", { a: 1, b: 2 });
+		expect(handler).toHaveBeenCalledTimes(1);
+
+		// Same values, different key order — should hit cache
+		await t.callToolText("add", { b: 2, a: 1 });
+		expect(handler).toHaveBeenCalledTimes(1);
+
+		await t.close();
+	});
+
 	it("supports custom key function", async () => {
 		const handler = vi.fn(async () => text("ok"));
 		const server = createTestServer();

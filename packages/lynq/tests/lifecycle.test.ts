@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
+import { getInternals } from "../src/internals.js";
 import { text } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
 
@@ -12,7 +13,7 @@ describe("lifecycle hooks", () => {
 				name: "test",
 				version: "1.0.0",
 				onSessionCreate,
-			}) as any;
+			});
 
 			server.tool("ping", { input: z.object({}) }, async () => text("pong"));
 
@@ -34,7 +35,7 @@ describe("lifecycle hooks", () => {
 				name: "test",
 				version: "1.0.0",
 				onSessionCreate,
-			}) as any;
+			});
 
 			server.tool("ping", { input: z.object({}) }, async () => text("pong"));
 
@@ -54,7 +55,7 @@ describe("lifecycle hooks", () => {
 				onSessionCreate: () => {
 					throw new Error("hook error");
 				},
-			}) as any;
+			});
 
 			server.tool("ping", { input: z.object({}) }, async () => text("pong"));
 
@@ -71,7 +72,7 @@ describe("lifecycle hooks", () => {
 				onSessionCreate: async () => {
 					throw new Error("async hook error");
 				},
-			}) as any;
+			});
 
 			server.tool("ping", { input: z.object({}) }, async () => text("pong"));
 
@@ -89,7 +90,7 @@ describe("lifecycle hooks", () => {
 				name: "test",
 				version: "1.0.0",
 				onSessionDestroy,
-			}) as any;
+			});
 
 			server.tool("ping", { input: z.object({}) }, async () => text("pong"));
 
@@ -110,7 +111,7 @@ describe("lifecycle hooks", () => {
 				name: "test",
 				version: "1.0.0",
 				onSessionDestroy,
-			}) as any;
+			});
 
 			server.tool("login", { input: z.object({}) }, async (_args: any, c: any) => {
 				c.session.set("user", { id: "u123" });
@@ -135,7 +136,7 @@ describe("lifecycle hooks", () => {
 				onSessionDestroy: () => {
 					throw new Error("destroy error");
 				},
-			}) as any;
+			});
 
 			server.tool("ping", { input: z.object({}) }, async () => text("pong"));
 
@@ -154,14 +155,14 @@ describe("lifecycle hooks", () => {
 				name: "test",
 				version: "1.0.0",
 				onServerStart,
-			}) as any;
+			});
 
 			// Simulate stdio() flow: connect + onServerStart
 			const { InMemoryTransport } = await import(
 				"@modelcontextprotocol/sdk/inMemory.js"
 			);
 			const [, serverTransport] = InMemoryTransport.createLinkedPair();
-			await server._server.connect(serverTransport);
+			await getInternals(server).server.connect(serverTransport);
 
 			// stdio() calls onServerStart after connect — simulate that call
 			await Promise.resolve(onServerStart()).catch(() => {});
