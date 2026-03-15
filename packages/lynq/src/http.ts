@@ -122,9 +122,10 @@ export function createHttpAdapter(
 				onsessionclosed: (sid: string) => {
 					httpSessions.delete(sid);
 					state.serverBySession.delete(sid);
+					const sessionData = state.sessions.get(sid)?.data ?? new Map();
 					state.sessions.delete(sid);
 					if (state.onSessionDestroy) {
-						Promise.resolve(state.onSessionDestroy(sid)).catch(() => {});
+						Promise.resolve(state.onSessionDestroy(sid, sessionData)).catch(() => {});
 					}
 				},
 			});
@@ -134,9 +135,10 @@ export function createHttpAdapter(
 					if (entry.server === srv) {
 						httpSessions.delete(sid);
 						state.serverBySession.delete(sid);
+						const sessionData = state.sessions.get(sid)?.data ?? new Map();
 						state.sessions.delete(sid);
 						if (state.onSessionDestroy) {
-							Promise.resolve(state.onSessionDestroy(sid)).catch(() => {});
+							Promise.resolve(state.onSessionDestroy(sid, sessionData)).catch(() => {});
 						}
 						break;
 					}

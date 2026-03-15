@@ -1,7 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { signState, verifyState } from "../src/helpers.js";
+import { buildTemplatePattern, signState, verifyState } from "../src/helpers.js";
 
 const SECRET = "test-secret-key";
+
+describe("buildTemplatePattern", () => {
+	it("matches a single-segment variable", () => {
+		const re = buildTemplatePattern("file:///{name}");
+		expect(re.test("file:///main.ts")).toBe(true);
+	});
+
+	it("does not match slashes within a variable segment", () => {
+		const re = buildTemplatePattern("file:///{name}");
+		expect(re.test("file:///src/main.ts")).toBe(false);
+	});
+
+	it("does not match path traversal", () => {
+		const re = buildTemplatePattern("/files/{path}");
+		expect(re.test("/files/../../etc/passwd")).toBe(false);
+	});
+
+	it("matches multiple variables", () => {
+		const re = buildTemplatePattern("db://{schema}/{table}");
+		expect(re.test("db://public/users")).toBe(true);
+		expect(re.test("db://public/a/b")).toBe(false);
+	});
+});
 
 describe("signState / verifyState", () => {
 	it("round-trips with standard UUIDs", () => {

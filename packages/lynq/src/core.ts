@@ -51,6 +51,7 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		onServerStart: info.onServerStart,
 		onSessionCreate: info.onSessionCreate,
 		onSessionDestroy: info.onSessionDestroy,
+		runningTasks: new Set(),
 	};
 
 	const elicitation = createElicitationTracker();
@@ -70,10 +71,11 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 	server.onclose = () => {
 		// For non-HTTP transports (stdio, InMemory), clean up the default session
 		const sessionId = "default";
+		const sessionData = state.sessions.get(sessionId)?.data ?? new Map();
 		state.sessions.delete(sessionId);
 		if (state.onSessionDestroy) {
 			try {
-				Promise.resolve(state.onSessionDestroy(sessionId)).catch(() => {});
+				Promise.resolve(state.onSessionDestroy(sessionId, sessionData)).catch(() => {});
 			} catch {
 				// fire-and-forget — sync throws are silently caught
 			}
@@ -203,6 +205,10 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		setupHandlers,
 	);
 
+	async function drain(): Promise<void> {
+		await Promise.allSettled(state.runningTasks);
+	}
+
 	return {
 		use,
 		tool: tool as MCPServer["tool"],
@@ -210,6 +216,7 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		task: task as MCPServer["task"],
 		stdio,
 		http,
+		drain,
 		session: (sessionId: string) => createSessionAPI(state, server, sessionId),
 		completeElicitation: elicitation.complete,
 		store: state.store,

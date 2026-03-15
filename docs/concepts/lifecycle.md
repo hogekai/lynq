@@ -18,8 +18,9 @@ const server = createMCPServer({
   onSessionCreate: (sessionId) => {
     console.log(`Session created: ${sessionId}`);
   },
-  onSessionDestroy: (sessionId) => {
+  onSessionDestroy: (sessionId, data) => {
     console.log(`Session destroyed: ${sessionId}`);
+    // data contains session KV pairs — e.g. data.get("user") for cleanup
   },
 });
 ```
@@ -30,7 +31,7 @@ const server = createMCPServer({
 |------|-----------|------|
 | `onServerStart` | `() => void \| Promise<void>` | After stdio connect, or on first HTTP request |
 | `onSessionCreate` | `(sessionId: string) => void \| Promise<void>` | When a new session is first accessed |
-| `onSessionDestroy` | `(sessionId: string) => void \| Promise<void>` | When an HTTP session closes |
+| `onSessionDestroy` | `(sessionId: string, data: ReadonlyMap<string, unknown>) => void \| Promise<void>` | When an HTTP session closes |
 
 All hooks are optional. All hooks are **fire-and-forget** -- errors (sync throws or async rejections) are silently caught and do not affect server operation.
 
@@ -70,21 +71,20 @@ For stdio transport, the default `"default"` session is created on the first too
 
 ## onSessionDestroy
 
-Fires when an HTTP session is closed (transport disconnect). Also cleans up internal session state.
+Fires when a session is destroyed (HTTP session close or transport disconnect). The second argument contains the session's KV data, useful for cleanup (e.g. resolving the user ID to delete store entries).
 
 ```ts
 createMCPServer({
   name: "my-server",
   version: "1.0.0",
-  onSessionDestroy: async (sessionId) => {
-    await cleanupUserResources(sessionId);
+  onSessionDestroy: async (sessionId, data) => {
+    const user = data.get("user");
+    if (user) {
+      await store.delete(`user:${user}:preferences`);
+    }
   },
 });
 ```
-
-:::tip
-`onSessionDestroy` only fires for HTTP stateful sessions that explicitly close. For stdio, there is no session close event -- the process exits directly.
-:::
 
 ## What's Next
 

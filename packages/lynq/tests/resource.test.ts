@@ -231,9 +231,9 @@ describe("resources/read integration", () => {
 
 		const t = await createTestClient(server);
 
-		const txt = await t.readResource("file:///src/main.ts");
-		expect(txt).toBe("content of file:///src/main.ts");
-		expect(receivedUri).toBe("file:///src/main.ts");
+		const txt = await t.readResource("file:///main.ts");
+		expect(txt).toBe("content of file:///main.ts");
+		expect(receivedUri).toBe("file:///main.ts");
 
 		await t.close();
 	});

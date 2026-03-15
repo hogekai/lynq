@@ -101,7 +101,31 @@ describe("lifecycle hooks", () => {
 			await new Promise((r) => setTimeout(r, 10));
 
 			expect(onSessionDestroy).toHaveBeenCalledTimes(1);
-			expect(onSessionDestroy).toHaveBeenCalledWith(expect.any(String));
+			expect(onSessionDestroy).toHaveBeenCalledWith(expect.any(String), expect.any(Map));
+		});
+
+		it("passes session data to the callback", async () => {
+			const onSessionDestroy = vi.fn();
+			const server = createMCPServer({
+				name: "test",
+				version: "1.0.0",
+				onSessionDestroy,
+			}) as any;
+
+			server.tool("login", { input: z.object({}) }, async (_args: any, c: any) => {
+				c.session.set("user", { id: "u123" });
+				return text("ok");
+			});
+
+			const t = await createTestClient(server);
+			await t.callTool("login", {});
+
+			await t.close();
+			await new Promise((r) => setTimeout(r, 10));
+
+			expect(onSessionDestroy).toHaveBeenCalledTimes(1);
+			const data = onSessionDestroy.mock.calls[0][1] as Map<string, unknown>;
+			expect(data.get("user")).toEqual({ id: "u123" });
 		});
 
 		it("does not crash if hook throws", async () => {

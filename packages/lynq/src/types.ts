@@ -32,8 +32,8 @@ export interface ServerOptions extends ServerInfo {
 	onServerStart?: () => void | Promise<void>;
 	/** Called when a new session is created. */
 	onSessionCreate?: (sessionId: string) => void | Promise<void>;
-	/** Called when a session is destroyed (HTTP session close or transport disconnect). */
-	onSessionDestroy?: (sessionId: string) => void | Promise<void>;
+	/** Called when a session is destroyed (HTTP session close or transport disconnect). Session data is provided for cleanup (e.g. resolving user ID to delete store entries). */
+	onSessionDestroy?: (sessionId: string, data: ReadonlyMap<string, unknown>) => void | Promise<void>;
 }
 
 // === Session ===
@@ -341,4 +341,7 @@ export interface MCPServer {
 
 	/** The persistent store instance. */
 	store: Store;
+
+	/** @experimental Wait for all running tasks to settle. For graceful shutdown. */
+	drain(): Promise<void>;
 }

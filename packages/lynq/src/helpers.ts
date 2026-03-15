@@ -63,7 +63,7 @@ export function buildTemplatePattern(uri: string): RegExp {
 	// Replace {variable} placeholders first, then escape the rest
 	const parts = uri.split(/\{[^}]+\}/);
 	const escaped = parts.map((p) => p.replace(/[.*+?^$|()[\]\\]/g, "\\$&"));
-	return new RegExp(`^${escaped.join("(.+)")}$`);
+	return new RegExp(`^${escaped.join("([^/]+)")}$`);
 }
 
 export function isVisible(

@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createMCPServer } from "../src/core.js";
 import { auth } from "../src/middleware/auth.js";
 import { error, text } from "../src/response.js";
 import { createTestClient } from "../src/test.js";
+import type { MCPServer } from "../src/types.js";
 
 function createTestServer() {
 	return createMCPServer({ name: "test", version: "1.0.0" }) as any;
@@ -154,5 +155,30 @@ describe("task argument validation", () => {
 				text("done"),
 			),
 		).toThrow('"name" property');
+	});
+});
+
+describe("drain()", () => {
+	it("waits for running tasks to settle", async () => {
+		let resolved = false;
+		const server = createMCPServer({ name: "test", version: "1.0.0" }) as MCPServer & { _server: any };
+		server.task(
+			"slow",
+			{ description: "Slow task" },
+			async () => {
+				await new Promise((r) => setTimeout(r, 50));
+				resolved = true;
+				return text("done");
+			},
+		);
+
+		const t = await createTestClient(server);
+		await t.callTool("slow", {});
+
+		expect(resolved).toBe(false);
+		await server.drain();
+		expect(resolved).toBe(true);
+
+		await t.close();
 	});
 });
