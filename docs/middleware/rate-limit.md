@@ -47,7 +47,7 @@ The first 5 calls within any 30-second window succeed. The 6th call returns an e
 
 ## Store-Based (Distributed)
 
-By default, rate limits are session-scoped -- each connection has its own counter. For distributed environments where limits should persist across sessions, enable `store`:
+By default, rate limits are **session-scoped** -- each connection has its own counter. This means a client can bypass the limit by simply reconnecting (creating a new session). For production rate limiting, enable `store`:
 
 ```ts
 rateLimit({ max: 100, windowMs: 60_000, store: true })
@@ -67,6 +67,10 @@ rateLimit({ max: 10, perUser: true })
 ```
 
 The rate limit key is prefixed with the user ID resolved from `session.get("user")`. Each user has an independent counter. If no user is in the session, falls back to `"anon"`.
+
+:::warning Anonymous users share a single bucket
+When `perUser: true` is set but no user is in the session, all anonymous requests share the same `"anon"` rate limit bucket. Ensure `session.set("user", ...)` is called before rate-limited tools if per-user isolation is required.
+:::
 
 :::tip Under the hood
 Uses the `onCall` hook. In session mode, stores `{ count, resetAt }` via `c.session.get/set` with key `rateLimit:{toolName}`. In store mode, uses `c.store.get/set` with key `rateLimit:{toolName}` or `rateLimit:{userId}:{toolName}` (perUser). Store entries are set with a TTL matching `windowMs` for automatic cleanup.

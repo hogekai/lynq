@@ -25,6 +25,16 @@ const server = createMCPServer({
 
 `memoryStore()` is in-process and lost on restart. For production, provide a custom `Store` implementation backed by Redis, SQLite, or any KV store.
 
+### Options
+
+```ts
+memoryStore({ maxEntries: 5000 }); // default: 10000
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `maxEntries` | `10000` | Maximum number of entries. When exceeded, expired entries are swept first, then the least-recently-accessed entry is evicted (LRU). |
+
 ## c.store (Global)
 
 Global key-value store available in tool, resource, and task handlers:

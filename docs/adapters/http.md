@@ -73,6 +73,10 @@ Each client session is identified by the `Mcp-Session-Id` header. The server mai
 
 **Memory consideration:** Each active session holds a `Server` instance, a `Transport`, and session data in memory. Monitor session count in production.
 
+:::warning Session security
+Session routing relies on the `Mcp-Session-Id` header. Session IDs are UUIDs (hard to guess) but can leak via logs or proxies. Use `onRequest` to add additional validation (e.g., Bearer token check, IP binding) or `sessionIdGenerator` to produce HMAC-signed session tokens.
+:::
+
 ### Sessionless
 
 ```ts
