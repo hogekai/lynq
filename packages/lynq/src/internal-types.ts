@@ -54,7 +54,12 @@ export interface ServerState {
 	serverBySession: Map<string, Server>;
 	onServerStart: (() => void | Promise<void>) | undefined;
 	onSessionCreate: ((sessionId: string) => void | Promise<void>) | undefined;
-	onSessionDestroy: ((sessionId: string, data: ReadonlyMap<string, unknown>) => void | Promise<void>) | undefined;
+	onSessionDestroy:
+		| ((
+				sessionId: string,
+				data: ReadonlyMap<string, unknown>,
+		  ) => void | Promise<void>)
+		| undefined;
 	runningTasks: Set<Promise<void>>;
 }
 

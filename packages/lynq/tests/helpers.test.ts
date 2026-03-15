@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildTemplatePattern, signState, verifyState } from "../src/helpers.js";
+import {
+	buildTemplatePattern,
+	signState,
+	verifyState,
+} from "../src/helpers.js";
 
 const SECRET = "test-secret-key";
 

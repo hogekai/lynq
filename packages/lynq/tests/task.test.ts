@@ -94,7 +94,10 @@ describe("task in tools/list", () => {
 			{ name: "test-client", version: "1.0.0" },
 			{ capabilities: { tasks: {} } },
 		);
-		await Promise.all([getInternals(server).server.connect(st), client.connect(ct)]);
+		await Promise.all([
+			getInternals(server).server.connect(st),
+			client.connect(ct),
+		]);
 
 		const result = await client.listTools();
 		const deployTool = result.tools.find((t: any) => t.name === "deploy");
@@ -162,15 +165,11 @@ describe("drain()", () => {
 	it("waits for running tasks to settle", async () => {
 		let resolved = false;
 		const server = createMCPServer({ name: "test", version: "1.0.0" });
-		server.task(
-			"slow",
-			{ description: "Slow task" },
-			async () => {
-				await new Promise((r) => setTimeout(r, 50));
-				resolved = true;
-				return text("done");
-			},
-		);
+		server.task("slow", { description: "Slow task" }, async () => {
+			await new Promise((r) => setTimeout(r, 50));
+			resolved = true;
+			return text("done");
+		});
 
 		const t = await createTestClient(server);
 		await t.callTool("slow", {});

@@ -97,7 +97,10 @@ export function setupHandlers(
 		const tool = state.tools.get(name);
 		if (tool) {
 			if (!isToolVisible(state, tool, sessionId))
-				throw new McpError(ErrorCode.MethodNotFound, `Tool not available: ${name}`);
+				throw new McpError(
+					ErrorCode.MethodNotFound,
+					`Tool not available: ${name}`,
+				);
 
 			const toolArgs = args ?? {};
 			const c = createToolContext(
@@ -121,9 +124,13 @@ export function setupHandlers(
 		const task = state.tasks.get(name);
 		if (task) {
 			if (!isTaskVisible(state, task, sessionId))
-				throw new McpError(ErrorCode.MethodNotFound, `Tool not available: ${name}`);
+				throw new McpError(
+					ErrorCode.MethodNotFound,
+					`Tool not available: ${name}`,
+				);
 			const requestTaskStore = extra.taskStore;
-			if (!requestTaskStore) throw new McpError(ErrorCode.InternalError, "Task store not available");
+			if (!requestTaskStore)
+				throw new McpError(ErrorCode.InternalError, "Task store not available");
 
 			const createdTask = await requestTaskStore.createTask({
 				pollInterval: 1000,
@@ -237,13 +244,19 @@ export function setupHandlers(
 			const res = findResourceByUri(state.resources, uri);
 
 			if (!res) {
-				throw new McpError(ErrorCode.InvalidRequest, `Unknown resource: ${uri}`);
+				throw new McpError(
+					ErrorCode.InvalidRequest,
+					`Unknown resource: ${uri}`,
+				);
 			}
 
 			const sessionId = extra.sessionId ?? "default";
 
 			if (!isResourceVisible(state, res, sessionId)) {
-				throw new McpError(ErrorCode.InvalidRequest, `Resource not available: ${uri}`);
+				throw new McpError(
+					ErrorCode.InvalidRequest,
+					`Resource not available: ${uri}`,
+				);
 			}
 
 			const session = createSessionAPI(state, defaultServer, sessionId);

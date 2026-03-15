@@ -72,7 +72,9 @@ describe("middleware", () => {
 		server.tool("open", { input: z.object({ name: z.string() }) }, async () =>
 			text("ok"),
 		);
-		expect(getInternals(server).isToolVisible("guarded", "default")).toBe(false);
+		expect(getInternals(server).isToolVisible("guarded", "default")).toBe(
+			false,
+		);
 		expect(getInternals(server).isToolVisible("open", "default")).toBe(true);
 	});
 

@@ -33,7 +33,7 @@ export function memoryStore(options?: MemoryStoreOptions): Store {
 				// LRU eviction if still at capacity
 				if (data.size >= maxEntries) {
 					let oldestKey: string | undefined;
-					let oldestTime = Infinity;
+					let oldestTime = Number.POSITIVE_INFINITY;
 					for (const [k, v] of data) {
 						if (v.accessedAt < oldestTime) {
 							oldestTime = v.accessedAt;

@@ -102,7 +102,10 @@ describe("lifecycle hooks", () => {
 			await new Promise((r) => setTimeout(r, 10));
 
 			expect(onSessionDestroy).toHaveBeenCalledTimes(1);
-			expect(onSessionDestroy).toHaveBeenCalledWith(expect.any(String), expect.any(Map));
+			expect(onSessionDestroy).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.any(Map),
+			);
 		});
 
 		it("passes session data to the callback", async () => {
@@ -113,10 +116,14 @@ describe("lifecycle hooks", () => {
 				onSessionDestroy,
 			});
 
-			server.tool("login", { input: z.object({}) }, async (_args: any, c: any) => {
-				c.session.set("user", { id: "u123" });
-				return text("ok");
-			});
+			server.tool(
+				"login",
+				{ input: z.object({}) },
+				async (_args: any, c: any) => {
+					c.session.set("user", { id: "u123" });
+					return text("ok");
+				},
+			);
 
 			const t = await createTestClient(server);
 			await t.callTool("login", {});

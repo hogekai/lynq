@@ -125,7 +125,9 @@ export function createHttpAdapter(
 					const sessionData = state.sessions.get(sid)?.data ?? new Map();
 					state.sessions.delete(sid);
 					if (state.onSessionDestroy) {
-						Promise.resolve(state.onSessionDestroy(sid, sessionData)).catch(() => {});
+						Promise.resolve(state.onSessionDestroy(sid, sessionData)).catch(
+							() => {},
+						);
 					}
 				},
 			});
@@ -138,7 +140,9 @@ export function createHttpAdapter(
 						const sessionData = state.sessions.get(sid)?.data ?? new Map();
 						state.sessions.delete(sid);
 						if (state.onSessionDestroy) {
-							Promise.resolve(state.onSessionDestroy(sid, sessionData)).catch(() => {});
+							Promise.resolve(state.onSessionDestroy(sid, sessionData)).catch(
+								() => {},
+							);
 						}
 						break;
 					}

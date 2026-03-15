@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.3] - 2026-03-15
+
+### Fixed
+
+- `memoryStore`: fix LRU eviction logic for correct least-recently-used behavior
+- `verifyState`: colon-safe parsing for state tokens containing colons
+- Task tracking: proper `drain()` support for waiting on running tasks
+- Template pattern: prevent path traversal in scaffold templates
+- `session.destroy()`: correctly clear session data on destroy
+- `http()`: hoist lazy import cache to `createHttpAdapter` scope (avoid redundant imports)
+- Unified error handling across tool/resource/task handlers
+- Stabilized cache middleware keys for consistent cache hits
+
+### Changed
+
+- Test internals extracted to `internals.ts` export for cleaner test helper API
+- Added HTTP adapter tests for session lifecycle and error cases
+
 ## [0.8.2] - 2026-03-12
 
 ### Fixed

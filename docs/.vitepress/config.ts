@@ -131,9 +131,7 @@ export default defineConfig({
 			},
 		],
 
-		socialLinks: [
-			{ icon: "github", link: "https://github.com/hogekai/lynq" },
-		],
+		socialLinks: [{ icon: "github", link: "https://github.com/hogekai/lynq" }],
 
 		search: {
 			provider: "local",

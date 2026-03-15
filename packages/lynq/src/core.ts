@@ -75,7 +75,9 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		state.sessions.delete(sessionId);
 		if (state.onSessionDestroy) {
 			try {
-				Promise.resolve(state.onSessionDestroy(sessionId, sessionData)).catch(() => {});
+				Promise.resolve(state.onSessionDestroy(sessionId, sessionData)).catch(
+					() => {},
+				);
 			} catch {
 				// fire-and-forget — sync throws are silently caught
 			}
