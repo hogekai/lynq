@@ -19,6 +19,19 @@ export function createHttpAdapter(
 		cancelledTaskIds: Set<string>,
 	) => void,
 ): (options?: HttpAdapterOptions) => (req: Request) => Promise<Response> {
+	// biome-ignore lint/suspicious/noExplicitAny: lazy-loaded transport class
+	let TransportCtor: any = null;
+
+	async function lazyImport() {
+		if (!TransportCtor) {
+			const mod = await import(
+				"@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
+			);
+			TransportCtor = mod.WebStandardStreamableHTTPServerTransport;
+		}
+		return TransportCtor;
+	}
+
 	const serverCapabilities = {
 		tools: { listChanged: true },
 		resources: { listChanged: true },
@@ -37,19 +50,6 @@ export function createHttpAdapter(
 	return function http(
 		options?: HttpAdapterOptions,
 	): (req: Request) => Promise<Response> {
-		// biome-ignore lint/suspicious/noExplicitAny: lazy-loaded transport class
-		let TransportCtor: any = null;
-
-		async function lazyImport() {
-			if (!TransportCtor) {
-				const mod = await import(
-					"@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
-				);
-				TransportCtor = mod.WebStandardStreamableHTTPServerTransport;
-			}
-			return TransportCtor;
-		}
-
 		// Sessionless: new server+transport per request
 		if (options?.sessionless) {
 			return async (req: Request): Promise<Response> => {
