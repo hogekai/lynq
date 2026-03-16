@@ -76,6 +76,10 @@
 			"types": "./dist/middleware/retry.d.ts",
 			"import": "./dist/middleware/retry.mjs"
 		},
+		"./agent-payment": {
+			"types": "./dist/middleware/agent-payment.d.ts",
+			"import": "./dist/middleware/agent-payment.mjs"
+		},
 		"./store": {
 			"types": "./dist/store.d.ts",
 			"import": "./dist/store.mjs"

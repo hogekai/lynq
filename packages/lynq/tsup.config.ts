@@ -18,6 +18,7 @@ export default defineConfig({
 		"middleware/tip": "src/middleware/tip.ts",
 		"middleware/cache": "src/middleware/cache.ts",
 		"middleware/retry": "src/middleware/retry.ts",
+		"middleware/agent-payment": "src/middleware/agent-payment.ts",
 		"adapters/stdio": "src/adapters/stdio.ts",
 		store: "src/store.ts",
 		test: "src/test.ts",

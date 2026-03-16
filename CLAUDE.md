@@ -74,6 +74,7 @@ The core framework. Multiple entry points via `exports` field:
 - `lynq/url-action` — URL-based elicitation middleware (`urlAction()`)
 - `lynq/oauth` — OAuth flow middleware (`oauth()`)
 - `lynq/payment` — payment flow middleware (`payment()`)
+- `lynq/agent-payment` — agent-to-agent payment middleware (`agentPayment()`, `verifyOnChain()`, `verifyViaFacilitator()`)
 - `lynq/bearer` — Bearer token verification middleware (`bearer()`)
 - `lynq/jwt` — JWT verification middleware (`jwt()`) — requires `jose` peer dep
 - `lynq/tip` — post-result tip link appender (`tip()`)
@@ -148,6 +149,7 @@ packages/
 │   │   │   ├── url-action.ts   — urlAction() URL-based elicitation
 │   │   │   ├── oauth.ts        — oauth() flow middleware
 │   │   │   ├── payment.ts      — payment() flow middleware
+│   │   │   ├── agent-payment.ts — agentPayment() agent-to-agent payment
 │   │   │   ├── bearer.ts       — bearer() token verification
 │   │   │   ├── jwt.ts          — jwt() JWT verification
 │   │   │   └── tip.ts          — tip() onResult middleware
