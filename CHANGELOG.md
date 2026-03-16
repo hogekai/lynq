@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-03-16
+
+### Added
+
+- `agentPayment()` middleware — agent-to-agent payment flow with on-chain and facilitator verification (`lynq/agent-payment`)
+
 ## [0.8.4] - 2026-03-15
 
 ### Added
