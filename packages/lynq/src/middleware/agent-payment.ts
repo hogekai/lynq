@@ -72,9 +72,7 @@ function buildMessage(text: string, request: PaymentRequest): string {
 }
 
 /** Extract payment metadata from an elicitation message. Returns null if not a payment. */
-export function parsePaymentMeta(
-	message: string,
-): PaymentRequest | null {
+export function parsePaymentMeta(message: string): PaymentRequest | null {
 	const match = message.match(/\[x-lynq-payment:(\{[^}]+\})\]/);
 	if (!match) return null;
 	try {

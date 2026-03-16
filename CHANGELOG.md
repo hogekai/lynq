@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] - 2026-03-17
+
+### Added
+
+- `Elicit.form()` raw JSON Schema overload — pass plain `Record<string, unknown>` instead of Zod
+- `parsePaymentMeta()` export from `lynq/agent-payment` — extract `[x-lynq-payment:{json}]` metadata from elicitation messages
+- `agentPayment()` embeds payment metadata in elicitation message via `[x-lynq-payment]` tag
+
+### Changed
+
+- `agentPayment()` uses raw JSON Schema instead of lazy Zod import — no `zod` peer dependency needed
+
 ## [0.9.0] - 2026-03-16
 
 ### Added

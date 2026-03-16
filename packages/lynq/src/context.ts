@@ -23,7 +23,7 @@ export function createElicit(
 	cancelElicitation?: (eid: string) => void,
 ): Elicit {
 	return {
-		async form(message, schema) {
+		async form(message: string, schema: unknown) {
 			const jsonSchema = inputToJsonSchema(schema);
 			const r = await sdkServer.elicitInput({
 				message,
