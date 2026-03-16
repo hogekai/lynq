@@ -51,23 +51,37 @@ export interface AgentPaymentOptions {
 	onComplete?: (c: ToolContext) => void | Promise<void>;
 }
 
-// === JSON Schema with x-lynq-payment flag ===
+// === Proof schema (raw JSON Schema, no Zod dependency) ===
 
-/** Payment proof JSON Schema. `x-lynq-payment` identifies this as a payment elicitation and carries payment details. */
-export interface PaymentSchemaExtension {
-	"x-lynq-payment": PaymentRequest;
+const PROOF_SCHEMA = {
+	type: "object" as const,
+	properties: {
+		type: { type: "string" as const, enum: ["signature", "tx_hash"] },
+		value: { type: "string" as const },
+	},
+	required: ["type", "value"],
+};
+
+/**
+ * Build elicitation message with embedded payment metadata.
+ * Format: human-readable text + `\n[x-lynq-payment:{json}]` tag.
+ * Wallets detect the tag, not the human text.
+ */
+function buildMessage(text: string, request: PaymentRequest): string {
+	return `${text}\n[x-lynq-payment:${JSON.stringify(request)}]`;
 }
 
-function buildProofSchema(request: PaymentRequest) {
-	return {
-		type: "object" as const,
-		properties: {
-			type: { type: "string" as const, enum: ["signature", "tx_hash"] },
-			value: { type: "string" as const },
-		},
-		required: ["type", "value"],
-		"x-lynq-payment": request,
-	};
+/** Extract payment metadata from an elicitation message. Returns null if not a payment. */
+export function parsePaymentMeta(
+	message: string,
+): PaymentRequest | null {
+	const match = message.match(/\[x-lynq-payment:(\{[^}]+\})\]/);
+	if (!match) return null;
+	try {
+		return JSON.parse(match[1]) as PaymentRequest;
+	} catch {
+		return null;
+	}
 }
 
 // === Middleware ===
@@ -78,16 +92,17 @@ export function agentPayment(options: AgentPaymentOptions): ToolMiddleware {
 	const token = options.token ?? "USDC";
 	const network = options.network ?? "base";
 	const once = options.once ?? true;
-	const message =
-		options.message ??
-		`Payment required: ${options.amount} ${token} to ${options.recipient} on ${network}.`;
-
 	const request: PaymentRequest = {
 		recipient: options.recipient,
 		amount: options.amount,
 		network,
 		token,
 	};
+
+	const humanMessage =
+		options.message ??
+		`Payment required: ${options.amount} ${token} to ${options.recipient} on ${network}.`;
+	const message = buildMessage(humanMessage, request);
 
 	const middleware: ToolMiddleware = {
 		name,
@@ -99,9 +114,8 @@ export function agentPayment(options: AgentPaymentOptions): ToolMiddleware {
 				return next();
 			}
 
-			// Elicit proof from agent using JSON Schema directly (not Zod)
-			// so x-lynq-payment flag is preserved in the wire format
-			const result = await c.elicit.form(message, buildProofSchema(request));
+			// Elicit proof from agent
+			const result = await c.elicit.form(message, PROOF_SCHEMA);
 
 			if (result.action !== "accept") {
 				return error("Payment cancelled.");
