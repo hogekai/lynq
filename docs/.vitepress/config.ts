@@ -96,6 +96,10 @@ export default defineConfig({
 						link: "/payment/stripe",
 					},
 					{ text: "Crypto", link: "/payment/crypto" },
+					{
+						text: "Agent Payment",
+						link: "/payment/agent-payment",
+					},
 					{ text: "tip()", link: "/payment/tip" },
 				],
 			},

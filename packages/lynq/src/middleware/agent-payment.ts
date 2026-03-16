@@ -1,4 +1,3 @@
-import type { z } from "zod";
 import { error } from "../response.js";
 import type { ToolContext, ToolMiddleware } from "../types.js";
 
@@ -52,21 +51,23 @@ export interface AgentPaymentOptions {
 	onComplete?: (c: ToolContext) => void | Promise<void>;
 }
 
-// === Zod schema factory ===
+// === JSON Schema with x-lynq-payment flag ===
 
-let proofSchema: z.ZodObject<{
-	type: z.ZodEnum<["signature", "tx_hash"]>;
-	value: z.ZodString;
-}>;
+/** Payment proof JSON Schema. `x-lynq-payment` identifies this as a payment elicitation and carries payment details. */
+export interface PaymentSchemaExtension {
+	"x-lynq-payment": PaymentRequest;
+}
 
-function getProofSchema(zod: typeof z): typeof proofSchema {
-	if (!proofSchema) {
-		proofSchema = zod.object({
-			type: zod.enum(["signature", "tx_hash"]),
-			value: zod.string(),
-		});
-	}
-	return proofSchema;
+function buildProofSchema(request: PaymentRequest) {
+	return {
+		type: "object" as const,
+		properties: {
+			type: { type: "string" as const, enum: ["signature", "tx_hash"] },
+			value: { type: "string" as const },
+		},
+		required: ["type", "value"],
+		"x-lynq-payment": request,
+	};
 }
 
 // === Middleware ===
@@ -98,20 +99,18 @@ export function agentPayment(options: AgentPaymentOptions): ToolMiddleware {
 				return next();
 			}
 
-			// Lazy-import zod to avoid hard dependency
-			const { z: zod } = await import("zod");
-			const schema = getProofSchema(zod);
-
-			// Elicit proof from agent
-			const result = await c.elicit.form(message, schema);
+			// Elicit proof from agent using JSON Schema directly (not Zod)
+			// so x-lynq-payment flag is preserved in the wire format
+			const result = await c.elicit.form(message, buildProofSchema(request));
 
 			if (result.action !== "accept") {
 				return error("Payment cancelled.");
 			}
 
+			const content = result.content as Record<string, unknown>;
 			const proof: PaymentProof = {
-				type: result.content.type,
-				value: result.content.value,
+				type: content.type as PaymentProof["type"],
+				value: content.value as string,
 			};
 
 			// Verify

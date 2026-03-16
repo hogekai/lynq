@@ -69,6 +69,7 @@ export default { port: 3000, fetch: app.fetch };
 | [`payment()`](/payment/overview) | `@lynq/lynq/payment` | Generic URL-based payment |
 | [`stripe()`](/payment/stripe) | `@lynq/stripe` | Stripe Checkout integration |
 | [`crypto()`](/payment/crypto) | `@lynq/crypto` | On-chain crypto payment |
+| [`agentPayment()`](/payment/agent-payment) | `@lynq/lynq/agent-payment` | Agent-to-agent payment via form elicitation |
 | [`tip()`](/payment/tip) | `@lynq/lynq/tip` | Post-result tip link (non-blocking) |
 
 :::tip Under the hood

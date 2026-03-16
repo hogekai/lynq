@@ -83,11 +83,16 @@ export interface ElicitUrlOptions {
 }
 
 export interface Elicit {
-	/** Request structured data from the user via a form. */
+	/** Request structured data from the user via a Zod schema form. */
 	form<T extends z.ZodObject<z.ZodRawShape>>(
 		message: string,
 		schema: T,
 	): Promise<ElicitFormResult<z.infer<T>>>;
+	/** Request structured data from the user via a raw JSON Schema form. */
+	form<T = Record<string, unknown>>(
+		message: string,
+		schema: Record<string, unknown>,
+	): Promise<ElicitFormResult<T>>;
 	/** Direct the user to an external URL. */
 	url(
 		message: string,

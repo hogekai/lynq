@@ -238,6 +238,7 @@ Check `c.task.cancelled` periodically to respect client cancellation. Tasks use 
 | `@lynq/lynq/url-action` | `urlAction()` URL-based elicitation |
 | `@lynq/lynq/oauth` | `oauth()` generic OAuth flow |
 | `@lynq/lynq/payment` | `payment()` payment flow |
+| `@lynq/lynq/agent-payment` | `agentPayment()`, `verifyOnChain()`, `verifyViaFacilitator()` |
 | `@lynq/lynq/logger` | `logger()` logging |
 | `@lynq/lynq/rate-limit` | `rateLimit()` rate limiting |
 | `@lynq/lynq/truncate` | `truncate()` response truncation |
