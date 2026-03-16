@@ -138,12 +138,28 @@ mcp.tool(
 | **`once` default** | N/A (controlled by provider) | `true` |
 | **Callback route** | Required | Not needed |
 
-::: info Peer dependency
-`agentPayment()` requires `zod` as a peer dependency for the proof form schema.
-:::
+## Wallet Detection
+
+`agentPayment()` embeds a `[x-lynq-payment:{...}]` tag in the elicitation message containing the payment details as structured JSON. Wallet implementations detect this tag — not the human-readable text.
+
+```
+Payment required: 0.01 USDC to 0x1234... on base.
+[x-lynq-payment:{"recipient":"0x1234...","amount":"0.01","token":"USDC","network":"base"}]
+```
+
+Use the exported `parsePaymentMeta()` helper to extract payment details from a message:
+
+```ts
+import { parsePaymentMeta } from "@lynq/lynq/agent-payment";
+
+const meta = parsePaymentMeta(message);
+if (meta) {
+  // meta: { recipient, amount, token, network }
+}
+```
 
 ::: tip Under the hood
-`agentPayment()` follows the same pattern as [`credentials()`](/middleware/credentials). On tool call, the `onCall` hook checks the session for an existing proof. If absent, it calls `c.elicit.form()` with a Zod schema for `{ type, value }`. The calling agent is expected to obtain a proof from a wallet MCP server, fill the form, and submit. The middleware then runs the user-provided `verify()` function. If valid, the proof is stored in the session and `next()` is called.
+On tool call, the `onCall` hook checks the session for an existing proof. If absent, it calls `c.elicit.form()` with a raw JSON Schema for `{ type, value }` and a message containing the `[x-lynq-payment]` tag. The calling agent (or wallet hook) fills the form with a `PaymentProof`. The middleware then runs the user-provided `verify()` function. If valid, the proof is stored in the session and `next()` is called.
 
 When `once: false`, an `onResult` hook clears the session key after each successful call, requiring payment on every invocation.
 :::
