@@ -1,6 +1,10 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import type { ElicitationTracker, ServerState } from "./internal-types.js";
-import { createSessionAPI } from "./session.js";
+import {
+	createSessionAPI,
+	swallowError,
+	sweepExpiredSessions,
+} from "./session.js";
 import type { HttpAdapterOptions, ServerOptions } from "./types.js";
 
 export function createHttpAdapter(
@@ -69,10 +73,29 @@ export function createHttpAdapter(
 		const httpSessions = new Map<string, { server: Server; transport: any }>();
 		let started = false;
 
+		// Periodic session sweep for TTL enforcement
+		let sweepTimer: ReturnType<typeof setInterval> | undefined;
+		if (state.sessionTTL > 0) {
+			sweepTimer = setInterval(
+				() => sweepExpiredSessions(state, httpSessions),
+				state.sessionTTL * 500, // sweep at half the TTL interval
+			);
+			// Allow the process to exit even if the timer is still running
+			if (
+				sweepTimer &&
+				typeof sweepTimer === "object" &&
+				"unref" in sweepTimer
+			) {
+				sweepTimer.unref();
+			}
+		}
+
 		return async (req: Request): Promise<Response> => {
 			if (!started && state.onServerStart) {
 				started = true;
-				Promise.resolve(state.onServerStart()).catch(() => {});
+				Promise.resolve(state.onServerStart()).catch(
+					swallowError(state, "onServerStart"),
+				);
 			}
 			const T = await lazyImport();
 			const sessionId = req.headers.get("mcp-session-id");
@@ -126,7 +149,7 @@ export function createHttpAdapter(
 					state.sessions.delete(sid);
 					if (state.onSessionDestroy) {
 						Promise.resolve(state.onSessionDestroy(sid, sessionData)).catch(
-							() => {},
+							swallowError(state, "onSessionDestroy", sid),
 						);
 					}
 				},
@@ -141,7 +164,7 @@ export function createHttpAdapter(
 						state.sessions.delete(sid);
 						if (state.onSessionDestroy) {
 							Promise.resolve(state.onSessionDestroy(sid, sessionData)).catch(
-								() => {},
+								swallowError(state, "onSessionDestroy", sid),
 							);
 						}
 						break;

@@ -42,10 +42,12 @@ export interface SessionState {
 	grants: Set<string>;
 	toolOverrides: Map<string, "enabled" | "disabled">;
 	resourceOverrides: Map<string, "enabled" | "disabled">;
+	lastActivityAt: number;
 }
 
 export interface ServerState {
 	store: Store;
+	sessionTTL: number;
 	globalMiddlewares: ToolMiddleware[];
 	tools: Map<string, InternalTool>;
 	resources: Map<string, InternalResource>;
@@ -59,6 +61,12 @@ export interface ServerState {
 				sessionId: string,
 				data: ReadonlyMap<string, unknown>,
 		  ) => void | Promise<void>)
+		| undefined;
+	onError:
+		| ((
+				error: unknown,
+				context: { source: string; sessionId?: string },
+		  ) => void)
 		| undefined;
 	runningTasks: Set<Promise<void>>;
 }

@@ -9,7 +9,9 @@ interface PendingElicitation {
 
 const ELICITATION_TTL_MS = 3_600_000; // 1 hour
 
-export function createElicitationTracker(): ElicitationTracker {
+export function createElicitationTracker(
+	onError?: (error: unknown, context: { source: string }) => void,
+): ElicitationTracker {
 	const pendingElicitations = new Map<string, PendingElicitation>();
 
 	function cleanupExpired(): void {
@@ -49,7 +51,9 @@ export function createElicitationTracker(): ElicitationTracker {
 		if (!pending) return;
 		pendingElicitations.delete(elicitationId);
 		if (pending.completionNotifier) {
-			pending.completionNotifier().catch(() => {});
+			pending.completionNotifier().catch((err) => {
+				onError?.(err, { source: "elicitationNotifier" });
+			});
 		}
 		pending.resolver();
 	}

@@ -49,6 +49,12 @@ export function escapeHtml(str: string): string {
 
 // ── HTML Templates ─────────────────────────────────────────────────────
 
+const BASE_STYLES = `body { font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: #1a1a1a; }
+    .card { text-align: center; padding: 40px; }
+    .icon { font-size: 3em; margin-bottom: 12px; }
+    h1 { font-size: 1.2em; margin-bottom: 8px; }
+    p { color: #666; font-size: 0.9em; }`;
+
 export function successPage(type: string): string {
 	const t = escapeHtml(type);
 	return `<!DOCTYPE html>
@@ -57,16 +63,12 @@ export function successPage(type: string): string {
   <meta charset="utf-8">
   <title>${t} Complete</title>
   <style>
-    body { font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: #1a1a1a; }
-    .card { text-align: center; padding: 40px; }
-    .check { font-size: 3em; margin-bottom: 12px; }
-    h1 { font-size: 1.2em; margin-bottom: 8px; }
-    p { color: #666; font-size: 0.9em; }
+    ${BASE_STYLES}
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="check">&#10003;</div>
+    <div class="icon">&#10003;</div>
     <h1>${t} complete</h1>
     <p>You can close this tab and return to your app.</p>
   </div>
@@ -82,11 +84,9 @@ export function errorPage(message: string): string {
   <meta charset="utf-8">
   <title>Error</title>
   <style>
-    body { font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: #1a1a1a; }
-    .card { text-align: center; padding: 40px; max-width: 420px; }
-    .icon { font-size: 3em; margin-bottom: 12px; }
-    h1 { font-size: 1.2em; margin-bottom: 8px; }
-    p { color: #dc2626; font-size: 0.9em; word-break: break-word; }
+    ${BASE_STYLES}
+    .card { max-width: 420px; }
+    p { color: #dc2626; word-break: break-word; }
   </style>
 </head>
 <body>
@@ -121,7 +121,7 @@ export function cryptoPaymentPage(params: {
   <title>Payment &mdash; ${a} ${t}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; max-width: 420px; margin: 60px auto; padding: 20px; color: #1a1a1a; }
+    body { font-family: system-ui, sans-serif; color: #1a1a1a; max-width: 420px; margin: 60px auto; padding: 20px; }
     h1 { font-size: 1.4em; margin-bottom: 8px; }
     .info { background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0; font-size: 0.9em; }
     .info dt { color: #666; font-size: 0.85em; margin-top: 8px; }

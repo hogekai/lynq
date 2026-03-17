@@ -23,6 +23,7 @@ import {
 	isResourceVisible,
 	isTaskVisible,
 	isToolVisible,
+	swallowError,
 } from "./session.js";
 import { createUserStore } from "./store.js";
 import type { ResourceContext, TaskContext, TaskControl } from "./types.js";
@@ -143,7 +144,7 @@ export function setupHandlers(
 					const status = msg ? `${pct}% ${msg}` : `${pct}%`;
 					requestTaskStore
 						.updateTaskStatus(taskId, "working", status)
-						.catch(() => {});
+						.catch(swallowError(state, "taskStatusUpdate"));
 				},
 				get cancelled() {
 					return cancelledTaskIds.has(taskId);
@@ -182,7 +183,7 @@ export function setupHandlers(
 							const msg = err instanceof Error ? err.message : String(err);
 							await requestTaskStore
 								.storeTaskResult(taskId, "failed", errorResponse(msg))
-								.catch(() => {});
+								.catch(swallowError(state, "taskResultStore"));
 						}
 					}
 				})();

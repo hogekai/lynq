@@ -22,6 +22,7 @@ import {
 	isResourceVisible,
 	isTaskVisible,
 	isToolVisible,
+	swallowError,
 } from "./session.js";
 import { memoryStore } from "./store.js";
 import type {
@@ -42,6 +43,7 @@ import type {
 export function createMCPServer(info: ServerOptions): MCPServer {
 	const state: ServerState = {
 		store: info.store ?? memoryStore(),
+		sessionTTL: info.sessionTTL ?? 3600,
 		globalMiddlewares: [],
 		tools: new Map<string, InternalTool>(),
 		resources: new Map<string, InternalResource>(),
@@ -51,10 +53,13 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		onServerStart: info.onServerStart,
 		onSessionCreate: info.onSessionCreate,
 		onSessionDestroy: info.onSessionDestroy,
+		onError: info.onError,
 		runningTasks: new Set(),
 	};
 
-	const elicitation = createElicitationTracker();
+	const elicitation = createElicitationTracker((err, ctx) =>
+		state.onError?.(err, ctx),
+	);
 	const { taskStore, cancelledTaskIds } = createTaskStore();
 
 	const server = new Server(info, {
@@ -76,10 +81,10 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		if (state.onSessionDestroy) {
 			try {
 				Promise.resolve(state.onSessionDestroy(sessionId, sessionData)).catch(
-					() => {},
+					swallowError(state, "onSessionDestroy", sessionId),
 				);
-			} catch {
-				// fire-and-forget — sync throws are silently caught
+			} catch (err) {
+				state.onError?.(err, { source: "onSessionDestroy", sessionId });
 			}
 		}
 	};
@@ -189,7 +194,9 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		const transport = new StdioServerTransport();
 		await server.connect(transport);
 		if (state.onServerStart) {
-			await Promise.resolve(state.onServerStart()).catch(() => {});
+			await Promise.resolve(state.onServerStart()).catch(
+				swallowError(state, "onServerStart"),
+			);
 		}
 	}
 

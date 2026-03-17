@@ -28,6 +28,8 @@ export type User = string | { id: string | number } | { sub: string };
 
 export interface ServerOptions extends ServerInfo {
 	store?: Store;
+	/** Session inactivity timeout in seconds. Sessions inactive longer than this are automatically cleaned up. Set to `0` to disable. Default: `3600` (1 hour). */
+	sessionTTL?: number;
 	/** Called when the server starts (after stdio connect or on first HTTP request). */
 	onServerStart?: () => void | Promise<void>;
 	/** Called when a new session is created. */
@@ -37,6 +39,11 @@ export interface ServerOptions extends ServerInfo {
 		sessionId: string,
 		data: ReadonlyMap<string, unknown>,
 	) => void | Promise<void>;
+	/** Called when an internal fire-and-forget operation fails (lifecycle hooks, SDK notifications, task updates). Without this, errors are silently swallowed. */
+	onError?: (
+		error: unknown,
+		context: { source: string; sessionId?: string },
+	) => void;
 }
 
 // === Session ===
@@ -306,7 +313,30 @@ export interface MCPServer {
 		config: ToolConfig<TInput>,
 		handler: ToolHandler<TInput>,
 	): void;
-
+	/** Register a tool with 1 middleware, config, and handler. */
+	tool<TInput>(
+		name: string,
+		mw1: ToolMiddleware,
+		config: ToolConfig<TInput>,
+		handler: ToolHandler<TInput>,
+	): void;
+	/** Register a tool with 2 middlewares, config, and handler. */
+	tool<TInput>(
+		name: string,
+		mw1: ToolMiddleware,
+		mw2: ToolMiddleware,
+		config: ToolConfig<TInput>,
+		handler: ToolHandler<TInput>,
+	): void;
+	/** Register a tool with 3 middlewares, config, and handler. */
+	tool<TInput>(
+		name: string,
+		mw1: ToolMiddleware,
+		mw2: ToolMiddleware,
+		mw3: ToolMiddleware,
+		config: ToolConfig<TInput>,
+		handler: ToolHandler<TInput>,
+	): void;
 	/** Register a tool with per-tool middlewares, config, and handler. */
 	tool<TInput>(
 		name: string,
@@ -315,7 +345,30 @@ export interface MCPServer {
 
 	/** Register a resource with config and handler. */
 	resource(uri: string, config: ResourceConfig, handler: ResourceHandler): void;
-
+	/** Register a resource with 1 middleware, config, and handler. */
+	resource(
+		uri: string,
+		mw1: ToolMiddleware,
+		config: ResourceConfig,
+		handler: ResourceHandler,
+	): void;
+	/** Register a resource with 2 middlewares, config, and handler. */
+	resource(
+		uri: string,
+		mw1: ToolMiddleware,
+		mw2: ToolMiddleware,
+		config: ResourceConfig,
+		handler: ResourceHandler,
+	): void;
+	/** Register a resource with 3 middlewares, config, and handler. */
+	resource(
+		uri: string,
+		mw1: ToolMiddleware,
+		mw2: ToolMiddleware,
+		mw3: ToolMiddleware,
+		config: ResourceConfig,
+		handler: ResourceHandler,
+	): void;
 	/** Register a resource with per-resource middlewares, config, and handler. */
 	resource(
 		uri: string,
@@ -328,7 +381,30 @@ export interface MCPServer {
 		config: TaskConfig<TInput>,
 		handler: TaskHandler<TInput>,
 	): void;
-
+	/** @experimental Register a task with 1 middleware, config, and handler. */
+	task<TInput>(
+		name: string,
+		mw1: ToolMiddleware,
+		config: TaskConfig<TInput>,
+		handler: TaskHandler<TInput>,
+	): void;
+	/** @experimental Register a task with 2 middlewares, config, and handler. */
+	task<TInput>(
+		name: string,
+		mw1: ToolMiddleware,
+		mw2: ToolMiddleware,
+		config: TaskConfig<TInput>,
+		handler: TaskHandler<TInput>,
+	): void;
+	/** @experimental Register a task with 3 middlewares, config, and handler. */
+	task<TInput>(
+		name: string,
+		mw1: ToolMiddleware,
+		mw2: ToolMiddleware,
+		mw3: ToolMiddleware,
+		config: TaskConfig<TInput>,
+		handler: TaskHandler<TInput>,
+	): void;
 	/** @experimental Register a task with per-task middlewares, config, and handler. */
 	task<TInput>(
 		name: string,
