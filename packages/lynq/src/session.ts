@@ -52,8 +52,6 @@ function deserializeSession(
 	};
 }
 
-const persistTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
 export function persistSession(state: ServerState, sessionId: string): void {
 	if (!state.sessionPersistence) return;
 	const session = state.sessions.get(sessionId);
@@ -74,22 +72,22 @@ export function persistSession(state: ServerState, sessionId: string): void {
 	}
 
 	// Debounce
-	const existing = persistTimers.get(sessionId);
+	const existing = state.persistTimers.get(sessionId);
 	if (existing) clearTimeout(existing);
-	persistTimers.set(
+	state.persistTimers.set(
 		sessionId,
 		setTimeout(() => {
-			persistTimers.delete(sessionId);
+			state.persistTimers.delete(sessionId);
 			doWrite();
 		}, interval * 1000),
 	);
 }
 
-function cancelPersistTimer(sessionId: string): void {
-	const timer = persistTimers.get(sessionId);
+function cancelPersistTimer(state: ServerState, sessionId: string): void {
+	const timer = state.persistTimers.get(sessionId);
 	if (timer) {
 		clearTimeout(timer);
-		persistTimers.delete(sessionId);
+		state.persistTimers.delete(sessionId);
 	}
 }
 
@@ -127,7 +125,7 @@ function destroySession(
 	sessionId: string,
 	session: SessionState,
 ): void {
-	cancelPersistTimer(sessionId);
+	cancelPersistTimer(state, sessionId);
 	state.sessions.delete(sessionId);
 	state.serverBySession.delete(sessionId);
 	if (state.sessionPersistence) {

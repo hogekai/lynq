@@ -69,6 +69,7 @@ export interface ServerState {
 		  ) => void)
 		| undefined;
 	sessionPersistence: { syncInterval: number; ttl: number } | undefined;
+	persistTimers: Map<string, ReturnType<typeof setTimeout>>;
 	runningTasks: Set<Promise<void>>;
 }
 

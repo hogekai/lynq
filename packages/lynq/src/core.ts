@@ -63,6 +63,7 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 					ttl: info.sessionPersistence.ttl ?? 86400,
 				}
 			: undefined,
+		persistTimers: new Map(),
 		runningTasks: new Set(),
 	};
 

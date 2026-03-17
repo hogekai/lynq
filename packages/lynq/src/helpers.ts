@@ -201,6 +201,9 @@ export function buildMiddlewareChain<TResult = CallToolResult>(
 				source: `middleware:${mw.name}:onCall`,
 				sessionId: c.sessionId,
 			});
+			// Re-throw instead of returning errorResponse — middleware may
+			// intentionally throw (e.g. retry re-throws handler errors).
+			// Converting to errorResponse would break that contract.
 			throw err;
 		}
 	};
