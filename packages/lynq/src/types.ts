@@ -44,6 +44,17 @@ export interface ServerOptions extends ServerInfo {
 		error: unknown,
 		context: { source: string; sessionId?: string },
 	) => void;
+	/**
+	 * Persist session state (grants, data, overrides) to the Store.
+	 * Enables session restoration after reconnection or server restart.
+	 * Requires a Store (default `memoryStore` works but is lost on restart).
+	 */
+	sessionPersistence?: {
+		/** Sync interval in seconds. `0` for write-through (immediate). Default: `0`. */
+		syncInterval?: number;
+		/** TTL for persisted session state in the Store, in seconds. Default: `86400` (24 hours). */
+		ttl?: number;
+	};
 }
 
 // === Session ===

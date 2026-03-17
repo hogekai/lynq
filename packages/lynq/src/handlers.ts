@@ -117,7 +117,12 @@ export function setupHandlers(
 			);
 
 			const finalHandler = () => Promise.resolve(tool.handler(toolArgs, c));
-			const chain = buildMiddlewareChain(tool.middlewares, c, finalHandler);
+			const chain = buildMiddlewareChain(
+				tool.middlewares,
+				c,
+				finalHandler,
+				state.onError,
+			);
 			return chain();
 		}
 
@@ -192,7 +197,12 @@ export function setupHandlers(
 				return { task: createdTask } as unknown as CallToolResult;
 			};
 
-			const chain = buildMiddlewareChain(task.middlewares, c, finalHandler);
+			const chain = buildMiddlewareChain(
+				task.middlewares,
+				c,
+				finalHandler,
+				state.onError,
+			);
 			return chain();
 		}
 
@@ -298,7 +308,12 @@ export function setupHandlers(
 				};
 			};
 
-			const chain = buildMiddlewareChain(res.middlewares, toolC, finalHandler);
+			const chain = buildMiddlewareChain(
+				res.middlewares,
+				toolC,
+				finalHandler,
+				state.onError,
+			);
 
 			return chain();
 		},

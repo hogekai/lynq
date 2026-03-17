@@ -2,6 +2,9 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import type { ElicitationTracker, ServerState } from "./internal-types.js";
 import {
 	createSessionAPI,
+	notifyResourceListChanged,
+	notifyToolListChanged,
+	restoreSession,
 	swallowError,
 	sweepExpiredSessions,
 } from "./session.js";
@@ -134,6 +137,15 @@ export function createHttpAdapter(
 				onsessioninitialized: (sid: string) => {
 					httpSessions.set(sid, { server: srv, transport });
 					state.serverBySession.set(sid, srv);
+					// Restore persisted session state (fire-and-forget)
+					restoreSession(state, sid)
+						.then((restored) => {
+							if (restored) {
+								notifyToolListChanged(state, defaultServer, sid);
+								notifyResourceListChanged(state, defaultServer, sid);
+							}
+						})
+						.catch(swallowError(state, "sessionRestore", sid));
 					if (options?.onRequest) {
 						options.onRequest(
 							req,

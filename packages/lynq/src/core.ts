@@ -22,6 +22,9 @@ import {
 	isResourceVisible,
 	isTaskVisible,
 	isToolVisible,
+	notifyResourceListChanged,
+	notifyToolListChanged,
+	restoreSession,
 	swallowError,
 } from "./session.js";
 import { memoryStore } from "./store.js";
@@ -54,6 +57,12 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		onSessionCreate: info.onSessionCreate,
 		onSessionDestroy: info.onSessionDestroy,
 		onError: info.onError,
+		sessionPersistence: info.sessionPersistence
+			? {
+					syncInterval: info.sessionPersistence.syncInterval ?? 0,
+					ttl: info.sessionPersistence.ttl ?? 86400,
+				}
+			: undefined,
 		runningTasks: new Set(),
 	};
 
@@ -193,6 +202,12 @@ export function createMCPServer(info: ServerOptions): MCPServer {
 		);
 		const transport = new StdioServerTransport();
 		await server.connect(transport);
+		// Restore persisted session state for the default (stdio) session
+		const restored = await restoreSession(state, "default").catch(() => false);
+		if (restored) {
+			notifyToolListChanged(state, server, "default");
+			notifyResourceListChanged(state, server, "default");
+		}
 		if (state.onServerStart) {
 			await Promise.resolve(state.onServerStart()).catch(
 				swallowError(state, "onServerStart"),

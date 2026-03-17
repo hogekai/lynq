@@ -4,8 +4,12 @@ import {
 	normalizeObjectSchema,
 } from "@modelcontextprotocol/sdk/server/zod-compat.js";
 import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import {
+	type CallToolResult,
+	McpError,
+} from "@modelcontextprotocol/sdk/types.js";
 import type { InternalResource } from "./internal-types.js";
+import { error as errorResponse } from "./response.js";
 import type { ToolContext, ToolInfo, ToolMiddleware } from "./types.js";
 
 export function inputToJsonSchema(input: unknown): Record<string, unknown> {
@@ -155,6 +159,10 @@ export function buildMiddlewareChain<TResult = CallToolResult>(
 	middlewares: ToolMiddleware[],
 	c: ToolContext,
 	finalHandler: () => Promise<TResult>,
+	onError?: (
+		error: unknown,
+		context: { source: string; sessionId?: string },
+	) => void,
 ): () => Promise<TResult> {
 	const callMiddlewares = middlewares.filter((mw) => mw.onCall);
 	const resultMiddlewares = middlewares.filter((mw) => mw.onResult).reverse();
@@ -164,20 +172,40 @@ export function buildMiddlewareChain<TResult = CallToolResult>(
 		if (index >= callMiddlewares.length) {
 			let result = await finalHandler();
 			for (const mw of resultMiddlewares) {
-				// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onResult
-				result = (await mw.onResult!(
-					result as CallToolResult,
-					c,
-				)) as Awaited<TResult>;
+				try {
+					// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onResult
+					result = (await mw.onResult!(
+						result as CallToolResult,
+						c,
+					)) as Awaited<TResult>;
+				} catch (err) {
+					if (err instanceof McpError) throw err;
+					onError?.(err, {
+						source: `middleware:${mw.name}:onResult`,
+						sessionId: c.sessionId,
+					});
+					// keep previous result
+				}
 			}
 			return result;
 		}
 		const mw = callMiddlewares[index++];
-		// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onCall
-		return mw.onCall!(
-			c,
-			next as () => Promise<CallToolResult>,
-		) as Promise<TResult>;
+		try {
+			// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onCall
+			return mw.onCall!(
+				c,
+				next as () => Promise<CallToolResult>,
+			) as Promise<TResult>;
+		} catch (err) {
+			if (err instanceof McpError) throw err;
+			onError?.(err, {
+				source: `middleware:${mw.name}:onCall`,
+				sessionId: c.sessionId,
+			});
+			return errorResponse(
+				`Middleware "${mw.name}" failed: ${err instanceof Error ? err.message : String(err)}`,
+			) as TResult;
+		}
 	};
 
 	return next;

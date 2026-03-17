@@ -19,6 +19,102 @@ export function swallowError(
 	};
 }
 
+// ── Session Persistence ─────────────────────────────────────────────────
+
+interface SerializedSessionState {
+	data: Record<string, unknown>;
+	grants: string[];
+	toolOverrides: Record<string, "enabled" | "disabled">;
+	resourceOverrides: Record<string, "enabled" | "disabled">;
+}
+
+function serializeSession(session: SessionState): SerializedSessionState {
+	return {
+		data: Object.fromEntries(session.data),
+		grants: Array.from(session.grants),
+		toolOverrides: Object.fromEntries(session.toolOverrides),
+		resourceOverrides: Object.fromEntries(session.resourceOverrides),
+	};
+}
+
+function deserializeSession(
+	s: SerializedSessionState,
+): Omit<SessionState, "lastActivityAt"> {
+	return {
+		data: new Map(Object.entries(s.data)),
+		grants: new Set(s.grants),
+		toolOverrides: new Map(
+			Object.entries(s.toolOverrides),
+		) as SessionState["toolOverrides"],
+		resourceOverrides: new Map(
+			Object.entries(s.resourceOverrides),
+		) as SessionState["resourceOverrides"],
+	};
+}
+
+const persistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+export function persistSession(state: ServerState, sessionId: string): void {
+	if (!state.sessionPersistence) return;
+	const session = state.sessions.get(sessionId);
+	if (!session) return;
+
+	const doWrite = () => {
+		const key = `session:${sessionId}`;
+		const serialized = serializeSession(session);
+		state.store
+			.set(key, serialized, state.sessionPersistence?.ttl)
+			.catch(swallowError(state, "sessionPersist", sessionId));
+	};
+
+	const interval = state.sessionPersistence.syncInterval;
+	if (interval <= 0) {
+		doWrite();
+		return;
+	}
+
+	// Debounce
+	const existing = persistTimers.get(sessionId);
+	if (existing) clearTimeout(existing);
+	persistTimers.set(
+		sessionId,
+		setTimeout(() => {
+			persistTimers.delete(sessionId);
+			doWrite();
+		}, interval * 1000),
+	);
+}
+
+function cancelPersistTimer(sessionId: string): void {
+	const timer = persistTimers.get(sessionId);
+	if (timer) {
+		clearTimeout(timer);
+		persistTimers.delete(sessionId);
+	}
+}
+
+export async function restoreSession(
+	state: ServerState,
+	sessionId: string,
+): Promise<boolean> {
+	if (!state.sessionPersistence) return false;
+	const key = `session:${sessionId}`;
+	const stored = await state.store.get<SerializedSessionState>(key);
+	if (!stored) return false;
+
+	const session = state.sessions.get(sessionId);
+	if (!session) return false;
+
+	const restored = deserializeSession(stored);
+	session.data = restored.data;
+	session.grants = restored.grants;
+	session.toolOverrides = restored.toolOverrides;
+	session.resourceOverrides = restored.resourceOverrides;
+	return true;
+}
+
+// ── Session Lifecycle ───────────────────────────────────────────────────
+
 function isSessionExpired(state: ServerState, session: SessionState): boolean {
 	return (
 		state.sessionTTL > 0 &&
@@ -31,8 +127,14 @@ function destroySession(
 	sessionId: string,
 	session: SessionState,
 ): void {
+	cancelPersistTimer(sessionId);
 	state.sessions.delete(sessionId);
 	state.serverBySession.delete(sessionId);
+	if (state.sessionPersistence) {
+		state.store
+			.delete(`session:${sessionId}`)
+			.catch(swallowError(state, "sessionDelete", sessionId));
+	}
 	if (state.onSessionDestroy) {
 		try {
 			Promise.resolve(state.onSessionDestroy(sessionId, session.data)).catch(
@@ -99,6 +201,8 @@ export function sweepExpiredSessions(
 	}
 }
 
+// ── Visibility ──────────────────────────────────────────────────────────
+
 export function isToolVisible(
 	state: ServerState,
 	tool: InternalTool,
@@ -141,6 +245,8 @@ export function isTaskVisible(
 	);
 }
 
+// ── Notifications ───────────────────────────────────────────────────────
+
 export function notifyToolListChanged(
 	state: ServerState,
 	defaultServer: Server,
@@ -165,6 +271,8 @@ export function notifyResourceListChanged(
 		.catch(swallowError(state, "sendResourceListChanged", sessionId));
 }
 
+// ── Session API ─────────────────────────────────────────────────────────
+
 export function createSessionAPI(
 	state: ServerState,
 	defaultServer: Server,
@@ -178,14 +286,17 @@ export function createSessionAPI(
 		},
 		set(key: string, value: unknown): void {
 			s.data.set(key, value);
+			persistSession(state, sessionId);
 		},
 		authorize(middlewareName: string): void {
 			s.grants.add(middlewareName);
+			persistSession(state, sessionId);
 			notifyToolListChanged(state, defaultServer, sessionId);
 			notifyResourceListChanged(state, defaultServer, sessionId);
 		},
 		revoke(middlewareName: string): void {
 			s.grants.delete(middlewareName);
+			persistSession(state, sessionId);
 			notifyToolListChanged(state, defaultServer, sessionId);
 			notifyResourceListChanged(state, defaultServer, sessionId);
 		},
@@ -193,24 +304,28 @@ export function createSessionAPI(
 			for (const name of names) {
 				s.toolOverrides.set(name, "enabled");
 			}
+			persistSession(state, sessionId);
 			notifyToolListChanged(state, defaultServer, sessionId);
 		},
 		disableTools(...names: string[]): void {
 			for (const name of names) {
 				s.toolOverrides.set(name, "disabled");
 			}
+			persistSession(state, sessionId);
 			notifyToolListChanged(state, defaultServer, sessionId);
 		},
 		enableResources(...uris: string[]): void {
 			for (const uri of uris) {
 				s.resourceOverrides.set(uri, "enabled");
 			}
+			persistSession(state, sessionId);
 			notifyResourceListChanged(state, defaultServer, sessionId);
 		},
 		disableResources(...uris: string[]): void {
 			for (const uri of uris) {
 				s.resourceOverrides.set(uri, "disabled");
 			}
+			persistSession(state, sessionId);
 			notifyResourceListChanged(state, defaultServer, sessionId);
 		},
 	};

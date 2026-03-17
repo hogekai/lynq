@@ -68,6 +68,7 @@ export interface ServerState {
 				context: { source: string; sessionId?: string },
 		  ) => void)
 		| undefined;
+	sessionPersistence: { syncInterval: number; ttl: number } | undefined;
 	runningTasks: Set<Promise<void>>;
 }
 
