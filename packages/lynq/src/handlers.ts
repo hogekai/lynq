@@ -106,7 +106,9 @@ export function setupHandlers(
 			const rawArgs = args ?? {};
 			const toolArgs =
 				tool.input && typeof tool.input === "object" && "parse" in tool.input
-					? (tool.input as { parse: (v: unknown) => unknown }).parse(rawArgs)
+					? ((tool.input as { parse: (v: unknown) => unknown }).parse(
+							rawArgs,
+						) as Record<string, unknown>)
 					: rawArgs;
 			const c = createToolContext(
 				sdkServer,

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.3] - 2026-03-17
+
+### Fixed
+
+- Parse tool arguments through Zod schema when `input` has a `parse` method, enabling validation before middleware and handlers
+
 ## [0.11.2] - 2026-03-17
 
 ### Fixed
