@@ -9,7 +9,6 @@ import {
 	McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { InternalResource } from "./internal-types.js";
-import { error as errorResponse } from "./response.js";
 import type { ToolContext, ToolInfo, ToolMiddleware } from "./types.js";
 
 export function inputToJsonSchema(input: unknown): Record<string, unknown> {

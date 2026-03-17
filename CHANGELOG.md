@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.1] - 2026-03-17
+
+### Fixed
+
+- Middleware error boundary — `await` the `onCall` return value so async rejections are caught by the `try/catch`
+- Middleware error boundary — re-throw errors after `onError` instead of swallowing them as error responses
+
 ## [0.11.0] - 2026-03-17
 
 ### Added
