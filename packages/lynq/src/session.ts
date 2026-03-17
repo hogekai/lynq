@@ -15,7 +15,7 @@ export function swallowError(
 	sessionId?: string,
 ): (err: unknown) => void {
 	return (err: unknown) => {
-		state.onError?.(err, { source, sessionId });
+		state.onError?.(err, sessionId ? { source, sessionId } : { source });
 	};
 }
 

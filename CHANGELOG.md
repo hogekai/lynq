@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2026-03-17
+
+### Added
+
+- `onError` callback option — surfaces previously swallowed errors from lifecycle hooks, SDK notifications, middleware, and task updates
+- `sessionPersistence` option — persist session state (grants, data, overrides) to the Store for restoration after reconnect or server restart
+- `sessionTTL` option (default: 3600s) — automatic session expiration with lazy cleanup on access and periodic sweep in HTTP adapter
+- Middleware error boundary — `onCall`/`onResult` errors are caught and reported via `onError` instead of crashing; `McpError` is re-thrown
+- Explicit type overloads for `tool()`, `resource()`, `task()` with 1–3 middlewares for better IDE autocomplete
+
+### Fixed
+
+- Rate-limit atomicity — in-process mutex prevents concurrent requests from bypassing store-based rate limits
+- CSS deduplication in HTML page templates via shared `BASE_STYLES` constant
+
 ## [0.10.0] - 2026-03-17
 
 ### Added
