@@ -176,14 +176,82 @@ describe("agentPayment middleware", () => {
 		expect(session.get("agent-payment")).toBeUndefined();
 	});
 
-	it("does not have onResult when once=true", () => {
+	it("has onResult by default (receipt=true)", () => {
 		const mw = agentPayment({
 			recipient: "0x1234",
 			amount: "1.00",
 			once: true,
 			verify: async () => true,
 		});
+		expect(mw.onResult).toBeDefined();
+	});
+
+	it("does not have onResult when receipt=false and once=true", () => {
+		const mw = agentPayment({
+			recipient: "0x1234",
+			amount: "1.00",
+			once: true,
+			receipt: false,
+			verify: async () => true,
+		});
 		expect(mw.onResult).toBeUndefined();
+	});
+
+	it("appends _lynq_payment receipt to result by default", async () => {
+		const server = createTestServer();
+		const mw = agentPayment({
+			recipient: "0x1234",
+			amount: "1.00",
+			token: "USDC",
+			network: "base",
+			verify: async () => true,
+		});
+		server.tool("premium", mw, { input: z.object({}) }, async () => text("ok"));
+
+		const client = await createConnectedPair(server, async () => ({
+			action: "accept",
+			content: { type: "tx_hash", value: "0xabc" },
+		}));
+
+		const result = await client.callTool({ name: "premium", arguments: {} });
+		const contents = (result as any).content;
+		expect(contents[0].text).toBe("ok");
+		expect(contents.length).toBe(2);
+		const receiptData = JSON.parse(contents[1].text);
+		expect(receiptData._lynq_payment).toMatchObject({
+			amount: "1.00",
+			token: "USDC",
+			recipient: "0x1234",
+			tx: "0xabc",
+			network: "base",
+		});
+		expect(receiptData._lynq_payment.paidAt).toBeDefined();
+	});
+
+	it("receipt + once=false: appends receipt and clears session", async () => {
+		const server = createTestServer();
+		const mw = agentPayment({
+			recipient: "0x1234",
+			amount: "1.00",
+			once: false,
+			verify: async () => true,
+		});
+		server.tool("premium", mw, { input: z.object({}) }, async () => text("ok"));
+
+		const client = await createConnectedPair(server, async () => ({
+			action: "accept",
+			content: { type: "tx_hash", value: "0xabc" },
+		}));
+
+		const result = await client.callTool({ name: "premium", arguments: {} });
+		const contents = (result as any).content;
+		// Receipt appended
+		expect(contents.length).toBe(2);
+		const receiptData = JSON.parse(contents[1].text);
+		expect(receiptData._lynq_payment.tx).toBe("0xabc");
+		// Session key cleared
+		const session = getInternals(server).createSessionAPI("default");
+		expect(session.get("agent-payment")).toBeUndefined();
 	});
 
 	it("skipIf takes priority over session key check", async () => {

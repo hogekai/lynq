@@ -45,6 +45,8 @@ export interface AgentPaymentOptions {
 	once?: boolean;
 	/** Verify payment proof. Return true if valid. */
 	verify: VerifyFn;
+	/** Append payment receipt to tool result. Default: true */
+	receipt?: boolean;
 	/** Custom skip condition. Takes priority over sessionKey check. */
 	skipIf?: (c: ToolContext) => boolean | Promise<boolean>;
 	/** Called after payment verification succeeds, before next(). */
@@ -149,10 +151,39 @@ export function agentPayment(options: AgentPaymentOptions): ToolMiddleware {
 		},
 	};
 
-	// If not once, clear session key after each call
-	if (!once) {
+	const receipt = options.receipt ?? true;
+
+	if (receipt || !once) {
 		middleware.onResult = (result, c) => {
-			c.session.set(sessionKey, undefined);
+			if (receipt) {
+				const payment = c.session.get(sessionKey) as
+					| Record<string, unknown>
+					| undefined;
+				if (payment?.paidAt) {
+					result = {
+						...result,
+						content: [
+							...(result.content ?? []),
+							{
+								type: "text" as const,
+								text: JSON.stringify({
+									_lynq_payment: {
+										amount: payment.amount,
+										token: payment.token,
+										recipient: payment.recipient,
+										tx: payment.value,
+										network: payment.network,
+										paidAt: payment.paidAt,
+									},
+								}),
+							},
+						],
+					};
+				}
+			}
+			if (!once) {
+				c.session.set(sessionKey, undefined);
+			}
 			return result;
 		};
 	}
