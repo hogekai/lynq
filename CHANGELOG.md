@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.1] - 2026-03-17
+
+### Changed
+
+- Document `agentPayment` `receipt` option and auto-append payment receipt behavior
+
 ## [0.12.0] - 2026-03-17
 
 ### Added
