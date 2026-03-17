@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.2] - 2026-03-17
+
+### Fixed
+
+- Scope `persistTimers` per server instance — previously shared across all `createMCPServer()` instances, causing cross-server timer leakage
+
 ## [0.11.1] - 2026-03-17
 
 ### Fixed
