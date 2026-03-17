@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.0] - 2026-03-17
+
+### Added
+
+- `agentPayment` auto-appends `_lynq_payment` receipt to tool results by default — service MCP authors get payment info passed to agents without custom `onResult` hooks
+- `receipt` option on `agentPayment` (`boolean`, default: `true`) — set `false` to disable automatic receipt
+
 ## [0.11.3] - 2026-03-17
 
 ### Fixed

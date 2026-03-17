@@ -155,15 +155,16 @@ export function agentPayment(options: AgentPaymentOptions): ToolMiddleware {
 
 	if (receipt || !once) {
 		middleware.onResult = (result, c) => {
+			let out = result;
 			if (receipt) {
 				const payment = c.session.get(sessionKey) as
 					| Record<string, unknown>
 					| undefined;
 				if (payment?.paidAt) {
-					result = {
-						...result,
+					out = {
+						...out,
 						content: [
-							...(result.content ?? []),
+							...(out.content ?? []),
 							{
 								type: "text" as const,
 								text: JSON.stringify({
@@ -184,7 +185,7 @@ export function agentPayment(options: AgentPaymentOptions): ToolMiddleware {
 			if (!once) {
 				c.session.set(sessionKey, undefined);
 			}
-			return result;
+			return out;
 		};
 	}
 
