@@ -192,19 +192,17 @@ export function buildMiddlewareChain<TResult = CallToolResult>(
 		const mw = callMiddlewares[index++];
 		try {
 			// biome-ignore lint/style/noNonNullAssertion: filtered above to only include middlewares with onCall
-			return mw.onCall!(
+			return (await mw.onCall!(
 				c,
 				next as () => Promise<CallToolResult>,
-			) as Promise<TResult>;
+			)) as TResult;
 		} catch (err) {
 			if (err instanceof McpError) throw err;
 			onError?.(err, {
 				source: `middleware:${mw.name}:onCall`,
 				sessionId: c.sessionId,
 			});
-			return errorResponse(
-				`Middleware "${mw.name}" failed: ${err instanceof Error ? err.message : String(err)}`,
-			) as TResult;
+			throw err;
 		}
 	};
 
