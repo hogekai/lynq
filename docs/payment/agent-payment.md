@@ -34,6 +34,7 @@ server.tool("premium", agentPayment({
 | `message` | `string` | Auto-generated | Message shown in elicitation form |
 | `once` | `boolean` | `true` | If true, skip after first successful verification in session |
 | `verify` | `(proof, request) => Promise<boolean>` | **(required)** | Verify payment proof |
+| `receipt` | `boolean` | `true` | Append `_lynq_payment` receipt to tool result |
 | `skipIf` | `(c) => boolean \| Promise<boolean>` | — | Custom skip condition (priority over session check) |
 | `onComplete` | `(c) => void \| Promise<void>` | — | Called after verification succeeds, before `next()` |
 
@@ -158,8 +159,27 @@ if (meta) {
 }
 ```
 
+## Payment Receipt
+
+By default, `agentPayment()` appends a `_lynq_payment` JSON block to the tool result after the handler completes. This lets the calling agent (e.g. Claude) see what was paid without the service author writing any `onResult` logic.
+
+```json
+{
+  "_lynq_payment": {
+    "amount": "0.01",
+    "token": "USDC",
+    "recipient": "0x1234...",
+    "tx": "0xabc...",
+    "network": "base",
+    "paidAt": "2026-03-17T12:00:00.000Z"
+  }
+}
+```
+
+Disable with `receipt: false` if you don't want the receipt appended.
+
 ::: tip Under the hood
 On tool call, the `onCall` hook checks the session for an existing proof. If absent, it calls `c.elicit.form()` with a raw JSON Schema for `{ type, value }` and a message containing the `[x-lynq-payment]` tag. The calling agent (or wallet hook) fills the form with a `PaymentProof`. The middleware then runs the user-provided `verify()` function. If valid, the proof is stored in the session and `next()` is called.
 
-When `once: false`, an `onResult` hook clears the session key after each successful call, requiring payment on every invocation.
+After the handler returns, the `onResult` hook appends the payment receipt to the result (unless `receipt: false`). When `once: false`, it also clears the session key, requiring payment on every invocation.
 :::
