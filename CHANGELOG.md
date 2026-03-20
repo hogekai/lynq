@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0] - 2026-03-20
+
+### Breaking Changes
+
+- Rename `[x-lynq-payment]` elicitation tag to `[x-agent-payment]` per Agent Payment Protocol specification
+- Rename `_lynq_payment` receipt key to `_agent_payment`
+
 ## [0.12.1] - 2026-03-17
 
 ### Changed
