@@ -1,5 +1,9 @@
 # agentPayment()
 
+> **Protocol:** This implementation conforms to the
+> [Agent Payment Protocol](https://github.com/hogekai/agent-payment-protocol)
+> specification.
+
 Agent-to-agent payment middleware via form elicitation. Unlike [`payment()`](/payment/overview) which redirects humans to a browser, `agentPayment()` collects a structured `PaymentProof` directly from the calling agent.
 
 ## Import
@@ -34,7 +38,7 @@ server.tool("premium", agentPayment({
 | `message` | `string` | Auto-generated | Message shown in elicitation form |
 | `once` | `boolean` | `true` | If true, skip after first successful verification in session |
 | `verify` | `(proof, request) => Promise<boolean>` | **(required)** | Verify payment proof |
-| `receipt` | `boolean` | `true` | Append `_lynq_payment` receipt to tool result |
+| `receipt` | `boolean` | `true` | Append `_agent_payment` receipt to tool result |
 | `skipIf` | `(c) => boolean \| Promise<boolean>` | — | Custom skip condition (priority over session check) |
 | `onComplete` | `(c) => void \| Promise<void>` | — | Called after verification succeeds, before `next()` |
 
@@ -141,11 +145,11 @@ mcp.tool(
 
 ## Wallet Detection
 
-`agentPayment()` embeds a `[x-lynq-payment:{...}]` tag in the elicitation message containing the payment details as structured JSON. Wallet implementations detect this tag — not the human-readable text.
+`agentPayment()` embeds a `[x-agent-payment:{...}]` tag in the elicitation message containing the payment details as structured JSON. Wallet implementations detect this tag — not the human-readable text.
 
 ```
 Payment required: 0.01 USDC to 0x1234... on base.
-[x-lynq-payment:{"recipient":"0x1234...","amount":"0.01","token":"USDC","network":"base"}]
+[x-agent-payment:{"recipient":"0x1234...","amount":"0.01","token":"USDC","network":"base"}]
 ```
 
 Use the exported `parsePaymentMeta()` helper to extract payment details from a message:
@@ -161,11 +165,11 @@ if (meta) {
 
 ## Payment Receipt
 
-By default, `agentPayment()` appends a `_lynq_payment` JSON block to the tool result after the handler completes. This lets the calling agent (e.g. Claude) see what was paid without the service author writing any `onResult` logic.
+By default, `agentPayment()` appends a `_agent_payment` JSON block to the tool result after the handler completes. This lets the calling agent (e.g. Claude) see what was paid without the service author writing any `onResult` logic.
 
 ```json
 {
-  "_lynq_payment": {
+  "_agent_payment": {
     "amount": "0.01",
     "token": "USDC",
     "recipient": "0x1234...",
@@ -179,7 +183,7 @@ By default, `agentPayment()` appends a `_lynq_payment` JSON block to the tool re
 Disable with `receipt: false` if you don't want the receipt appended.
 
 ::: tip Under the hood
-On tool call, the `onCall` hook checks the session for an existing proof. If absent, it calls `c.elicit.form()` with a raw JSON Schema for `{ type, value }` and a message containing the `[x-lynq-payment]` tag. The calling agent (or wallet hook) fills the form with a `PaymentProof`. The middleware then runs the user-provided `verify()` function. If valid, the proof is stored in the session and `next()` is called.
+On tool call, the `onCall` hook checks the session for an existing proof. If absent, it calls `c.elicit.form()` with a raw JSON Schema for `{ type, value }` and a message containing the `[x-agent-payment]` tag. The calling agent (or wallet hook) fills the form with a `PaymentProof`. The middleware then runs the user-provided `verify()` function. If valid, the proof is stored in the session and `next()` is called.
 
 After the handler returns, the `onResult` hook appends the payment receipt to the result (unless `receipt: false`). When `once: false`, it also clears the session key, requiring payment on every invocation.
 :::

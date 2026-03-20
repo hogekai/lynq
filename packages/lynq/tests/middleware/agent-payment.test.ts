@@ -197,7 +197,7 @@ describe("agentPayment middleware", () => {
 		expect(mw.onResult).toBeUndefined();
 	});
 
-	it("appends _lynq_payment receipt to result by default", async () => {
+	it("appends _agent_payment receipt to result by default", async () => {
 		const server = createTestServer();
 		const mw = agentPayment({
 			recipient: "0x1234",
@@ -218,14 +218,14 @@ describe("agentPayment middleware", () => {
 		expect(contents[0].text).toBe("ok");
 		expect(contents.length).toBe(2);
 		const receiptData = JSON.parse(contents[1].text);
-		expect(receiptData._lynq_payment).toMatchObject({
+		expect(receiptData._agent_payment).toMatchObject({
 			amount: "1.00",
 			token: "USDC",
 			recipient: "0x1234",
 			tx: "0xabc",
 			network: "base",
 		});
-		expect(receiptData._lynq_payment.paidAt).toBeDefined();
+		expect(receiptData._agent_payment.paidAt).toBeDefined();
 	});
 
 	it("receipt + once=false: appends receipt and clears session", async () => {
@@ -248,7 +248,7 @@ describe("agentPayment middleware", () => {
 		// Receipt appended
 		expect(contents.length).toBe(2);
 		const receiptData = JSON.parse(contents[1].text);
-		expect(receiptData._lynq_payment.tx).toBe("0xabc");
+		expect(receiptData._agent_payment.tx).toBe("0xabc");
 		// Session key cleared
 		const session = getInternals(server).createSessionAPI("default");
 		expect(session.get("agent-payment")).toBeUndefined();

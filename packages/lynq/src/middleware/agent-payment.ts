@@ -66,16 +66,16 @@ const PROOF_SCHEMA = {
 
 /**
  * Build elicitation message with embedded payment metadata.
- * Format: human-readable text + `\n[x-lynq-payment:{json}]` tag.
+ * Format: human-readable text + `\n[x-agent-payment:{json}]` tag.
  * Wallets detect the tag, not the human text.
  */
 function buildMessage(text: string, request: PaymentRequest): string {
-	return `${text}\n[x-lynq-payment:${JSON.stringify(request)}]`;
+	return `${text}\n[x-agent-payment:${JSON.stringify(request)}]`;
 }
 
 /** Extract payment metadata from an elicitation message. Returns null if not a payment. */
 export function parsePaymentMeta(message: string): PaymentRequest | null {
-	const match = message.match(/\[x-lynq-payment:(\{[^}]+\})\]/);
+	const match = message.match(/\[x-agent-payment:(\{[^}]+\})\]/);
 	if (!match) return null;
 	try {
 		return JSON.parse(match[1]) as PaymentRequest;
@@ -168,7 +168,7 @@ export function agentPayment(options: AgentPaymentOptions): ToolMiddleware {
 							{
 								type: "text" as const,
 								text: JSON.stringify({
-									_lynq_payment: {
+									_agent_payment: {
 										amount: payment.amount,
 										token: payment.token,
 										recipient: payment.recipient,
